@@ -35,6 +35,22 @@ Si el programa te entrega fechas con mes o día, confirma con la oficina qué a�
 
 
 
+## Configuración
+
+Define **cómo lee el programa cada Excel**: columnas, filtros y reglas de cruce. Cámbiala solo si los Excel cambiaron de formato.
+
+Dentro encontrarás el detalle de cada opción y una guía para editarla.
+
+
+
+## Ver revisión
+
+Informe de lo que el programa **no pudo cruzar o dejó dudoso** al generar el cuadro. Se activa después de generar.
+
+Dentro encontrarás el detalle de cada aviso y cómo resolverlo.
+
+
+
 ## Archivos que se usarán
 
 Es la lista de comprobación antes de generar. Cada **fila** es un año de la vigencia y cada **columna** es un archivo que el programa necesita:
@@ -52,3 +68,27 @@ Es la lista de comprobación antes de generar. Cada **fila** es un año de la vi
 Puedes generar igual con archivos faltantes; lo que falte quedará anotado en la revisión.
 
 
+## Alerta al pulsar «Generar cuadro maestro»
+
+Ventana modal: el usuario debe confirmar o cancelar. El foco inicial está en **Cancelar** (Enter cancela). Los datos del resumen son de ejemplo; en el programa salen de lo elegido.
+
+**¿Generar el cuadro maestro?**
+
+- Programa: Fisioterapia
+- Vigencia: 2019 a 2023
+- Archivos: 14 de 15 encontrados
+- Configuración: modificada el 12-nov-2026
+
+> ⚠ Falta 1 de 15 archivos (Movilidad 2021). Ese año quedará incompleto en el conteo. *(solo aparece si faltan archivos)*
+
+Se usará la **configuración de cruce de datos actual** de los Excel: las columnas, filtros y reglas guardadas en Configuración.
+
+**Antes de continuar, ten en cuenta**
+
+- El resultado depende de esa configuración. Si los Excel cambiaron de columnas, nombres o filtros y la configuración no se actualizó, el cuadro puede quedar **incompleto o con datos incorrectos**.
+- El programa **no modifica tus Excel originales**: solo los lee y crea un archivo nuevo.
+- Después de generarlo, abre **Ver revisión** y confirma lo que no se pudo cruzar antes de entregar el cuadro.
+
+**¿Quieres continuar?**
+
+Botones: [Cancelar] [Sí, generar cuadro maestro]

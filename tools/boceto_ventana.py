@@ -67,6 +67,22 @@ AYUDAS = {
             ("p", [R("“Desde” no puede ser mayor que “Hasta”. No hay límite de años: de 2019 a 2026 son 8 años y 24 archivos.")]),
         ],
     },
+    "config": {
+        "titulo": "Configuración",
+        "bloques": [
+            ("p", [R("Define "), B("cómo lee el programa cada Excel"), R(": columnas, filtros y reglas de cruce. "
+                     "Cámbiala solo si los Excel cambiaron de formato.")]),
+            ("p", [R("Dentro encontrarás el detalle de cada opción y una guía para editarla.")]),
+        ],
+    },
+    "revision": {
+        "titulo": "Ver revisión",
+        "bloques": [
+            ("p", [R("Informe de lo que el programa "), B("no pudo cruzar o dejó dudoso"), R(" al generar el cuadro. "
+                     "Se activa después de generar.")]),
+            ("p", [R("Dentro encontrarás el detalle de cada aviso y cómo resolverlo.")]),
+        ],
+    },
     "archivos": {
         "titulo": "Archivos que se usarán",
         "bloques": [
@@ -382,13 +398,17 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     if not estrecha:
         boton_primario(L, M, y, M + 290, y + 46, "Generar cuadro maestro", est_g)
         boton_secundario(L, M + 304, y, M + 304 + 146, y + 46, "Configuración", est_c)
-        L.txt(W - M, y + 23, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+        icono_ayuda(L, M + 304 + 146 + 10, y + 23, hover=(popover == "config"))
+        L.txt(W - M - 28, y + 23, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+        icono_ayuda(L, W - M - 20, y + 23, hover=(popover == "revision"))
         fin = y + 46
     else:
         boton_primario(L, M, y, W - M, y + 46, "Generar cuadro maestro", est_g)
         y += 58
         boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
-        L.txt(W - M, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+        icono_ayuda(L, M + 170, y + 20, hover=(popover == "config"))
+        L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+        icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
         fin = y + 40
 
     if H is None:                      # ajustar altura al contenido
@@ -401,13 +421,111 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     L.rect(0, H - 34, W, H, fill=FONDO)
     L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
     L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
-    L.txt(W - M, H - 17, "Boceto v0.3 · datos ficticios", fuente("Light", 10), GRIS, "rm")
+    L.txt(W - M, H - 17, "Boceto v0.4 · datos ficticios", fuente("Light", 10), GRIS, "rm")
     L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
     return L
 
 
 def reducir(img, f=2):
     return img.resize((img.width * f // S, img.height * f // S), Image.LANCZOS)
+
+
+# ---------- alerta de confirmación ----------
+ALERTA = {
+    "titulo": "¿Generar el cuadro maestro?",
+    "resumen": [("Programa", "Fisioterapia"), ("Vigencia", "2019 a 2023"),
+                ("Archivos", "14 de 15 encontrados"), ("Configuración", "modificada el 12-nov-2026")],
+    "aviso": "Falta 1 de 15 archivos (Movilidad 2021). Ese año quedará incompleto en el conteo.",
+    "bloques": [
+        ("p", [R("Se usará la "), B("configuración de cruce de datos actual"),
+               R(" de los Excel: las columnas, filtros y reglas guardadas en Configuración.")]),
+        ("h", "Antes de continuar, ten en cuenta"),
+        ("b", [R("El resultado depende de esa configuración. Si los Excel cambiaron de columnas, nombres o filtros "
+                 "y la configuración no se actualizó, el cuadro puede quedar "), B("incompleto o con datos incorrectos"), R(".")]),
+        ("b", [R("El programa "), B("no modifica tus Excel originales"), R(": solo los lee y crea un archivo nuevo.")]),
+        ("b", [R("Después de generarlo, abre "), B("Ver revisión"),
+               R(" y confirma lo que no se pudo cruzar antes de entregar el cuadro.")]),
+    ],
+    "pregunta": "¿Quieres continuar?",
+    "botones": ("Cancelar", "Sí, generar cuadro maestro"),
+}
+
+
+def dialogo(W=580):
+    """Diálogo modal de confirmación (ventana secundaria con barra de título del sistema)."""
+    tmp = Lienzo(10, 10)
+    f_r, f_b = fuente("Regular", 12), fuente("Bold", 12)
+    pad = 28
+    inner = W - 2 * pad
+    y = 32 + 24
+    y += 60                                            # icono + título
+    y += len(ALERTA["resumen"]) * 24 + 24 + 16          # caja de resumen
+    lav = partir(tmp, [R(ALERTA["aviso"])], f_r, f_r, inner - 52)
+    ah = 22 + 17 * len(lav)
+    y += ah + 16
+    layout = []
+    for tipo, dato in ALERTA["bloques"]:
+        if tipo == "h":
+            y += 4; layout.append((tipo, dato, y)); y += 24
+        else:
+            sang = 16 if tipo == "b" else 0
+            lin = partir(tmp, dato, f_r, f_b, inner - sang)
+            layout.append((tipo, lin, y)); y += len(lin) * 18 + 8
+    y += 6
+    pregunta_y = y; y += 42
+    botones_y = y; y += 40 + 26
+    H = y
+    D = Lienzo(W, H)
+    D.rect(0, 0, W, 32, fill="#EDEDED")
+    D.txt(12, 16, "Confirmar generación", fuente("Regular", 11), GRIS_OSC, "lm")
+    D.cross(W - 24, 16, GRIS_OSC, 5, 1.2)
+    yy = 32 + 24
+    D.d.ellipse([D.P(pad), D.P(yy), D.P(pad + 40), D.P(yy + 40)], fill=NARANJA)
+    D.txt(pad + 20, yy + 21, "!", fuente("Bold", 22), NEGRO, "mm")
+    D.txt(pad + 56, yy + 21, ALERTA["titulo"], fuente("Bold", 19), GRIS_OSC, "lm")
+    yy += 60
+    cajah = len(ALERTA["resumen"]) * 24 + 24
+    D.rect(pad, yy, W - pad, yy + cajah, fill=FONDO, line=LINEA, w=1, r=8)
+    for i, (k, v) in enumerate(ALERTA["resumen"]):
+        ry = yy + 12 + i * 24 + 12
+        D.txt(pad + 16, ry, k, fuente("Bold", 11.5), GRIS_OSC, "lm")
+        if k == "Archivos":
+            D.d.ellipse([D.P(pad + 140), D.P(ry - 4), D.P(pad + 148), D.P(ry + 4)], fill=NARANJA)
+            D.txt(pad + 156, ry, v, f_r, NEGRO, "lm")
+        else:
+            D.txt(pad + 140, ry, v, f_r, NEGRO, "lm")
+    yy += cajah + 16
+    D.rect(pad, yy, W - pad, yy + ah, fill=AVISO_BG, line=NARANJA, w=1, r=8)
+    D.d.ellipse([D.P(pad + 12), D.P(yy + ah / 2 - 8), D.P(pad + 28), D.P(yy + ah / 2 + 8)], fill=NARANJA)
+    D.txt(pad + 20, yy + ah / 2, "!", fuente("Bold", 11), NEGRO, "mm")
+    for i, ln in enumerate(lav):
+        D.txt(pad + 40, yy + 11 + 8.5 + i * 17, " ".join(t[0] for t in ln), f_r, NEGRO, "lm")
+    for tipo, dato, y0 in layout:
+        if tipo == "h":
+            D.txt(pad, y0 + 9, dato, fuente("Bold", 12.5), VERDE_CTA, "lm")
+            continue
+        sang = 16 if tipo == "b" else 0
+        if tipo == "b":
+            D.d.ellipse([D.P(pad + 3), D.P(y0 + 6), D.P(pad + 8), D.P(y0 + 11)], fill=VERDE_CTA)
+        for i, linea in enumerate(dato):
+            cx = pad + sang
+            for w, neg, sp in linea:
+                f = f_b if neg else f_r
+                if sp:
+                    cx += D.tw(" ", f_r)
+                D.txt(cx, y0 + 8 + i * 18, w, f, NEGRO, "lm")
+                cx += D.tw(w, f)
+    D.txt(pad, pregunta_y + 14, ALERTA["pregunta"], fuente("Bold", 13.5), GRIS_OSC, "lm")
+    bx1 = W - pad
+    bw_p = 280
+    boton_primario(D, bx1 - bw_p, botones_y, bx1, botones_y + 40, ALERTA["botones"][1])
+    bw_c = 120
+    cx1 = bx1 - bw_p - 12
+    # "Cancelar" lleva el foco inicial (Enter = Cancelar): borde grueso
+    D.rect(cx1 - bw_c, botones_y, cx1, botones_y + 40, fill=BLANCO, line=VERDE_CTA, w=2.5, r=8)
+    D.txt(cx1 - bw_c / 2, botones_y + 20, ALERTA["botones"][0], fuente("Bold", 13), VERDE_CTA, "mm")
+    D.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    return D.img
 
 
 # ---------- 1) ventana principal: ayuda de Vigencia abierta y botón principal en hover ----------
@@ -433,19 +551,23 @@ hoja.paste(a, (M_, cab))
 hoja.paste(m, (a.width + 2 * M_, cab))
 hoja.save(f"{OUT}/ventana_responsiva.png")
 
-# ---------- 3) hoja con los tres textos de ayuda ----------
+# ---------- 3) hoja con los textos de ayuda (5 tarjetas) ----------
 ts = [tarjeta(AYUDAS[k], 430) for k in ("carpeta", "vigencia", "archivos")]
+ts2 = [tarjeta(AYUDAS[k], 360) for k in ("config", "revision")]
 gap = 20
-wtot = sum(t_["rgb"].width / S for t_ in ts) + 4 * gap
-htot = max(t_["rgb"].height / S for t_ in ts) + 90
-hoja = Image.new("RGB", (int(wtot * S), int(htot * S)), "#E9E9E9")
+w1 = sum(t_["rgb"].width / S for t_ in ts) + 4 * gap
+h1 = max(t_["rgb"].height / S for t_ in ts)
+h2 = max(t_["rgb"].height / S for t_ in ts2)
+hoja = Image.new("RGB", (int(w1 * S), int((h1 + h2 + 120) * S)), "#E9E9E9")
 x = gap
 for t_ in ts:
-    poner(hoja, t_, x, 70)
-    x += t_["rgb"].width / S + gap
+    poner(hoja, t_, x, 70); x += t_["rgb"].width / S + gap
+x = gap
+for t_ in ts2:
+    poner(hoja, t_, x, 70 + h1 + 20); x += t_["rgb"].width / S + gap
 k = 1.5
 hoja = hoja.resize((int(hoja.width * k / S), int(hoja.height * k / S)), Image.LANCZOS)
-ImageDraw.Draw(hoja).text((20, 20), "Textos de los tres signos de ayuda (?)", font=ft, fill=GRIS_OSC)
+ImageDraw.Draw(hoja).text((20, 20), "Textos de los signos de ayuda (?)", font=ft, fill=GRIS_OSC)
 hoja.save(f"{OUT}/textos_ayuda.png")
 
 # ---------- 3b) estados de los controles ----------
@@ -494,6 +616,22 @@ y += 90
 E.rect(0, 0, 759, 519, line="#9A9A9A", w=1)
 reducir(E.img).save(f"{OUT}/estados_controles.png")
 
+# ---------- 3c) alerta de confirmación sobre la ventana (atenuada) ----------
+base = ventana(760, None, hover="generar_press").img
+oscuro = Image.new("RGB", base.size, "#000000")
+base = Image.blend(base, oscuro, 0.45)
+dl = dialogo(580)
+dx = int((base.width - dl.width) / 2)
+dy = int((base.height - dl.height) / 2)
+sm = Image.new("L", dl.size, 0)
+ImageDraw.Draw(sm).rectangle([0, 0, dl.width, dl.height], fill=110)
+sm_big = Image.new("L", (dl.width + 80 * S // 3, dl.height + 80 * S // 3), 0)
+ImageDraw.Draw(sm_big).rectangle([40 * S // 3, 40 * S // 3 + 12, sm_big.width - 40 * S // 3, sm_big.height - 40 * S // 3 + 12], fill=110)
+sm_big = sm_big.filter(ImageFilter.GaussianBlur(14))
+base.paste(Image.new("RGB", sm_big.size, "#000000"), (dx - 40 * S // 3, dy - 40 * S // 3), sm_big)
+base.paste(dl, (dx, dy))
+reducir(base).save(f"{OUT}/alerta_confirmacion.png")
+
 # ---------- 4) textos en Markdown (editables) ----------
 def md(segs):
     out = []
@@ -525,4 +663,19 @@ with open(f"{OUT}/textos_ayuda.md", "w", encoding="utf-8") as fh:
             elif tipo == "mal":
                 fh.write("- ✖ " + md(dato) + "\n")
         fh.write("\n")
+    fh.write("## Alerta al pulsar «Generar cuadro maestro»\n\n"
+             "Ventana modal: el usuario debe confirmar o cancelar. El foco inicial está en **Cancelar** "
+             "(Enter cancela). Los datos del resumen son de ejemplo; en el programa salen de lo elegido.\n\n")
+    fh.write(f"**{ALERTA['titulo']}**\n\n")
+    for k_, v_ in ALERTA["resumen"]:
+        fh.write(f"- {k_}: {v_}\n")
+    fh.write(f"\n> ⚠ {ALERTA['aviso']} *(solo aparece si faltan archivos)*\n\n")
+    for tipo, dato in ALERTA["bloques"]:
+        if tipo == "p":
+            fh.write(md(dato) + "\n\n")
+        elif tipo == "h":
+            fh.write(f"**{dato}**\n\n")
+        elif tipo == "b":
+            fh.write("- " + md(dato) + "\n")
+    fh.write(f"\n**{ALERTA['pregunta']}**\n\nBotones: [{ALERTA['botones'][0]}] [{ALERTA['botones'][1]}]\n")
 print("listo")
