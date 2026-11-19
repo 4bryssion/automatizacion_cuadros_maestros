@@ -43,4 +43,20 @@ Contrastes medidos (WCAG; mínimo 4,5:1 texto normal, 3:1 texto grande/negrita �
 - La barra de título la dibuja Windows; no se puede cambiar.
 - Rejilla de archivos: `ttk.Treeview` o etiquetas en cuadrícula.
 
-Boceto de referencia: `tools/render_boceto.py` (necesita los archivos de marca en `assets/marca/`).
+## Estados de los controles (derivados del verde de llamado a la acción)
+| Control | Normal | Hover | Pulsado | Desactivado |
+|---|---|---|---|---|
+| Botón principal | `#67882C` | `#587425` | `#4A6320` | fondo `#D9D9D9`, texto `#9A9A9A` |
+| Botón secundario | fondo blanco, borde `#67882C` | fondo `#EAF2DD` | — | borde `#C8C8C8`, texto `#9A9A9A` |
+| Campo | borde `#606060` | — | foco: borde `#67882C` de 2 px | — |
+| Campo con error | borde `#E6007E` de 2 px + mensaje en magenta | | | |
+| Signo de ayuda (?) | círculo con borde verde | círculo verde relleno, "?" blanco | | |
+
+## Adaptación al tamaño de la ventana
+- Tamaño mínimo propuesto: 560 px de ancho. Por debajo de ~720 px, Programa y Vigencia pasan a apilarse
+  y el botón principal ocupa todo el ancho; la tabla muestra solo los iconos (✔) y deja el texto en los faltantes.
+- Por encima, campos y tabla se ensanchan. Con muchos años (8 o más) la tabla gana barra de desplazamiento.
+
+Boceto de referencia: `tools/boceto_ventana.py` (necesita los archivos de marca en `assets/marca/`).
+Uso: `python tools/boceto_ventana.py assets/marca salida/`. Los textos de ayuda viven en `docs/textos_ayuda.md`
+(se generan desde el mismo script; al editar, mantener ambos iguales).
