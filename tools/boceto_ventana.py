@@ -421,7 +421,7 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     L.rect(0, H - 34, W, H, fill=FONDO)
     L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
     L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
-    L.txt(W - M, H - 17, "Boceto v0.4 · datos ficticios", fuente("Light", 10), GRIS, "rm")
+    L.txt(W - M, H - 17, "Boceto v0.4.1 · datos ficticios", fuente("Light", 10), GRIS, "rm")
     L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
     return L
 
@@ -449,6 +449,9 @@ ALERTA = {
     "pregunta": "¿Quieres continuar?",
     "botones": ("Cancelar", "Sí, generar cuadro maestro"),
 }
+
+
+RADIO_ALERTA = 16
 
 
 def dialogo(W=580):
@@ -524,7 +527,7 @@ def dialogo(W=580):
     # "Cancelar" lleva el foco inicial (Enter = Cancelar): borde grueso
     D.rect(cx1 - bw_c, botones_y, cx1, botones_y + 40, fill=BLANCO, line=VERDE_CTA, w=2.5, r=8)
     D.txt(cx1 - bw_c / 2, botones_y + 20, ALERTA["botones"][0], fuente("Bold", 13), VERDE_CTA, "mm")
-    D.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    D.rect(0.5, 0.5, W - 0.5, H - 0.5, line="#9A9A9A", w=1, r=RADIO_ALERTA)
     return D.img
 
 
@@ -623,13 +626,14 @@ base = Image.blend(base, oscuro, 0.45)
 dl = dialogo(580)
 dx = int((base.width - dl.width) / 2)
 dy = int((base.height - dl.height) / 2)
-sm = Image.new("L", dl.size, 0)
-ImageDraw.Draw(sm).rectangle([0, 0, dl.width, dl.height], fill=110)
-sm_big = Image.new("L", (dl.width + 80 * S // 3, dl.height + 80 * S // 3), 0)
-ImageDraw.Draw(sm_big).rectangle([40 * S // 3, 40 * S // 3 + 12, sm_big.width - 40 * S // 3, sm_big.height - 40 * S // 3 + 12], fill=110)
+mk = Image.new("L", dl.size, 0)
+ImageDraw.Draw(mk).rounded_rectangle([0, 0, dl.width - 1, dl.height - 1], radius=RADIO_ALERTA * S, fill=255)
+m3 = 40 * S // 3
+sm_big = Image.new("L", (dl.width + 2 * m3, dl.height + 2 * m3), 0)
+ImageDraw.Draw(sm_big).rounded_rectangle([m3, m3 + 12, sm_big.width - m3, sm_big.height - m3 + 12], radius=RADIO_ALERTA * S, fill=120)
 sm_big = sm_big.filter(ImageFilter.GaussianBlur(14))
-base.paste(Image.new("RGB", sm_big.size, "#000000"), (dx - 40 * S // 3, dy - 40 * S // 3), sm_big)
-base.paste(dl, (dx, dy))
+base.paste(Image.new("RGB", sm_big.size, "#000000"), (dx - m3, dy - m3), sm_big)
+base.paste(dl, (dx, dy), mk)
 reducir(base).save(f"{OUT}/alerta_confirmacion.png")
 
 # ---------- 4) textos en Markdown (editables) ----------
