@@ -1,0 +1,13 @@
+# Material de marca (licencia y uso institucional): NO se sube al repositorio
+assets/
+*.otf
+*.ttf
+*.pdf
+*.pptx
+
+# Python / empaquetado
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
