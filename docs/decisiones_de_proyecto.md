@@ -80,3 +80,11 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - **Cuadro generado:** tres casos (con avisos, de nuevo desde la revisión, sin avisos); el botón principal cambia según el caso. Detalle en [diseno_generacion.md](diseno_generacion.md).
 - **Ver revisión activo:** enlace verde subrayado; gris mientras no haya generación guardada.
 - Alerta de confirmación: ahora dice que el archivo se crea en la subcarpeta Cuadros generados. Versión de los mockups nuevos: v0.13 (al cerrar la fase de mockups se unifica la versión en todos).
+
+## Primera apertura y reapertura (23-nov-2026, tarde)
+
+- Se guarda **solo la última generación** (no una por programa); la franja "Último cuadro" y Ver revisión nombran su programa.
+- Al reabrir con cambios sin incluir (cierre inesperado o generación fallida) aparece un aviso con **Generar cuadro de nuevo** y **Ver revisión**; se puede cerrar y seguir en la ventana principal, con la franja naranja.
+- Los cambios hechos con el programa cerrado (Excel editados) no se detectan; Previsualizar o Recargar los revelan.
+- La tabla de archivos depende de carpeta y vigencia, no del programa. Detalle en [diseno_apertura.md](diseno_apertura.md).
+- **Por confirmar:** al cambiar la **carpeta** o la **vigencia** con cambios sin incluir, aplicar la misma regla que al cambiar de programa (aviso para generar de nuevo antes de cambiar). Hoy la regla solo nombra el programa.
