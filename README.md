@@ -73,6 +73,8 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/configuracion_tecnica.md](docs/configuracion_tecnica.md) | Archivo de configuración, guardado doble y copias de seguridad (para mantenimiento) |
 | `src/cuadro_maestro/` | Código del programa (hoy: `configuracion/`) |
 | `tests/` | Pruebas automáticas (`python -m pytest`); corren en Windows y Linux en cada push |
+| `tests/muestra_sintetica.py` | Muestra inventada de los cuatro Excel de entrada, con las rarezas de los reales |
+| `tools/anonimizar_reales.py` | Crea, solo en el equipo local, copias anonimizadas de los Excel reales para las pruebas ([detalle](tests/datos/reales_anonimizados/LEEME.md)) |
 | [docs/diseno_campos_y_fuentes.md](docs/diseno_campos_y_fuentes.md) | Modales de Campos del cuadro maestro y Fuentes de datos |
 | [docs/diseno_equivalencias_y_tipos.md](docs/diseno_equivalencias_y_tipos.md) | Modales de Equivalencias y Tipos de persona |
 | [docs/diseno_reglas_de_cruce.md](docs/diseno_reglas_de_cruce.md) | Modal de Reglas de cruce: opciones y estado confirmada/cambiada |
@@ -97,7 +99,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | `tools/prototipo_mapeo.py` | Prueba de detección de encabezados y mapeo de columnas |
 | `tools/prototipo_cruce.py` | Prueba de las reglas de cruce contra el cuadro de ejemplo |
 
-Los logos, fuentes y Excel reales no se incluyen en el repositorio.
+Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en el repositorio.
 
 ## Hoja de ruta
 
@@ -114,7 +116,8 @@ Los logos, fuentes y Excel reales no se incluyen en el repositorio.
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
 - [ ] Informe de revisión (lógica; el diseño ya está)
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
-- [ ] Datos de ejemplo ficticios para pruebas y capacitación
+- [x] Datos de prueba: muestra inventada (en el repositorio) y copias anonimizadas de los reales (solo locales)
+- [ ] Datos de ejemplo ficticios para capacitación
 
 ## Tecnología
 

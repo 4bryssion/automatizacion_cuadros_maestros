@@ -45,3 +45,15 @@ internacionalización en casa 2022-1 y 2022-2 (sede Pereira). Solo estructura; s
   el filtro real de qué entra al cuadro no se deduce de los datos (pregunta al jefe).
 - Patrón visto: movilidad → convenio específico; IC → convenio marco; si falta uno, va al que exista.
 - Preguntas pendientes para el jefe: documento "Cuadro maestro internacional automatizado: preguntas para definir las reglas".
+
+## Al preparar los datos de prueba (23-nov-2026)
+- Hay datos de personas **fuera de las celdas**: la caché de una tabla dinámica del consolidado de movilidad copia
+  todas las filas (con correos), una lista desplegable de la matriz tiene nombres y correos escritos dentro y las
+  macros traen correos. Cualquier copia que salga de la oficina debe limpiarse también por dentro.
+- Hojas con datos de personas además de las principales: `NACIONAL 2019` (oculta, movilidad nacional) en el
+  consolidado y `CONTACTOS` en la matriz.
+- Errores de captura: una descripción de cargo escrita en la columna de institución y un nombre de ciudad en la columna País.
+- Los números llegan como decimales (2022.0) en los originales y como enteros si el archivo se vuelve a guardar: el
+  lector debe aceptar ambos.
+- La configuración inicial reconoce, por sus encabezados, todas las columnas que necesita en los cuatro archivos de
+  2022 y las 25 columnas de programas de Pereira en la matriz (`tests/test_datos_reales.py`).

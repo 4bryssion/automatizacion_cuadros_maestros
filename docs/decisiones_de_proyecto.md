@@ -114,10 +114,24 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 
 ## Inicio de la construcción: configuración (23-nov-2026, tarde)
 
-- **Datos de prueba:** solo datos sintéticos en el repositorio. De los Excel reales solo se usan encabezados y nombres de columnas.
+- **Datos de prueba:** se autorizó apoyarse en los Excel reales (ver «Datos de prueba a partir de los Excel reales»).
 - **Repositorio:** sigue en la cuenta personal mientras no haya decisión sobre la cuenta institucional.
 - **Carpetas:** `%APPDATA%\Cuadro maestro internacional` y la subcarpeta `Configuración` junto al .exe; cada una con su carpeta `copias`.
 - **Copia automática:** antes del primer cambio de cada sesión (no en cada cambio), para no llenar las 10 copias con un solo día de trabajo.
 - **Nada se pierde al sobrescribir:** si al abrir una copia está dañada, es de una versión más nueva del programa, o es válida pero más antigua y distinta, se guarda aparte como copia de seguridad antes de reescribirla.
 - **Configuración no encontrada:** no se escribe nada hasta que la persona elija restaurar una copia o seguir con la inicial.
 - Las pruebas automáticas corren en Windows y Linux con GitHub Actions. Detalle técnico en [configuracion_tecnica.md](configuracion_tecnica.md).
+
+## Datos de prueba a partir de los Excel reales (23-nov-2026, tarde)
+
+- Autorizado por la persona responsable: las pruebas se apoyan en los Excel reales de 2022.
+- `tools/anonimizar_reales.py` crea copias anonimizadas: conserva estructura y rarezas y reemplaza los datos de personas.
+  Usa una lista blanca de columnas; la ciudad y el país de origen de la persona y las fechas exactas de su movilidad no
+  se conservan. Quita macros, tablas dinámicas y validaciones de datos, que en los reales guardaban correos y nombres
+  fuera de las celdas. La verificación revisa todo el contenido interno de cada copia y se comprobó que detecta las
+  fugas en los originales. El prototipo de cruce da el mismo resultado con las copias que con los originales.
+- **Decidido: las copias anonimizadas no se suben al repositorio público** (opción 1). Aunque no traen nombres ni
+  correos, cada fila de movilidad conserva año, programa, institución y tipo de persona, y eso podría bastar para
+  reconocer a alguien. Viven solo en el equipo local (`tests/datos/reales_anonimizados`, en `.gitignore`).
+- En GitHub las pruebas usan una **muestra inventada** (`tests/muestra_sintetica.py`) con las mismas rarezas; las
+  pruebas con copias o con originales (`CUADRO_EXCEL_REALES`) corren en el equipo local y en GitHub se saltan.

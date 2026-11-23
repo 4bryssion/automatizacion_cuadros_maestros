@@ -16,3 +16,7 @@ dist/
 
 # Configuración local que crea el programa al ejecutarse desde el código fuente
 /Configuración/
+
+# Copias anonimizadas de los Excel reales: solo en el equipo local, nunca en el repositorio público
+tests/datos/reales_anonimizados/*
+!tests/datos/reales_anonimizados/LEEME.md
