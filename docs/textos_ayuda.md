@@ -253,7 +253,7 @@ Se usará la **configuración de cruce de datos actual** de los Excel: las colum
 **Antes de continuar, ten en cuenta**
 
 - El resultado depende de esa configuración. Si los Excel cambiaron de columnas, nombres o filtros y la configuración no se actualizó, el cuadro puede quedar **incompleto o con datos incorrectos**.
-- El programa **no modifica tus Excel originales**: solo los lee y crea un archivo nuevo.
+- El programa **no modifica tus Excel originales**: solo los lee y crea un archivo nuevo en la subcarpeta **Cuadros generados**.
 - ¿Dudas del resultado? Cancela y usa **Previsualizar cuadro**: muestra cómo quedaría sin crear ningún archivo.
 - Después de generarlo, abre **Ver revisión** y confirma lo que no se pudo cruzar antes de entregar el cuadro.
 

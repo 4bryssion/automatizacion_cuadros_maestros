@@ -628,7 +628,7 @@ ALERTA = {
         ("h", "Antes de continuar, ten en cuenta"),
         ("b", [R("El resultado depende de esa configuración. Si los Excel cambiaron de columnas, nombres o filtros "
                  "y la configuración no se actualizó, el cuadro puede quedar "), B("incompleto o con datos incorrectos"), R(".")]),
-        ("b", [R("El programa "), B("no modifica tus Excel originales"), R(": solo los lee y crea un archivo nuevo.")]),
+        ("b", [R("El programa "), B("no modifica tus Excel originales"), R(": solo los lee y crea un archivo nuevo en la subcarpeta "), B("Cuadros generados"), R(".")]),
         ("b", [R("¿Dudas del resultado? Cancela y usa "), B("Previsualizar cuadro"),
                R(": muestra cómo quedaría sin crear ningún archivo.")]),
         ("b", [R("Después de generarlo, abre "), B("Ver revisión"),

@@ -72,3 +72,11 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
   **Columna por confirmar «PROGRAMA ACADÉMICO»** (grupo "Resuélvelo aquí"), con **Confirmar sugerencia** y **Abrir Fuentes de datos**.
   Los conteos quedan en **8 avisos** en la vista previa y en la revisión; tras recargar: "Antes 8, ahora 7".
 - Mockups 28 y 29 subidos a Drive; 10, 11, 12, 13, 20 y 26 reemplazados.
+
+## Generación y cuadro generado (23-nov-2026, tarde)
+
+- **Dónde se guarda:** subcarpeta `Cuadros generados` dentro de la carpeta de los Excel; nombre `Cuadro maestro - Programa - vigencia - fecha hora.xlsx`; siempre archivo nuevo.
+- **Cancelar durante la generación:** inmediato, sin crear archivo y sin cambiar la última generación guardada. La X del modal hace lo mismo.
+- **Cuadro generado:** tres casos (con avisos, de nuevo desde la revisión, sin avisos); el botón principal cambia según el caso. Detalle en [diseno_generacion.md](diseno_generacion.md).
+- **Ver revisión activo:** enlace verde subrayado; gris mientras no haya generación guardada.
+- Alerta de confirmación: ahora dice que el archivo se crea en la subcarpeta Cuadros generados. Versión de los mockups nuevos: v0.13 (al cerrar la fase de mockups se unifica la versión en todos).

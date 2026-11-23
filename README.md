@@ -83,6 +83,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | `tools/boceto_reglas_de_cruce.py` | Genera la imagen de Reglas de cruce |
 | `tools/boceto_previsualizar_y_pruebas.py` | Genera las imágenes de Previsualizar cuadro, Ver cómo se aplican, Probar lectura, Exportar/Importar y Copias |
 | `tools/boceto_revision.py` | Genera las imágenes de Ver revisión, antes y después de recargar |
+| `tools/boceto_generacion.py` | Genera las imágenes de Progreso de generación y Cuadro generado (3 casos) |
 | `tools/boceto_elegir_y_confirmar.py` | Genera las imágenes de Elegir institución… y Confirmar sugerencias (sobre la revisión) |
 | `tools/prototipo_mapeo.py` | Prueba de detección de encabezados y mapeo de columnas |
 | `tools/prototipo_cruce.py` | Prueba de las reglas de cruce contra el cuadro de ejemplo |
