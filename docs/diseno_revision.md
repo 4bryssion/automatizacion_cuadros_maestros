@@ -86,7 +86,7 @@ Los botones cambian de prioridad según el momento:
 
 ## Después de recargar
 
-- Aparece una franja con el resultado: "Antes 7 avisos, ahora 6" y tres contadores: **resueltos**, **siguen**, **nuevo**.
+- Aparece una franja con el resultado: "Antes 8 avisos, ahora 7" y tres contadores: **resueltos**, **siguen**, **nuevo**.
 - Los avisos resueltos se agrupan arriba, en una caja verde, con lo que se logró.
 - Cada aviso que sigue lleva una marca: **Sigue pendiente** (naranja), **Sin cambios** (gris) o **Nuevo** (magenta).
   Un aviso nuevo puede aparecer por una corrección: en el ejemplo, la fecha que se escribió quedó posterior a la de fin.
@@ -97,6 +97,11 @@ Los botones cambian de prioridad según el momento:
 Para que **Ver revisión** y el modal de arriba funcionen al volver a abrir el programa, se guarda la **última generación**: programa, vigencia,
 carpeta, hora, avisos y si hay cambios sin incluir. Por eso Ver revisión sigue activo al reabrir (solo está desactivado si nunca se ha generado)
 y el programa sabe qué mostrar. No contiene datos de personas.
+
+## Confirmar varias sugerencias a la vez
+
+El encabezado del grupo "Resuélvelo aquí" lleva el botón **Confirmar sugerencias (3)**, que abre el modal de confirmación en bloque
+(ver [diseno_elegir_y_confirmar.md](diseno_elegir_y_confirmar.md)). Cada aviso conserva además su propio botón.
 
 ## Cómo se llega a Configuración desde la revisión
 
@@ -116,5 +121,4 @@ vista previa (ver [diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pru
 ## Por definir
 
 - Texto exacto de cada aviso para los casos que aparezcan con datos reales.
-- Modal "Elegir institución…" (lista con búsqueda de las instituciones de la matriz).
 - Si el informe de revisión también se exporta a un archivo para compartirlo.

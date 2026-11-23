@@ -205,6 +205,28 @@ Guarda **toda la configuración en un archivo .json** (para otro equipo o como r
 - Antes de importar se guarda una copia de la configuración actual.
 
 
+## Elegir institución
+
+Indica a qué institución de la matriz corresponde el nombre que aparece en el Excel y que no coincidió con ninguna.
+
+- **Sugeridas por el programa:** las más parecidas, con su porcentaje. Ninguna viene elegida: decides tú.
+- Si no está, búscala entre todas las instituciones de la matriz.
+- Revisa que sea la misma universidad: el parecido de nombres puede engañar.
+Al guardar se crea una equivalencia (origen: Revisión) que se usa en todos los archivos. Luego pulsa **Recargar archivos**.
+
+
+
+## Confirmar sugerencias del programa
+
+Reúne en un solo lugar los nombres que **se parecen sin ser idénticos**: instituciones, programas y columnas. El programa los propone; **tú decides**.
+
+- Ninguna viene marcada. **Marcar las muy parecidas** marca las de 95 % o más.
+- **Cambiar ›** abre la lista para elegir otra opción.
+- Solo se guarda lo marcado; lo demás sigue como aviso en Ver revisión.
+Lo guardado se puede editar o eliminar después en Equivalencias o en Fuentes de datos.
+
+
+
 ## Copias y almacenamiento
 
 La configuración se guarda en **dos lugares a la vez**: la carpeta del usuario y junto al programa. Al abrir se usa la más reciente.

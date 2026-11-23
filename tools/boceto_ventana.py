@@ -247,6 +247,28 @@ AYUDAS = {
             ("b", [R("Antes de importar se guarda una copia de la configuración actual.")]),
         ],
     },
+    "elegir_inst": {
+        "titulo": "Elegir institución",
+        "bloques": [
+            ("p", [R("Indica a qué institución de la matriz corresponde el nombre que aparece en el Excel y que no coincidió con ninguna.")]),
+            ("b", [B("Sugeridas por el programa: "), R("las más parecidas, con su porcentaje. Ninguna viene elegida: decides tú.")]),
+            ("b", [R("Si no está, búscala entre todas las instituciones de la matriz.")]),
+            ("b", [R("Revisa que sea la misma universidad: el parecido de nombres puede engañar.")]),
+            ("p", [R("Al guardar se crea una equivalencia (origen: Revisión) que se usa en todos los archivos. Luego pulsa "),
+                   B("Recargar archivos"), R(".")]),
+        ],
+    },
+    "sugerencias": {
+        "titulo": "Confirmar sugerencias del programa",
+        "bloques": [
+            ("p", [R("Reúne en un solo lugar los nombres que "), B("se parecen sin ser idénticos"),
+                   R(": instituciones, programas y columnas. El programa los propone; "), B("tú decides"), R(".")]),
+            ("b", [R("Ninguna viene marcada. "), B("Marcar las muy parecidas"), R(" marca las de 95 % o más.")]),
+            ("b", [B("Cambiar ›"), R(" abre la lista para elegir otra opción.")]),
+            ("b", [R("Solo se guarda lo marcado; lo demás sigue como aviso en Ver revisión.")]),
+            ("p", [R("Lo guardado se puede editar o eliminar después en Equivalencias o en Fuentes de datos.")]),
+        ],
+    },
     "copias": {
         "titulo": "Copias y almacenamiento",
         "bloques": [
@@ -761,8 +783,8 @@ def hoja_ayudas(claves, ancho, cols, titulo, ruta):
 
 hoja_ayudas(("prog", "campos", "fuentes", "eq_inst", "eq_prog", "tipos", "reglas", "gemini"), 360, 4,
             "Ayudas (?) de Configuración: se ven igual en la tarjeta y en su modal", f"{OUT}/ayudas_configuracion.png")
-hoja_ayudas(("vista_previa", "aplican", "lectura", "exportar", "copias"), 360, 3,
-            "Ayudas (?) de vista previa, pruebas, exportar/importar y copias", f"{OUT}/ayudas_modales.png")
+hoja_ayudas(("vista_previa", "aplican", "lectura", "exportar", "copias", "elegir_inst", "sugerencias"), 360, 4,
+            "Ayudas (?) de vista previa, pruebas, exportar/importar, copias y confirmaciones", f"{OUT}/ayudas_modales.png")
 
 # ---------- 3b) estados de los controles ----------
 E = Lienzo(760, 520, fondo=BLANCO)

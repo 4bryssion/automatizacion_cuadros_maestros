@@ -1944,7 +1944,7 @@ def modal_previsualizar(W=980):
     gap = 12
     cw = (x1 - x0 - 3 * gap) / 4
     stats = [("14 de 15", "archivos por año leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
-             ("412", "movilidades contadas", VERDE_CTA, None), ("7", "avisos para revisar", MAGENTA, "Ver abajo")]
+             ("412", "movilidades contadas", VERDE_CTA, None), ("8", "avisos para revisar", MAGENTA, "Ver abajo")]
     for i, (num, lbl, col, extra) in enumerate(stats):
         sx = x0 + i * (cw + gap)
         L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
@@ -1967,7 +1967,7 @@ def modal_previsualizar(W=980):
     y += 46 + 24
     # avisos
     L.txt(x0, y + 10, "Avisos de la vista previa", fuente("Bold", 14), GRIS_OSC, "lm")
-    L.txt(x1, y + 10, "Mostrando 3 de 7", fuente("Light", 11.5), GRIS, "rm")
+    L.txt(x1, y + 10, "Mostrando 3 de 8", fuente("Light", 11.5), GRIS, "rm")
     y += 30
     avisos = [(MAGENTA, "Convenio sin fecha de inicio válida: Universidad de Guadalajara (Convenios.xlsx, fila 112).", "Abrir Convenios.xlsx"),
               (MAGENTA, "Falta el archivo de Movilidad 2021: ese año quedará incompleto en el conteo.", "Abrir carpeta"),
@@ -1981,7 +1981,7 @@ def modal_previsualizar(W=980):
         boton_secundario(L, x1 - 14 - 176, y + 8, x1 - 14, y + rh - 8, acc, "normal", 11.5)
         y += rh
     L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
-    L.txt(x0, y + 16, "y 4 avisos más. Resuelve estos aquí o ve todos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(x0, y + 16, "y 5 avisos más. Resuelve estos aquí o ve todos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
     y += 38
     # cuadro
     L.txt(x0, y + 10, "Así quedaría el cuadro", fuente("Bold", 14), GRIS_OSC, "lm")

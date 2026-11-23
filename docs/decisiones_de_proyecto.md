@@ -61,3 +61,14 @@ Revisión de incongruencias entre pantallas; las siete se aprobaron.
 
 Otros ajustes: la sugerencia de Previsualizar en la alerta solo se muestra si no se usó la vista previa en la sesión; el aviso de "movilidades sin convenio" aparece
 como informativo (gris) en todas las pantallas; versión del boceto v0.12.
+
+## Elegir institución y Confirmar sugerencias (23-nov-2026, noche)
+
+- **Elegir institución…** (modal, 860 px): muestra el nombre tal como viene en el Excel, un buscador y tres sugerencias con porcentaje de parecido
+  (97 % «Muy parecida», 71 %, 64 %). Advierte cuando dos instituciones se parecen y pueden confundirse. La equivalencia se guarda con origen **Revisión**.
+- **Confirmar sugerencias** (modal, 1100 px): confirma en bloque lo que el programa propone (institución, programa, columna). Botón **Marcar las muy parecidas**;
+  las dudosas quedan sin marcar y se revisan con **Cambiar ›**.
+- **Incongruencia nueva:** la lectura y la vista previa mostraban "1 por confirmar" sin aviso equivalente en la revisión. Se añadió el aviso
+  **Columna por confirmar «PROGRAMA ACADÉMICO»** (grupo "Resuélvelo aquí"), con **Confirmar sugerencia** y **Abrir Fuentes de datos**.
+  Los conteos quedan en **8 avisos** en la vista previa y en la revisión; tras recargar: "Antes 8, ahora 7".
+- Mockups 28 y 29 subidos a Drive; 10, 11, 12, 13, 20 y 26 reemplazados.

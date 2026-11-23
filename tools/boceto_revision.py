@@ -982,7 +982,10 @@ def tarjeta_aviso(L, x0, y, x1, color, titulo, donde, paso, hacer, botones=(), e
     return h
 
 
-def encabezado_grupo(L, x0, y, x1, color, num_txt, n, titulo, sub, texto_num=BLANCO):
+def encabezado_grupo(L, x0, y, x1, color, num_txt, n, titulo, sub, texto_num=BLANCO, boton=None):
+    if boton:
+        bw_ = L.tw(boton, fuente("Bold", 12)) + 36
+        boton_secundario(L, x1 - bw_, y - 2, x1, y + 32, boton, "normal", 12)
     L.d.ellipse([L.P(x0), L.P(y), L.P(x0 + 28), L.P(y + 28)], fill=color)
     L.txt(x0 + 14, y + 14.5, str(n), fuente("Bold", 14), texto_num, "mm")
     L.txt(x0 + 40, y + 14, titulo, fuente("Bold", 15), GRIS_OSC, "lm")
@@ -1038,6 +1041,14 @@ REV_G = {
             "y esos 3 convenios no entran a ningún cuadro.",
     "hacer": "Agrégalo en Programas. Si es otro nombre de un programa que ya existe, créale una equivalencia en Equivalencias de programas.",
     "botones": ("Abrir Programas",),
+}
+REV_H = {
+    "titulo": "Columna por confirmar: «PROGRAMA ACADÉMICO»",
+    "donde": "Movilidad_2022.xlsx  ·  hoja Hoja1",
+    "paso": "El programa cree que esta columna trae el programa de cada persona, pero el nombre no es idéntico. "
+            "Mientras no lo confirmes no la usa y esas filas no se asignan a ningún programa.",
+    "hacer": "Confirma que es la columna correcta o elige otra en Fuentes de datos. Se guarda para los próximos archivos.",
+    "botones": ("Confirmar sugerencia", "Abrir Fuentes de datos"),
 }
 REV_E = {
     "titulo": "Movilidades sin convenio vigente en su año",
@@ -1098,12 +1109,13 @@ def contenido_revision(W, estado):
     y += 10
 
     # B. se resuelven en el programa
-    y += encabezado_grupo(L, x0, y, x1, NARANJA, "", 3, "Resuélvelo aquí en el programa",
+    y += encabezado_grupo(L, x0, y, x1, NARANJA, "", 4, "Resuélvelo aquí en el programa",
                           "No tienes que tocar el Excel. Elige o indica la opción correcta y el programa la recuerda.",
-                          NEGRO)
+                          NEGRO, boton="Confirmar sugerencias (3)")
     y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_C) + 14
     y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_D) + 14
     y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_G) + 14
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_H) + 14
     y += 10
 
     # C. informativo
@@ -1160,10 +1172,10 @@ def ventana_revision(W=860, H=900, estado="antes", scroll=0):
 
     # resumen / resultado de la recarga
     if not despues:
-        L.txt(M, y + 12, "7 avisos", fuente("Bold", 14), GRIS_OSC, "lm")
-        cx = M + L.tw("7 avisos", fuente("Bold", 14)) + 16
+        L.txt(M, y + 12, "8 avisos", fuente("Bold", 14), GRIS_OSC, "lm")
+        cx = M + L.tw("8 avisos", fuente("Bold", 14)) + 16
         for txt, bg, fg in (("2 se corrigen en el Excel", ROSA_SUAVE, MAGENTA),
-                            ("3 se resuelven aquí", AVISO_BG, AVISO_TXT),
+                            ("4 se resuelven aquí", AVISO_BG, AVISO_TXT),
                             ("2 solo informativos", "#EDEDED", GRIS_OSC)):
             x_, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 24)
             cx += w_ + 8
@@ -1172,9 +1184,9 @@ def ventana_revision(W=860, H=900, estado="antes", scroll=0):
         L.rect(M, y, W - M, y + 38, fill=OK_BG, line=VERDE, w=1.2, r=10)
         L.d.ellipse([L.P(M + 12), L.P(y + 9), L.P(M + 32), L.P(y + 29)], fill=VERDE_CTA)
         L.check(M + 22, y + 19.5, BLANCO, 4.2)
-        L.txt(M + 44, y + 19, "Archivos recargados hoy 14:41.  Antes 7 avisos, ahora 6.", fuente("Bold", 12), OK_TXT, "lm")
+        L.txt(M + 44, y + 19, "Archivos recargados hoy 14:41.  Antes 8 avisos, ahora 7.", fuente("Bold", 12), OK_TXT, "lm")
         cx = W - M - 12
-        for txt, bg, fg in (("1 nuevo", ROSA_SUAVE, MAGENTA), ("5 siguen", AVISO_BG, AVISO_TXT), ("2 resueltos", TINTE_VERDE, OK_TXT)):
+        for txt, bg, fg in (("1 nuevo", ROSA_SUAVE, MAGENTA), ("6 siguen", AVISO_BG, AVISO_TXT), ("2 resueltos", TINTE_VERDE, OK_TXT)):
             x_, w_ = chip(L, cx, y + 8, txt, bg, fg, 11, "r", 22)
             cx = x_ - 8
         y += 38 + 10
