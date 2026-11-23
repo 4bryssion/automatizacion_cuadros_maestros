@@ -135,3 +135,13 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
   reconocer a alguien. Viven solo en el equipo local (`tests/datos/reales_anonimizados`, en `.gitignore`).
 - En GitHub las pruebas usan una **muestra inventada** (`tests/muestra_sintetica.py`) con las mismas rarezas; las
   pruebas con copias o con originales (`CUADRO_EXCEL_REALES`) corren en el equipo local y en GitHub se saltan.
+
+## Motor de lectura (23-nov-2026, tarde)
+
+- **Nombre de la matriz:** se reconoce por contener «convenios» (sirve para `MATRIZ CONVENIOS…` y para `Convenios.xlsx`,
+  como en los mockups) y se excluyen los nombres con «cuadro» o «cm», porque el cuadro hecho a mano también lleva «Convenios».
+- **Dos archivos para el mismo año o semestre** (p. ej. una «Copia de…»): se usa el modificado más recientemente y la
+  revisión avisa cuáles se dejaron de lado.
+- **Un .xls antiguo** cuenta como «dañado o no es un .xlsx de verdad», con el mismo texto del mockup 43.
+- La lectura no depende del programa: cambiar de programa no obliga a volver a leer los archivos.
+- Solo se lee la carpeta elegida, sin subcarpetas. Detalle técnico en [lectura_tecnica.md](lectura_tecnica.md).

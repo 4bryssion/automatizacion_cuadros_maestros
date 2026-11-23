@@ -4,7 +4,7 @@ Programa portable que genera el **cuadro maestro internacional** de un programa 
 Excel de la Oficina de Relaciones Internacionales (Areandina, sede Pereira), sin instalación y sin enviar datos a internet.
 
 > **Estado: en construcción.** El diseño de la interfaz (49 mockups) y las reglas de negocio están cerrados.
-> Ya existe la configuración con guardado doble y copias de seguridad; siguen la lectura, el cruce y la interfaz.
+> Ya existen la configuración (guardado doble y copias) y la lectura de los Excel; siguen el cruce, la generación y la interfaz.
 > Todavía no existe un ejecutable.
 
 ## Qué resuelve
@@ -71,7 +71,8 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/diseno_configuracion.md](docs/diseno_configuracion.md) | Pantalla de Configuración, modales de listas y asistente con Gemini |
 | [docs/decisiones_de_proyecto.md](docs/decisiones_de_proyecto.md) | Decisiones tomadas y cómo se guarda la configuración |
 | [docs/configuracion_tecnica.md](docs/configuracion_tecnica.md) | Archivo de configuración, guardado doble y copias de seguridad (para mantenimiento) |
-| `src/cuadro_maestro/` | Código del programa (hoy: `configuracion/`) |
+| [docs/lectura_tecnica.md](docs/lectura_tecnica.md) | Cómo se buscan, abren y leen los Excel (para mantenimiento) |
+| `src/cuadro_maestro/` | Código del programa: `configuracion/` y `lectura/` |
 | `tests/` | Pruebas automáticas (`python -m pytest`); corren en Windows y Linux en cada push |
 | `tests/muestra_sintetica.py` | Muestra inventada de los cuatro Excel de entrada, con las rarezas de los reales |
 | `tools/anonimizar_reales.py` | Crea, solo en el equipo local, copias anonimizadas de los Excel reales para las pruebas ([detalle](tests/datos/reales_anonimizados/LEEME.md)) |
@@ -110,7 +111,7 @@ Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en 
 - [x] Diseño de Ver revisión con recarga de archivos
 - [x] Diseño de todas las pantallas (Boceto v1.0, 49 mockups)
 - [x] Configuración editable con guardado doble, validación y copias de seguridad
-- [ ] Motor de lectura y mapeo de columnas
+- [x] Motor de lectura y mapeo de columnas
 - [ ] Motor de cruce y conteo
 - [ ] Generación del Excel del cuadro maestro
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca

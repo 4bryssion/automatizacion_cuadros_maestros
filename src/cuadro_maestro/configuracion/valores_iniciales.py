@@ -56,7 +56,8 @@ _FUENTES = [
         "id": "matriz",
         "nombre": "Matriz de convenios",
         "base": True,
-        "archivo": {"contiene": ["matriz", "convenios"], "patron_anio": None, "patron_semestre": None},
+        "archivo": {"contiene": ["convenios"], "excluye": ["cuadro", "cm"], "patron_anio": None,
+                    "patron_semestre": None},
         "hoja": {"preferida": "CONV_INTERNACIONALES"},
         "fila_encabezado": {"automatica": True, "fila": 3},
         "columnas": {
@@ -75,7 +76,8 @@ _FUENTES = [
         "id": "movilidad",
         "nombre": "Movilidad",
         "base": True,
-        "archivo": {"contiene": ["movilidad"], "patron_anio": r"(20\d{2})", "patron_semestre": None},
+        "archivo": {"contiene": ["movilidad"], "excluye": ["cuadro"], "patron_anio": r"(20\d{2})",
+                    "patron_semestre": None},
         "hoja": {"preferida": "BD GENERAL"},
         "fila_encabezado": {"automatica": True, "fila": 1},
         "columnas": {
@@ -93,7 +95,7 @@ _FUENTES = [
         "id": "internacionalizacion_en_casa",
         "nombre": "Internacionalización en casa",
         "base": True,
-        "archivo": {"contiene": ["internacionalizaci", "casa"], "patron_anio": r"(20\d{2})",
+        "archivo": {"contiene": ["internacionalizaci", "casa"], "excluye": ["cuadro"], "patron_anio": r"(20\d{2})",
                     "patron_semestre": r"20\d{2}\s*-\s*([12])"},
         "hoja": {"preferida": None},
         "fila_encabezado": {"automatica": True, "fila": 1},

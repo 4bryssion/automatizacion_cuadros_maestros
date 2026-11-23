@@ -59,7 +59,8 @@ class _LibroXlsm(Workbook):
         return XLSM
 
 
-def _guardar(wb, ruta: Path):
+def guardar(wb, ruta: Path):
+    """Guarda conservando el tipo .xlsm cuando la extensión lo pide."""
     if ruta.suffix.lower() == ".xlsm":
         wb.__class__ = _LibroXlsm
     wb.save(ruta)
@@ -83,7 +84,7 @@ def _matriz(ruta):
     oculta = wb.create_sheet("CATALOGOS")
     oculta.append(["PAÍS", "REGIÓN"])
     oculta.sheet_state = "hidden"
-    _guardar(wb, ruta)
+    guardar(wb, ruta)
 
 
 def _movilidad(ruta):
@@ -110,7 +111,7 @@ def _movilidad(ruta):
     listas = wb.create_sheet("LISTAS")
     listas.append(["VINCULO_SNIES"])
     listas.sheet_state = "hidden"
-    _guardar(wb, ruta)
+    guardar(wb, ruta)
 
 
 _IC = ["AÑO", "SEMESTRE", "TIPO DE ACTIVIDAD", "SI SELECCIONÓ OTRA. CUÁL.", "ALCANCE ACTIVIDAD",
@@ -137,7 +138,7 @@ def _ic1(ruta):
     ws.append(_fila_ic(2022.0, 1.0, "Administración de Empresas", "Instituto de prueba del sur ", 25.0))
     ws.append(_fila_ic(2022.0, 1.0, "Administración de Empresas", "N/A", 40.0))
     ws.append(_fila_ic(2022.0, 1.0, "Optometría", "Centro de Estudios Falsos", "300 invitados y 25 ponencias"))
-    _guardar(wb, ruta)
+    guardar(wb, ruta)
 
 
 def _ic2(ruta):
@@ -159,7 +160,7 @@ def _ic2(ruta):
             ws.cell(i, j, v)
     for nombre in ("LISTAS", "PROGRAMAS", "PAISES"):
         wb.create_sheet(nombre).sheet_state = "hidden"
-    _guardar(wb, ruta)
+    guardar(wb, ruta)
 
 
 def crear_muestra(carpeta: Path) -> dict[str, Path]:

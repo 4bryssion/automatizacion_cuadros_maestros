@@ -7,7 +7,6 @@ Cada prueba corre sobre tres juegos de archivos:
   de quien las generó con tools/anonimizar_reales.py; no se suben al repositorio. Si no están, se saltan.
 - **originales:** los Excel reales, si la variable de entorno CUADRO_EXCEL_REALES apunta a su carpeta.
 """
-import os
 import re
 import warnings
 import zipfile
@@ -21,27 +20,10 @@ from cuadro_maestro.texto import normalizar
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
+from conftest import ANONIMIZADOS, HAY_ANONIMIZADOS
 from muestra_sintetica import crear_muestra
 
-ANONIMIZADOS = Path(__file__).parent / "datos" / "reales_anonimizados"
-HAY_ANONIMIZADOS = any(ANONIMIZADOS.glob("*.xls*"))
-ORIGINALES = os.environ.get("CUADRO_EXCEL_REALES")
 solo_con_anonimizados = pytest.mark.skipif(not HAY_ANONIMIZADOS, reason="copias anonimizadas solo en el equipo local")
-
-
-@pytest.fixture(scope="module", params=["sintetica", "anonimizados", "originales"])
-def carpeta(request, tmp_path_factory):
-    if request.param == "sintetica":
-        d = tmp_path_factory.mktemp("muestra")
-        crear_muestra(d)
-        return d
-    if request.param == "anonimizados":
-        if not HAY_ANONIMIZADOS:
-            pytest.skip("copias anonimizadas solo en el equipo local")
-        return ANONIMIZADOS
-    if not ORIGINALES:
-        pytest.skip("CUADRO_EXCEL_REALES no está definida")
-    return Path(ORIGINALES)
 
 PATRONES = {  # fuente -> (patrón del nombre de archivo, hoja con los datos, fila de encabezados esperada)
     "matriz": [("*MATRIZ*CONVENIOS*", "CONV_INTERNACIONALES", 3)],
