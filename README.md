@@ -75,7 +75,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/diseno_previsualizar_y_pruebas.md](docs/diseno_previsualizar_y_pruebas.md) | Previsualizar cuadro, pruebas de reglas y de lectura, Exportar/Importar y Copias |
 | [docs/diseno_revision.md](docs/diseno_revision.md) | Pantalla Ver revisión: avisos, cómo resolverlos y recarga |
 | [docs/identidad.md](docs/identidad.md) | Colores, tipografías, estados y comportamiento responsivo |
-| [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de los signos "?" y de la alerta de confirmación |
+| [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de todos los signos "?" (ventana, Configuración, modales y pruebas) y de la alerta de confirmación |
 | `tools/boceto_ventana.py` | Genera las imágenes de la ventana principal y la alerta |
 | `tools/boceto_configuracion.py` | Genera las imágenes de Configuración, el modal de listas y el asistente con Gemini |
 | `tools/boceto_campos_fuentes.py` | Genera las imágenes de Campos del cuadro maestro y Fuentes de datos |

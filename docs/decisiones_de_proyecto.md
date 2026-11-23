@@ -36,3 +36,11 @@ Las pruebas son de solo lectura y cada una está en la pantalla donde se usa; no
 - **Probar lectura de la carpeta:** dentro de Fuentes de datos (cómo lee el programa cada archivo).
 - Detalle en [diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md).
 - Los mockups definitivos se suben a Drive al aprobarse y, cuando todos estén definidos, al repositorio.
+
+## Ajustes de la tarde del 23-nov-2026
+
+- **Programas:** se trabaja con los **25 programas** de Pereira; la lista es editable en Configuración › Programas, así que el número puede cambiar sin tocar el código.
+- **Ventana principal:** el botón de la carpeta se llama **Elegir carpeta…** (antes "Buscar…").
+- **Alerta de confirmación:** incluye la sugerencia de usar **Previsualizar cuadro** antes de generar. Solo aparece si todavía no se usó la vista previa en esa sesión.
+- **Ayudas "?":** todas las tarjetas de Configuración y sus modales, la vista previa, las pruebas, Exportar/importar y Copias tienen su texto de ayuda en [textos_ayuda.md](textos_ayuda.md). La tarjeta de Configuración y su modal muestran la misma ayuda.
+- **Versión del boceto:** v0.12.

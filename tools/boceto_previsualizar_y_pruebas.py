@@ -312,10 +312,10 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
 
     # 1. carpeta
     etiqueta_con_ayuda(L, M, y + 8, "1. Carpeta con los Excel", hover=(popover == "carpeta"))
-    bw = 110
+    bw = 150
     campo(L, M, y + 26, W - M - bw - 14, y + 58, "C:\\Fuentes\\Movilidad_IeC", foco=False)
     est = "hover" if hover == "buscar" else "normal"
-    boton_secundario(L, W - M - bw, y + 26, W - M, y + 58, "Buscar…", est, 12)
+    boton_secundario(L, W - M - bw, y + 26, W - M, y + 58, "Elegir carpeta…", est, 12)
     y += 80
 
     # 2 y 3. programa y vigencia
@@ -1895,7 +1895,7 @@ def modal_almacenamiento(W=900):
 #  v0.11 — la vista previa del cuadro vive en la ventana principal;
 #  Reglas de cruce y Fuentes de datos tienen sus propias pruebas.
 # =====================================================================
-VERSION = "Boceto v0.11 · datos ficticios"
+VERSION = "Boceto v0.12 · datos ficticios"
 
 
 def num_circulo(L, cx, cy, n, r=14):

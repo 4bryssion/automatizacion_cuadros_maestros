@@ -18,7 +18,7 @@ BLANCO, LINEA, FONDO = "#FFFFFF", "#D9D9D9", "#F5F5F5"
 HOVER_CTA, PRESS_CTA = "#587425", "#4A6320"     # CTA al 85 % y 72 % de luminosidad
 TINTE_VERDE, AVISO_BG, OK_BG = "#EAF2DD", "#FFF3E3", "#EEF5E3"
 OFICINA = "Oficina de Relaciones Internacionales"
-VERSION = "Boceto v0.11 · datos ficticios"
+VERSION = "Boceto v0.12 · datos ficticios"
 
 
 def fuente(nombre, px):
@@ -107,6 +107,152 @@ AYUDAS = {
             ("mal", [B("Falta este archivo: "), R("no se encontró o no se pudo abrir. Ese año quedará incompleto en el conteo.")]),
             ("p", [B("“14 de 15 encontrados”: "), R("archivos hallados sobre los esperados. Naranja = faltan; verde = completo.")]),
             ("p", [R("Puedes generar igual con archivos faltantes; lo que falte quedará anotado en la revisión.")]),
+        ],
+    },
+
+    # ---- ayudas de Configuración (la misma tarjeta sale en la tarjeta de Configuración y en el modal) ----
+    "prog": {
+        "titulo": "Programas",
+        "bloques": [
+            ("p", [R("Lista de los "), B("25 programas de Pereira"), R(" que aparecen en el desplegable "), B("Programa"),
+                   R(" de la ventana principal. Parte de la matriz de convenios y se puede ajustar aquí.")]),
+            ("p", [R("Crea, edita o elimina programas si la oficina abre o cierra alguno.")]),
+            ("b", [R("El nombre debe coincidir con el de la matriz. Si un reporte lo escribe distinto, resuélvelo en "),
+                   B("Equivalencias de programas"), R(".")]),
+            ("b", [R("Eliminar solo quita el programa de la lista; tus Excel no se tocan.")]),
+        ],
+    },
+    "campos": {
+        "titulo": "Campos del cuadro maestro",
+        "bloques": [
+            ("p", [R("Define las "), B("columnas del Excel que se genera"), R(", en el orden en que aparecen.")]),
+            ("b", [R("Arrastra el agarre de seis puntos para cambiar el orden.")]),
+            ("b", [R("Cada campo indica de dónde sale: "), B("Matriz"), R(", "), B("Reportes"), R(", "), B("Calculado"),
+                   R(" o "), B("Vacío"), R(".")]),
+            ("b", [R("Los "), B("campos base"), R(" (Institución, Resultados concretos, Vigencia y Activo) se pueden renombrar, "
+                    "pero no eliminar: el programa los necesita para calcular.")]),
+            ("p", [R("Los cambios se guardan al instante y se usan la próxima vez que generes.")]),
+        ],
+    },
+    "fuentes": {
+        "titulo": "Fuentes de datos",
+        "bloques": [
+            ("p", [R("Define "), B("cómo reconoce el programa cada tipo de Excel"),
+                   R(": matriz de convenios, movilidad e internacionalización en casa.")]),
+            ("h", "Qué significa el semáforo"),
+            ("b", [B("Exacta (verde): "), R("la columna se encontró con el nombre esperado.")]),
+            ("b", [B("Por confirmar (naranja): "), R("hay una columna parecida; confirma que es la correcta.")]),
+            ("b", [B("Sin identificar (magenta): "), R("elige la columna con "), B("Elegir columna…"),
+                   R("; queda guardada para los próximos archivos.")]),
+            ("p", [B("Probar lectura de la carpeta"), R(" muestra cómo lee cada archivo, sin crear nada.")]),
+        ],
+    },
+    "eq_inst": {
+        "titulo": "Equivalencias de instituciones",
+        "bloques": [
+            ("p", [R("Une "), B("nombres distintos de una misma universidad"),
+                   R(": «como aparece en el Excel» → «es esta». Sirve, por ejemplo, para un nombre con error de escritura.")]),
+            ("p", [R("Se aplica a "), B("todos los archivos"), R(", de este año y de otros.")]),
+            ("b", [B("Origen: "), R("indica quién la creó: Tú, Gemini o Revisión (la confirmaste desde un aviso).")]),
+            ("b", [R("Eliminarla no toca tus Excel: el programa volverá a preguntar la próxima vez que vea ese nombre.")]),
+        ],
+    },
+    "eq_prog": {
+        "titulo": "Equivalencias de programas",
+        "bloques": [
+            ("p", [R("Une "), B("nombres de programa distintos"), R(" entre la matriz de convenios y los reportes. "
+                    "Por ejemplo: Ingeniería Industrial Distancia = Ingeniería Industrial.")]),
+            ("p", [R("Se aplica a "), B("todos los archivos"), R(", de este año y de otros.")]),
+            ("b", [B("Origen: "), R("indica quién la creó: Tú, Gemini o Revisión.")]),
+            ("b", [R("Eliminarla no toca tus Excel: el programa volverá a preguntar la próxima vez que vea ese nombre.")]),
+        ],
+    },
+    "tipos": {
+        "titulo": "Tipos de persona",
+        "bloques": [
+            ("p", [R("Cada tipo del cuadro (Docente saliente, Experto internacional…) reconoce una "), B("lista de valores"),
+                   R(" de la columna de vínculo de los Excel.")]),
+            ("b", [R("Quita un valor con la X y agrega otros con "), B("Agregar valor"), R(".")]),
+            ("b", [R("En naranja ves los valores que el programa "), B("vio y no reconoció"),
+                   R("; al tocar uno se agrega al tipo.")]),
+            ("b", [B("Internacionalización en casa"), R(" es un tipo base: se puede renombrar, no eliminar.")]),
+        ],
+    },
+    "reglas": {
+        "titulo": "Reglas de cruce",
+        "bloques": [
+            ("p", [R("Cómo se asigna cada registro a un convenio y cómo se cuenta. Vienen "),
+                   B("confirmadas por la jefatura (23-nov-2026)"), R(".")]),
+            ("p", [R("Puedes cambiarlas; lo que cambies queda marcado como "), B("Cambiada"),
+                   R(" y se puede volver a lo confirmado con "), B("Restablecer"), R(".")]),
+            ("b", [R("Lo que muestra un candado no se puede cambiar.")]),
+            ("p", [B("Ver cómo se aplican"), R(" muestra qué decidió cada regla y qué efecto tienen tus cambios, sin crear nada.")]),
+        ],
+    },
+    "gemini": {
+        "titulo": "Asistente con Gemini",
+        "bloques": [
+            ("p", [R("Ayuda "), B("opcional"), R(" para emparejar columnas y nombres usando Gemini en el navegador.")]),
+            ("b", [R("El programa prepara el mensaje con "), B("solo títulos de columnas y nombres de instituciones"),
+                   R(": nunca datos de personas.")]),
+            ("b", [R("Pegas la respuesta de vuelta y marcas las sugerencias que quieres guardar.")]),
+            ("p", [R("Gemini solo sugiere: no se guarda nada sin tu confirmación.")]),
+        ],
+    },
+    # ---- ayudas de los modales de vista previa y pruebas ----
+    "vista_previa": {
+        "titulo": "Vista previa del cuadro",
+        "bloques": [
+            ("p", [R("Muestra "), B("cómo quedaría el cuadro"),
+                   R(" con tus archivos y la configuración actual. No crea archivos ni cambia nada.")]),
+            ("b", [B("Las cuatro cifras: "), R("archivos leídos, convenios en el cuadro, movilidades contadas y avisos.")]),
+            ("b", [B("Avisos: "), R("se muestran los primeros; la lista completa está en Ver revisión, que existe después de generar.")]),
+            ("b", [B("Ver cómo se leyó cada archivo ›"), R(" abre el detalle de la lectura.")]),
+            ("p", [R("Si todo se ve bien, pulsa "), B("Generar cuadro maestro"), R(".")]),
+        ],
+    },
+    "aplican": {
+        "titulo": "Ver cómo se aplican",
+        "bloques": [
+            ("p", [R("Explica "), B("por qué el cuadro sale como sale"),
+                   R(". Lee tus archivos solo para leer: no crea archivos ni guarda cambios.")]),
+            ("b", [B("Efecto de tus cambios: "), R("compara lo confirmado por la jefatura con tus reglas actuales.")]),
+            ("b", [B("Qué decidió cada regla: "), R("el resultado de cada una.")]),
+            ("b", [B("Ejemplos reales: "), R("registros concretos y la regla que decidió. Lo que no se pudo asignar va a Ver revisión.")]),
+            ("p", [R("Para ver el cuadro completo usa "), B("Previsualizar cuadro"), R(" en la ventana principal.")]),
+        ],
+    },
+    "lectura": {
+        "titulo": "Probar lectura de la carpeta",
+        "bloques": [
+            ("p", [R("Muestra "), B("cómo lee el programa cada archivo"), R(" de la carpeta. Es solo lectura: no crea nada.")]),
+            ("b", [B("Cómo se leyó: "), R("la fuente usada, la fila de encabezados y las columnas reconocidas.")]),
+            ("b", [B("Estados: "), R("Listo, Por confirmar, Sin identificar o No se encontró.")]),
+            ("b", [B("Arreglar ›"), R(" abre la fuente para confirmar o elegir la columna. "
+                    "Un archivo que no se encontró se agrega a la carpeta.")]),
+        ],
+    },
+    "exportar": {
+        "titulo": "Exportar e importar configuración",
+        "bloques": [
+            ("p", [R("Guarda "), B("toda la configuración en un archivo .json"),
+                   R(" (para otro equipo o como respaldo) o carga una que ya tengas.")]),
+            ("b", [R("Incluye programas, campos, fuentes, equivalencias, tipos de persona y reglas. "),
+                   B("No incluye"), R(" Excel, datos de personas ni cuadros ya generados.")]),
+            ("b", [R("Al importar ves "), B("Qué cambiaría"), R(" antes de decidir: "), B("Reemplazar todo"), R(" o "),
+                   B("Combinar (recomendado)"), R(".")]),
+            ("b", [R("Antes de importar se guarda una copia de la configuración actual.")]),
+        ],
+    },
+    "copias": {
+        "titulo": "Copias y almacenamiento",
+        "bloques": [
+            ("p", [R("La configuración se guarda en "), B("dos lugares a la vez"),
+                   R(": la carpeta del usuario y junto al programa. Al abrir se usa la más reciente.")]),
+            ("b", [R("Si falta una copia o está dañada, se restaura desde la otra y se avisa.")]),
+            ("b", [R("Se conservan las "), B("últimas 10 copias de seguridad"),
+                   R(". Restaurar pide confirmación y guarda antes la actual.")]),
+            ("b", [R("Si la carpeta del programa no permite escribir, se usa solo la del usuario.")]),
         ],
     },
 }
@@ -323,10 +469,10 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
 
     # 1. carpeta
     etiqueta_con_ayuda(L, M, y + 8, "1. Carpeta con los Excel", hover=(popover == "carpeta"))
-    bw = 110
+    bw = 150
     campo(L, M, y + 26, W - M - bw - 14, y + 58, "C:\\Fuentes\\Movilidad_IeC", foco=False)
     est = "hover" if hover == "buscar" else "normal"
-    boton_secundario(L, W - M - bw, y + 26, W - M, y + 58, "Buscar…", est, 12)
+    boton_secundario(L, W - M - bw, y + 26, W - M, y + 58, "Elegir carpeta…", est, 12)
     y += 80
 
     # 2 y 3. programa y vigencia
@@ -455,6 +601,8 @@ ALERTA = {
         ("b", [R("El resultado depende de esa configuración. Si los Excel cambiaron de columnas, nombres o filtros "
                  "y la configuración no se actualizó, el cuadro puede quedar "), B("incompleto o con datos incorrectos"), R(".")]),
         ("b", [R("El programa "), B("no modifica tus Excel originales"), R(": solo los lee y crea un archivo nuevo.")]),
+        ("b", [R("¿Dudas del resultado? Cancela y usa "), B("Previsualizar cuadro"),
+               R(": muestra cómo quedaría sin crear ningún archivo.")]),
         ("b", [R("Después de generarlo, abre "), B("Ver revisión"),
                R(" y confirma lo que no se pudo cruzar antes de entregar el cuadro.")]),
     ],
@@ -585,6 +733,31 @@ hoja = hoja.resize((int(hoja.width * k / S), int(hoja.height * k / S)), Image.LA
 ImageDraw.Draw(hoja).text((20, 20), "Textos de los signos de ayuda (?)", font=ft, fill=GRIS_OSC)
 hoja.save(f"{OUT}/textos_ayuda.png")
 
+# ---------- 3a) hojas con las ayudas de Configuración y de los modales ----------
+def hoja_ayudas(claves, ancho, cols, titulo, ruta):
+    ts_ = [tarjeta(AYUDAS[k], ancho) for k in claves]
+    gap_ = 20
+    filas_ = [ts_[i:i + cols] for i in range(0, len(ts_), cols)]
+    alt = [max(t_["rgb"].height / S for t_ in fl) for fl in filas_]
+    wtot = cols * (ancho + gap_) + gap_
+    hoja_ = Image.new("RGB", (int(wtot * S), int((sum(alt) + gap_ * len(alt) + 80) * S)), "#E9E9E9")
+    yy_ = 70
+    for fl, a_ in zip(filas_, alt):
+        xx_ = gap_
+        for t_ in fl:
+            poner(hoja_, t_, xx_, yy_); xx_ += ancho + gap_
+        yy_ += a_ + gap_
+    k_ = 1.5
+    hoja_ = hoja_.resize((int(hoja_.width * k_ / S), int(hoja_.height * k_ / S)), Image.LANCZOS)
+    ImageDraw.Draw(hoja_).text((20, 20), titulo, font=ft, fill=GRIS_OSC)
+    hoja_.save(ruta)
+
+
+hoja_ayudas(("prog", "campos", "fuentes", "eq_inst", "eq_prog", "tipos", "reglas", "gemini"), 360, 4,
+            "Ayudas (?) de Configuración: se ven igual en la tarjeta y en su modal", f"{OUT}/ayudas_configuracion.png")
+hoja_ayudas(("vista_previa", "aplican", "lectura", "exportar", "copias"), 360, 3,
+            "Ayudas (?) de vista previa, pruebas, exportar/importar y copias", f"{OUT}/ayudas_modales.png")
+
 # ---------- 3b) estados de los controles ----------
 E = Lienzo(760, 520, fondo=BLANCO)
 E.txt(28, 30, "Estados de los controles", fuente("Bold", 18), GRIS_OSC, "lm")
@@ -695,5 +868,7 @@ with open(f"{OUT}/textos_ayuda.md", "w", encoding="utf-8") as fh:
             fh.write(f"**{dato}**\n\n")
         elif tipo == "b":
             fh.write("- " + md(dato) + "\n")
+    fh.write("\n*La viñeta «¿Dudas del resultado?» solo aparece si todavía no se usó Previsualizar cuadro en esta sesión; "
+             "si la alerta se abre desde la propia vista previa, no se muestra.*\n")
     fh.write(f"\n**{ALERTA['pregunta']}**\n\nBotones: [{ALERTA['botones'][0]}] [{ALERTA['botones'][1]}]\n")
 print("listo")
