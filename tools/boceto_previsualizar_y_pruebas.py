@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Boceto v10 (identidad Areandina): Probar con mis archivos, Exportar/Importar y Copias (sobre los componentes de v5 a v9).
-Uso: python3 -I boceto_v10.py <carpeta_marca> <carpeta_salida>"""
+"""Boceto v11 (identidad Areandina): Previsualizar cuadro, Ver cómo se aplican las reglas, Probar lectura, Exportar/Importar y Copias.
+Uso: python3 -I boceto_v11.py <carpeta_marca> <carpeta_salida>"""
 import os
 import sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -394,21 +394,23 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     # botones
     est_g = {"generar": "hover", "generar_press": "press"}.get(hover, "normal")
     est_c = "hover" if hover == "config" else "normal"
+    est_p = "hover" if hover == "previsualizar" else "normal"
     if not estrecha:
         boton_primario(L, M, y, M + 290, y + 46, "Generar cuadro maestro", est_g)
-        boton_secundario(L, M + 304, y, M + 304 + 146, y + 46, "Configuración", est_c)
-        icono_ayuda(L, M + 304 + 146 + 10, y + 23, hover=(popover == "config"))
-        L.txt(W - M - 28, y + 23, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
-        icono_ayuda(L, W - M - 20, y + 23, hover=(popover == "revision"))
-        fin = y + 46
+        boton_secundario(L, M + 304, y, M + 304 + 190, y + 46, "Previsualizar cuadro", est_p, 13)
+        icono_ayuda(L, M + 304 + 190 + 12, y + 23, hover=(popover == "previsualizar"))
+        y += 60
     else:
         boton_primario(L, M, y, W - M, y + 46, "Generar cuadro maestro", est_g)
         y += 58
-        boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
-        icono_ayuda(L, M + 170, y + 20, hover=(popover == "config"))
-        L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
-        icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
-        fin = y + 40
+        boton_secundario(L, M, y, M + 200, y + 40, "Previsualizar cuadro", est_p, 12)
+        icono_ayuda(L, M + 212, y + 20, hover=(popover == "previsualizar"))
+        y += 52
+    boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
+    icono_ayuda(L, M + 172, y + 20, hover=(popover == "config"))
+    L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+    icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
+    fin = y + 40
 
     if H is None:                      # ajustar altura al contenido
         H = int(fin + 30 + 34)
@@ -420,7 +422,7 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     L.rect(0, H - 34, W, H, fill=FONDO)
     L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
     L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
-    L.txt(W - M, H - 17, "Boceto v0.4.1 · datos ficticios", fuente("Light", 10), GRIS, "rm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
     L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
     return L
 
@@ -587,9 +589,10 @@ def ventana_config(W=760, hover=None):
     filas = (len(TARJETAS) + 1) // 2
     y += filas * (alto_card + 14) + 2
     # barra de acciones
-    L.txt(M, y + 20, "Última modificación: 12-nov-2026", fuente("Light", 11.5), GRIS, "lm")
-    boton_secundario(L, W - M - 290 - 190 - 12, y + 4, W - M - 290 - 12, y + 40, "Exportar configuración", "normal", 12)
-    boton_primario(L, W - M - 290, y + 4, W - M, y + 40, "Probar con mis archivos")
+    L.txt(M, y + 12, "Última modificación: 12-nov-2026", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(M, y + 32, "Copias y almacenamiento ›", fuente("Bold", 11.5), VERDE_CTA, "lm")
+    boton_secundario(L, W - M - 250 - 170 - 12, y + 4, W - M - 250 - 12, y + 40, "Exportar / importar", "normal", 12)
+    boton_primario(L, W - M - 250, y + 4, W - M, y + 40, "Volver al cuadro maestro")
     H = int(y + 40 + 28 + 34)
     recortar(L, H)
     L.rect(0, H - 34, W, H, fill=FONDO)
@@ -1194,7 +1197,8 @@ def modal_fuentes(W=980):
     L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
     y += 14
     boton_secundario(L, pad, y, pad + 200, y + 42, "Probar con un archivo…", "normal", 13)
-    L.txt(pad + 216, y + 21, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
+    boton_secundario(L, pad + 212, y, pad + 212 + 250, y + 42, "Probar lectura de la carpeta", "normal", 13)
+    L.txt(pad + 478, y + 21, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
     boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
     H = int(y + 42 + 26)
     recortar(L, H)
@@ -1643,10 +1647,10 @@ def modal_reglas(W=900):
     L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
     y += 14
     boton_secundario(L, pad, y, pad + 250, y + 42, "Restablecer todas a lo confirmado", "normal", 12.5)
-    boton_secundario(L, pad + 262, y, pad + 262 + 200, y + 42, "Probar con mis archivos", "normal", 12.5)
+    boton_secundario(L, pad + 262, y, pad + 262 + 200, y + 42, "Ver cómo se aplican", "normal", 12.5)
     boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
     y += 42 + 10
-    L.txt(pad, y + 8, "Los cambios se guardan al instante. Prueba el efecto antes de generar.", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(pad, y + 8, "Los cambios se guardan al instante. Mira cómo se aplican antes de generar.", fuente("Light", 11.5), GRIS, "lm")
     H = int(y + 18 + 24)
     recortar(L, H)
     cerrar_modal(L)
@@ -1708,99 +1712,6 @@ def estado_celda(L, x, cy, tipo, texto):
         L.txt(x + 20, cy, texto, fuente("Bold", 11.5), MAGENTA, "lm")
 
 
-def modal_prueba(W=980):
-    L = modal_base(W, 1500, "Probar con mis archivos")
-    pad = 28
-    y = titulo_modal(L, W, pad, "Probar con mis archivos", "Solo vista previa", ("#EDEDED", GRIS_OSC))
-    x0, x1 = pad, W - pad
-    # contexto
-    cx = x0
-    for t in ("Programa: Fisioterapia", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"):
-        _, w_ = chip(L, cx, y, t, FONDO, GRIS_OSC, 11.5, "l", 26)
-        L.rect(cx, y, cx + w_, y + 26, line=LINEA, w=1.2, r=13)
-        cx += w_ + 8
-    y += 40
-    y += banner_info(L, x0, y, x1, "Es solo una prueba: lee tus archivos y muestra cómo quedaría el cuadro. No crea ningún archivo ni cambia tu configuración.") + 16
-    # resumen
-    gap = 12
-    cw = (x1 - x0 - 3 * gap) / 4
-    stats = [("14 de 15", "archivos leídos", NARANJA, "Falta 1"), ("93", "convenios en el cuadro", VERDE_CTA, None),
-             ("412", "movilidades contadas", VERDE_CTA, None), ("6", "avisos para revisar", MAGENTA, "Ver avisos")]
-    for i, (num, lbl, col, extra) in enumerate(stats):
-        sx = x0 + i * (cw + gap)
-        L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
-        L.rect(sx, y + 14, sx + 4, y + 78, fill=col)
-        L.txt(sx + 20, y + 34, num, fuente("Bold", 26), GRIS_OSC, "lm")
-        L.txt(sx + 20, y + 62, lbl, fuente("Light", 12), GRIS, "lm")
-        if extra:
-            L.txt(sx + cw - 16, y + 20, extra, fuente("Bold", 11), (AVISO_TXT if col == NARANJA else VERDE_CTA), "rm")
-    y += 92 + 22
-    # archivos
-    L.txt(x0, y + 10, "Cómo se leyó cada archivo", fuente("Bold", 14), GRIS_OSC, "lm")
-    L.txt(x1, y + 10, "Mostrando 5 de 15", fuente("Light", 11.5), GRIS, "rm")
-    y += 30
-    cols = [x0 + 16, x0 + 300, x0 + 440, x0 + 590, x0 + 700]
-    top = y
-    L.rect(x0, y, x1, y + 32, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
-    for xx, t in zip(cols, ("Archivo", "Fila de encabezados", "Columnas", "Filas leídas", "Estado")):
-        L.txt(xx, y + 16, t, fuente("Bold", 11.5), BLANCO, "lm")
-    y += 32
-    filas = [("Convenios.xlsx", "fila 3", "8 de 8", "328", ("ok", "Listo")),
-             ("Movilidad_2021.xlsx", "—", "—", "—", ("mal", "No se encontró")),
-             ("Movilidad_2022.xlsx", "fila 1", "6 de 7", "1.204", ("aviso", "1 por confirmar")),
-             ("IntCasa_2022-1.xlsx", "fila 1", "6 de 7", "311", ("mal", "1 sin identificar")),
-             ("IntCasa_2022-2.xlsx", "fila 2", "7 de 7", "287", ("ok", "Listo"))]
-    for i, (a, b, c, d_, e) in enumerate(filas):
-        rh = 40
-        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
-        L.txt(cols[0], y + rh / 2, a, fuente("Bold", 12), GRIS_OSC, "lm")
-        for xx, t in zip(cols[1:4], (b, c, d_)):
-            L.txt(xx, y + rh / 2, t, fuente("Regular", 12), NEGRO, "lm")
-        estado_celda(L, cols[4], y + rh / 2, e[0], e[1])
-        y += rh
-    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
-    y += 24
-    # cuadro
-    L.txt(x0, y + 10, "Así quedaría el cuadro", fuente("Bold", 14), GRIS_OSC, "lm")
-    L.txt(x1, y + 10, "Mostrando 4 de 93", fuente("Light", 11.5), GRIS, "rm")
-    y += 30
-    cols = [x0 + 16, x0 + 62, x0 + 392, x0 + 690, x0 + 806]
-    top = y
-    L.rect(x0, y, x1, y + 32, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
-    for xx, t in zip(cols, ("No.", "Institución", "Resultados concretos", "Vigencia", "Activo")):
-        L.txt(xx, y + 16, t, fuente("Bold", 11.5), BLANCO, "lm")
-    y += 32
-    datos = [("1", "UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", ["2022", "- Estudiante saliente: 3"], "5", "Activo"),
-             ("2", "BENEMÉRITA UNIVERSIDAD AUTÓNOMA DE PUEBLA - BUAP", ["2022", "- Estudiante saliente: 2", "- Internacionalización en casa: 10"], "5", "No activo"),
-             ("3", "UNIVERSIDAD DEL ISTMO", ["Sin evidencia"], "10", "Activo"),
-             ("4", "UNIVERSIDAD DE CARABOBO", ["2022", "- Experto internacional: 1"], "5", "Activo")]
-    for i, (n, inst, res, vig, act) in enumerate(datos):
-        rh = max(44, len(res) * 17 + 18)
-        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
-        L.txt(cols[0], y + rh / 2, n, fuente("Regular", 12), GRIS, "lm")
-        fi = fuente("Bold", 11.5)
-        li = partir(L, [(inst, False)], fi, fi, cols[2] - cols[1] - 20)
-        for j, ln in enumerate(li[:2]):
-            L.txt(cols[1], y + rh / 2 + (j - (len(li[:2]) - 1) / 2) * 15, " ".join(t[0] for t in ln), fi, GRIS_OSC, "lm")
-        for j, t in enumerate(res):
-            L.txt(cols[2], y + rh / 2 + (j - (len(res) - 1) / 2) * 17, t, fuente("Bold" if j == 0 and t != "Sin evidencia" else "Regular", 11.5),
-                  (GRIS if t == "Sin evidencia" else NEGRO), "lm")
-        L.txt(cols[3], y + rh / 2, vig, fuente("Regular", 12), NEGRO, "lm")
-        chip(L, x1 - 16, y + rh / 2 - 11, act, (TINTE_VERDE if act == "Activo" else "#EDEDED"), (OK_TXT if act == "Activo" else GRIS_OSC), 10.5, "r", 22)
-        y += rh
-    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
-    y += 18
-    L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
-    y += 14
-    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
-    boton_secundario(L, pad + 132, y, pad + 132 + 150, y + 42, "Ver avisos (6)", "normal", 13)
-    L.txt(W - pad, y + 21, "Si algo no cuadra, corrígelo en Configuración y vuelve a probar.", fuente("Light", 11.5), GRIS, "rm")
-    H = int(y + 42 + 26)
-    recortar(L, H)
-    cerrar_modal(L)
-    return L
-
-
 # ------------------------------------------------------------------
 #  Exportar e importar configuración
 # ------------------------------------------------------------------
@@ -1839,10 +1750,8 @@ def modal_exportar_importar(W=980):
     L.txt(ex0 + 22, yy + 8, "Nombre del archivo", fuente("Bold", 12), GRIS_OSC, "lm")
     campo(L, ex0 + 22, yy + 20, ex1 - 22, yy + 52, recortar_texto(L, "Configuracion_CuadroMaestro_2026-11-23.json", fuente("Regular", 12), cw - 70))
     yy += 70
-    boton_secundario(L, ex0 + 22, yy, ex0 + 22 + 150, yy + 38, "Elegir carpeta…", "normal", 12)
-    boton_primario(L, ex1 - 22 - 150, yy, ex1 - 22, yy + 38, "Exportar")
     # lo que NO incluye (rellena el panel izquierdo)
-    yy += 66
+    yy += 6
     L.rect(ex0 + 22, yy, ex1 - 22, yy + 78, fill=FONDO, line=LINEA, w=1, r=8)
     icono_info(L, ex0 + 34, yy + 14, GRIS)
     L.txt(ex0 + 62, yy + 23, "No incluye", fuente("Bold", 12), GRIS_OSC, "lm")
@@ -1896,9 +1805,14 @@ def modal_exportar_importar(W=980):
     L.d.ellipse([L.P(ix0 + 34), L.P(yy + 12), L.P(ix0 + 50), L.P(yy + 28)], fill=NARANJA)
     L.txt(ix0 + 42, yy + 20.5, "!", fuente("Bold", 10.5), NEGRO, "mm")
     L.txt(ix0 + 60, yy + 20, "Antes de importar se guarda una copia de la actual.", fuente("Regular", 11.5), NEGRO, "lm")
-    yy += 56
-    boton_primario(L, ix1 - 22 - 150, yy, ix1 - 22, yy + 38, "Importar")
-    boton_secundario(L, ix1 - 22 - 150 - 10 - 110, yy, ix1 - 22 - 150 - 10, yy + 38, "Cancelar", "normal", 12)
+    # fila común de botones (misma altura en los dos paneles)
+    yb = ya + hpan - 22 - 38
+    for (a_, b_) in ((ex0, ex1), (ix0, ix1)):
+        L.d.line([L.P(a_ + 22), L.P(yb - 16), L.P(b_ - 22), L.P(yb - 16)], fill=LINEA, width=L.P(1))
+    boton_secundario(L, ex0 + 22, yb, ex0 + 22 + 150, yb + 38, "Elegir carpeta…", "normal", 12)
+    boton_primario(L, ex1 - 22 - 150, yb, ex1 - 22, yb + 38, "Exportar")
+    boton_secundario(L, ix1 - 22 - 150 - 10 - 110, yb, ix1 - 22 - 150 - 10, yb + 38, "Cancelar", "normal", 12)
+    boton_primario(L, ix1 - 22 - 150, yb, ix1 - 22, yb + 38, "Importar")
     y = ya + hpan + 18
     boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
     L.txt(pad, y + 21, "Los cambios importados se aplican al instante.", fuente("Light", 11.5), GRIS, "lm")
@@ -1974,10 +1888,286 @@ def modal_almacenamiento(W=900):
     return L
 
 
+
+# =====================================================================
+#  v0.11 — la vista previa del cuadro vive en la ventana principal;
+#  Reglas de cruce y Fuentes de datos tienen sus propias pruebas.
+# =====================================================================
+VERSION = "Boceto v0.11 · datos ficticios"
+
+
+def num_circulo(L, cx, cy, n, r=14):
+    L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=VERDE_CTA)
+    L.txt(cx, cy + 0.5, str(n), fuente("Bold", 13), BLANCO, "mm")
+
+
+def punto(L, x, cy, col, r=5):
+    L.d.ellipse([L.P(x - r), L.P(cy - r), L.P(x + r), L.P(cy + r)], fill=col)
+
+
+def chips_contexto(L, x0, y, textos):
+    cx = x0
+    for t in textos:
+        _, w_ = chip(L, cx, y, t, FONDO, GRIS_OSC, 11.5, "l", 26)
+        L.rect(cx, y, cx + w_, y + 26, line=LINEA, w=1.2, r=13)
+        cx += w_ + 8
+    return y + 40
+
+
+def tabla_cabecera(L, x0, x1, y, cols, titulos, alto=32):
+    L.rect(x0, y, x1, y + alto, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    for xx, t in zip(cols, titulos):
+        L.txt(xx, y + alto / 2, t, fuente("Bold", 11.5), BLANCO, "lm")
+    return y + alto
+
+
+def pie_modal(L, W, pad, y):
+    L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
+    return y + 14
+
+
+# ------------------------------------------------------------------
+#  Ventana principal › Previsualizar cuadro
+# ------------------------------------------------------------------
+def modal_previsualizar(W=980):
+    L = modal_base(W, 1700, "Previsualizar cuadro")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Previsualizar cuadro", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Programa: Fisioterapia", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Es solo una prueba: lee tus archivos y muestra cómo quedaría el cuadro. "
+                     "No crea ningún archivo ni cambia tu configuración.") + 16
+    gap = 12
+    cw = (x1 - x0 - 3 * gap) / 4
+    stats = [("14 de 15", "archivos leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
+             ("412", "movilidades contadas", VERDE_CTA, None), ("6", "avisos para revisar", MAGENTA, "Ver abajo")]
+    for i, (num, lbl, col, extra) in enumerate(stats):
+        sx = x0 + i * (cw + gap)
+        L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.rect(sx, y + 14, sx + 4, y + 78, fill=col)
+        L.txt(sx + 20, y + 34, num, fuente("Bold", 26), GRIS_OSC, "lm")
+        L.txt(sx + 20, y + 62, lbl, fuente("Light", 12), GRIS, "lm")
+        if extra:
+            L.txt(sx + cw - 16, y + 20, extra, fuente("Bold", 11), (AVISO_TXT if col == NARANJA else MAGENTA), "rm")
+    y += 92 + 16
+    # lectura de archivos: una sola línea
+    L.rect(x0, y, x1, y + 46, fill=FONDO, line=LINEA, w=1.2, r=10)
+    ft = fuente("Bold", 12.5)
+    L.txt(x0 + 16, y + 23, "Lectura de archivos", ft, GRIS_OSC, "lm")
+    xs = x0 + 16 + L.tw("Lectura de archivos", ft) + 16
+    for txt, bg, fg in (("12 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+                        ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, xs, y + 12, txt, bg, fg, 10.5, "l", 22)
+        xs += w_ + 8
+    L.txt(x1 - 16, y + 23, "Ver cómo se leyó cada archivo ›", fuente("Bold", 12), VERDE_CTA, "rm")
+    y += 46 + 24
+    # avisos
+    L.txt(x0, y + 10, "Avisos de la vista previa", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 3 de 6", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    avisos = [(MAGENTA, "Falta Movilidad_2021.xlsx: el año 2021 quedará incompleto en el conteo."),
+              (NARANJA, "Movilidad_2022.xlsx: la columna «Programa» necesita confirmación."),
+              (MAGENTA, "UNIVERSIDAD DE LOS ANDES (VE): 4 registros de 2022 sin convenio que cubra el año.")]
+    top = y
+    for i, (col, t) in enumerate(avisos):
+        rh = 40
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        punto(L, x0 + 22, y + rh / 2, col)
+        L.txt(x0 + 42, y + rh / 2, recortar_texto(L, t, fuente("Regular", 12), x1 - x0 - 70), fuente("Regular", 12), NEGRO, "lm")
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    L.txt(x0, y + 16, "y 3 avisos más. Los verás completos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
+    y += 38
+    # cuadro
+    L.txt(x0, y + 10, "Así quedaría el cuadro", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 4 de 101", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    cols = [x0 + 16, x0 + 62, x0 + 392, x0 + 690, x0 + 806]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("No.", "Institución", "Resultados concretos", "Vigencia", "Activo"))
+    datos = [("1", "UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", ["2022", "- Estudiante saliente: 3"], "5", "Activo"),
+             ("2", "BENEMÉRITA UNIVERSIDAD AUTÓNOMA DE PUEBLA - BUAP", ["2022", "- Estudiante saliente: 2", "- Internacionalización en casa: 10"], "5", "No activo"),
+             ("3", "UNIVERSIDAD DEL ISTMO", ["Sin evidencia"], "10", "Activo"),
+             ("4", "UNIVERSIDAD DE CARABOBO", ["2022", "- Experto internacional: 1"], "5", "Activo")]
+    for i, (n, inst, res, vig, act) in enumerate(datos):
+        rh = max(44, len(res) * 17 + 18)
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, n, fuente("Regular", 12), GRIS, "lm")
+        fi = fuente("Bold", 11.5)
+        li = partir(L, [(inst, False)], fi, fi, cols[2] - cols[1] - 20)
+        for j, ln_ in enumerate(li[:2]):
+            L.txt(cols[1], y + rh / 2 + (j - (len(li[:2]) - 1) / 2) * 15, " ".join(t[0] for t in ln_), fi, GRIS_OSC, "lm")
+        for j, t in enumerate(res):
+            L.txt(cols[2], y + rh / 2 + (j - (len(res) - 1) / 2) * 17, t,
+                  fuente("Bold" if j == 0 and t != "Sin evidencia" else "Regular", 11.5), (GRIS if t == "Sin evidencia" else NEGRO), "lm")
+        L.txt(cols[3], y + rh / 2, vig, fuente("Regular", 12), NEGRO, "lm")
+        chip(L, x1 - 16, y + rh / 2 - 11, act, (TINTE_VERDE if act == "Activo" else "#EDEDED"),
+             (OK_TXT if act == "Activo" else GRIS_OSC), 10.5, "r", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y = pie_modal(L, W, pad, y + 18)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    L.txt(pad + 136, y + 21, "Si algo no cuadra, corrígelo en Configuración y vuelve a previsualizar.", fuente("Light", 11.5), GRIS, "lm")
+    boton_primario(L, W - pad - 270, y, W - pad, y + 42, "Generar cuadro maestro")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ------------------------------------------------------------------
+#  Reglas de cruce › Ver cómo se aplican
+# ------------------------------------------------------------------
+def modal_aplican(W=980):
+    L = modal_base(W, 2000, "Ver cómo se aplican las reglas")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Ver cómo se aplican las reglas", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Programa: Fisioterapia", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Usa tus archivos reales y solo los lee: muestra qué decidió cada regla y qué efecto "
+                     "tienen tus cambios. No crea archivos ni guarda nada.") + 20
+    # efecto de los cambios
+    L.txt(x0, y + 10, "Efecto de tus cambios", fuente("Bold", 14), GRIS_OSC, "lm")
+    chip(L, x0 + L.tw("Efecto de tus cambios", fuente("Bold", 14)) + 12, y - 1, "1 regla cambiada", AVISO_BG, AVISO_TXT, 10.5, "l", 22)
+    y += 30
+    cols = [x0 + 16, x0 + 400, x0 + 560, x0 + 760]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Qué se compara", "Lo confirmado", "Con tus cambios", "Diferencia"))
+    comp = [("Convenios en el cuadro", "93", "101", ("+8", "aviso")), ("Convenios sin resultados (Sin evidencia)", "41", "49", ("+8", "aviso")),
+            ("Movilidades contadas", "412", "412", ("Igual", "igual")), ("Actividades de internacionalización en casa", "598", "598", ("Igual", "igual"))]
+    for i, (n, a, b, (t, k)) in enumerate(comp):
+        rh = 38
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, n, fuente("Regular", 12), NEGRO, "lm")
+        L.txt(cols[1] + 6, y + rh / 2, a, fuente("Regular", 12), NEGRO, "lm")
+        L.txt(cols[2] + 6, y + rh / 2, b, fuente("Bold" if k == "aviso" else "Regular", 12), NEGRO, "lm")
+        bg, fg = {"igual": ("#EDEDED", GRIS_OSC), "aviso": (AVISO_BG, AVISO_TXT)}[k]
+        chip(L, cols[3], y + 8, t, bg, fg, 10.5, "l", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y += 12
+    y += banner_info(L, x0, y, x1, "Tu cambio en la regla 1 («Convenios vencidos: entran todos») agrega 8 convenios al cuadro, "
+                     "todos sin resultados.", AVISO_BG, NARANJA, NARANJA) + 22
+    # qué decidió cada regla
+    L.txt(x0, y + 10, "Qué decidió cada regla", fuente("Bold", 14), GRIS_OSC, "lm")
+    y += 30
+    reglas = [("Qué convenios entran al cuadro", "101 entran · 14 quedan fuera porque no aplican al programa", True),
+              ("A qué convenio va cada registro", "1.010 registros asignados · 9 sin convenio que cubra el año (van a Ver revisión)", False),
+              ("Qué se cuenta", "412 movilidades · 598 actividades de internacionalización en casa", False),
+              ("Vigencia y fecha de fin", "27 vigencias calculadas con año de inicio + vigencia · 2 sin fecha de inicio válida (van a Ver revisión)", False),
+              ("Activo o No activo", "74 activos · 27 no activos, según la matriz de hoy", False)]
+    top = y
+    for i, (tit, res, cambiada) in enumerate(reglas):
+        rh = 58
+        L.rect(x0, y, x1, y + rh, fill=(AVISO_BG if cambiada else (BLANCO if i % 2 == 0 else FONDO)))
+        num_circulo(L, x0 + 34, y + rh / 2, i + 1)
+        L.txt(x0 + 62, y + 20, tit, fuente("Bold", 12.5), GRIS_OSC, "lm")
+        L.txt(x0 + 62, y + 40, recortar_texto(L, res, fuente("Regular", 12), 640), fuente("Regular", 12), NEGRO, "lm")
+        if cambiada:
+            xc_, wc_ = chip(L, x1 - 16, y + rh / 2 - 11, "Cambiada", AVISO_BG, AVISO_TXT, 10.5, "r", 22)
+            L.rect(xc_, y + rh / 2 - 11, xc_ + wc_, y + rh / 2 + 11, line=NARANJA, w=1, r=11)
+        else:
+            chip(L, x1 - 16, y + rh / 2 - 11, "Confirmada", TINTE_VERDE, OK_TXT, 10.5, "r", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y += 24
+    # ejemplos
+    L.txt(x0, y + 10, "Ejemplos reales, paso a paso", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 4 de 1.019", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    cols = [x0 + 16, x0 + 340, x0 + 770]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Registro", "Qué decidió", "Regla"))
+    ej = [("Movilidad 2022 · Estudiante saliente · BUAP", "Convenio específico 2019-014: su vigencia 2019–2024 cubre 2022 y es el preferido.", ("Regla 2", "ok")),
+          ("Int. en casa 2022-1 · Taller · U. de Carabobo", "Convenio marco 2018-007: para internacionalización en casa se prefiere el Marco.", ("Regla 2", "ok")),
+          ("Movilidad 2022 · Estudiante entrante · U. de los Andes (VE)", "Ningún convenio cubre 2022: no se cuenta y va a Ver revisión.", ("Regla 2", "mal")),
+          ("Convenio · U. del Istmo (vencido, sin resultados)", "Entra al cuadro porque «Convenios vencidos» está en «Entran todos».", ("Regla 1 · Cambiada", "aviso"))]
+    f_e = fuente("Regular", 11.5)
+    for i, (a, b, (t, k)) in enumerate(ej):
+        rh = 54
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        for xx, txt, ancho, fam in ((cols[0], a, cols[1] - cols[0] - 16, "Bold"), (cols[1], b, cols[2] - cols[1] - 16, "Regular")):
+            ff = fuente(fam, 11.5)
+            lin = partir(L, [(txt, False)], ff, ff, ancho)[:2]
+            for j, ln_ in enumerate(lin):
+                L.txt(xx, y + rh / 2 + (j - (len(lin) - 1) / 2) * 16, " ".join(tt[0] for tt in ln_), ff, GRIS_OSC if fam == "Bold" else NEGRO, "lm")
+        bg, fg = {"ok": (TINTE_VERDE, OK_TXT), "mal": (ROSA_SUAVE, MAGENTA), "aviso": (AVISO_BG, AVISO_TXT)}[k]
+        chip(L, cols[2], y + rh / 2 - 11, t, bg, fg, 10.5, "l", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y = pie_modal(L, W, pad, y + 18)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    L.txt(W - pad, y + 21, "Para volver a lo confirmado usa «Restablecer» en Reglas de cruce.", fuente("Light", 11.5), GRIS, "rm")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ------------------------------------------------------------------
+#  Fuentes de datos › Probar lectura de la carpeta
+# ------------------------------------------------------------------
+def modal_lectura(W=980):
+    L = modal_base(W, 1500, "Probar lectura de la carpeta")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Probar lectura de la carpeta", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Prueba cómo lee el programa cada archivo con lo que hay en Fuentes de datos. "
+                     "No crea archivos ni cambia tu configuración.") + 18
+    # resumen y filtro
+    cx = x0
+    for txt, bg, fg in (("12 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+                        ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 26)
+        cx += w_ + 8
+    # filtro Todos / Con problemas
+    fx = x1 - 300
+    L.rect(fx, y, x1, y + 28, fill=FONDO, line=LINEA, w=1.2, r=14)
+    L.rect(fx + 3, y + 3, fx + 138, y + 25, fill=VERDE_CTA, r=11)
+    L.txt(fx + 70, y + 14, "Todos (16)", fuente("Bold", 11), BLANCO, "mm")
+    L.txt(fx + 220, y + 14, "Con problemas (3)", fuente("Bold", 11), GRIS_OSC, "mm")
+    y += 44
+    cols = [x0 + 16, x0 + 270, x0 + 480, x0 + 600, x0 + 710]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Archivo", "Se leyó como", "Encabezados", "Columnas", "Estado"))
+    filas = [("Convenios.xlsx", "Matriz de convenios", "fila 3", "8 de 8", ("ok", "Listo")),
+             ("Movilidad_2019.xlsx", "Movilidad anual", "fila 1", "7 de 7", ("ok", "Listo")),
+             ("Movilidad_2021.xlsx", "—", "—", "—", ("mal", "No se encontró")),
+             ("Movilidad_2022.xlsx", "Movilidad anual", "fila 1", "6 de 7", ("aviso", "1 por confirmar")),
+             ("IntCasa_2022-1.xlsx", "Int. en casa", "fila 1", "6 de 7", ("mal", "1 sin identificar")),
+             ("IntCasa_2022-2.xlsx", "Int. en casa", "fila 2", "7 de 7", ("ok", "Listo")),
+             ("IntCasa_2023-1.xlsx", "Int. en casa", "fila 2", "7 de 7", ("ok", "Listo"))]
+    for i, (a, b, c, d_, e) in enumerate(filas):
+        rh = 40
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, a, fuente("Bold", 12), GRIS_OSC, "lm")
+        for xx, t in zip(cols[1:4], (b, c, d_)):
+            L.txt(xx, y + rh / 2, t, fuente("Regular", 12), NEGRO, "lm")
+        estado_celda(L, cols[4], y + rh / 2, e[0], e[1])
+        if e[0] != "ok" and e[1] != "No se encontró":
+            L.txt(x1 - 16, y + rh / 2, "Arreglar ›", fuente("Bold", 11.5), VERDE_CTA, "rm")
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    L.txt(x0, y + 16, "Mostrando 7 de 16 · «Arreglar» abre la fuente para confirmar o elegir la columna. Lo que falta se agrega a la carpeta.", fuente("Light", 11.5), GRIS, "lm")
+    y = pie_modal(L, W, pad, y + 36)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    L.txt(W - pad, y + 21, "Para ver cómo queda el cuadro, usa Previsualizar cuadro en la ventana principal.", fuente("Light", 11.5), GRIS, "rm")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
 # =====================================================================
 #  generación
 # =====================================================================
-reducir(sobre(ventana_config(1060, hover=("btn", 7)).img, modal_prueba(980).img)).save(f"{OUT}/modal_probar_con_mis_archivos.png")
+reducir(sobre(ventana(1060, hover="previsualizar").img, modal_previsualizar(980).img)).save(f"{OUT}/modal_previsualizar_cuadro.png")
+reducir(sobre(sobre(ventana_config(1000, hover=("btn", 6)).img, modal_reglas(900).img), modal_aplican(980).img)).save(f"{OUT}/modal_reglas_ver_como_se_aplican.png")
+reducir(sobre(ventana_config(1000, hover=("btn", 6)).img, modal_reglas(900).img)).save(f"{OUT}/modal_reglas_de_cruce.png")
+reducir(sobre(ventana_config(1000, hover=("btn", 2)).img, modal_fuentes(980).img)).save(f"{OUT}/modal_fuentes.png")
+reducir(sobre(sobre(ventana_config(1000, hover=("btn", 2)).img, modal_fuentes(980).img), modal_lectura(980).img)).save(f"{OUT}/modal_fuentes_probar_lectura.png")
 reducir(sobre(ventana_config(1060).img, modal_exportar_importar(980).img)).save(f"{OUT}/modal_exportar_importar.png")
 reducir(sobre(ventana_config(1000).img, modal_almacenamiento(900).img)).save(f"{OUT}/modal_copias_y_almacenamiento.png")
+reducir(ventana_config(760).img).save(f"{OUT}/configuracion.png")
 print("listo")

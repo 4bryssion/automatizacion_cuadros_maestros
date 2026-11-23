@@ -72,7 +72,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/diseno_campos_y_fuentes.md](docs/diseno_campos_y_fuentes.md) | Modales de Campos del cuadro maestro y Fuentes de datos |
 | [docs/diseno_equivalencias_y_tipos.md](docs/diseno_equivalencias_y_tipos.md) | Modales de Equivalencias y Tipos de persona |
 | [docs/diseno_reglas_de_cruce.md](docs/diseno_reglas_de_cruce.md) | Modal de Reglas de cruce: opciones y estado confirmada/cambiada |
-| [docs/diseno_prueba_exportar_y_copias.md](docs/diseno_prueba_exportar_y_copias.md) | Probar con mis archivos, Exportar/Importar configuración y Copias de seguridad |
+| [docs/diseno_previsualizar_y_pruebas.md](docs/diseno_previsualizar_y_pruebas.md) | Previsualizar cuadro, pruebas de reglas y de lectura, Exportar/Importar y Copias |
 | [docs/diseno_revision.md](docs/diseno_revision.md) | Pantalla Ver revisión: avisos, cómo resolverlos y recarga |
 | [docs/identidad.md](docs/identidad.md) | Colores, tipografías, estados y comportamiento responsivo |
 | [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de los signos "?" y de la alerta de confirmación |
@@ -81,7 +81,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | `tools/boceto_campos_fuentes.py` | Genera las imágenes de Campos del cuadro maestro y Fuentes de datos |
 | `tools/boceto_equivalencias_tipos.py` | Genera las imágenes de Equivalencias y Tipos de persona |
 | `tools/boceto_reglas_de_cruce.py` | Genera la imagen de Reglas de cruce |
-| `tools/boceto_prueba_exportar_copias.py` | Genera las imágenes de Probar con mis archivos, Exportar/Importar y Copias |
+| `tools/boceto_previsualizar_y_pruebas.py` | Genera las imágenes de Previsualizar cuadro, Ver cómo se aplican, Probar lectura, Exportar/Importar y Copias |
 | `tools/boceto_revision.py` | Genera las imágenes de Ver revisión, antes y después de recargar |
 | `tools/prototipo_mapeo.py` | Prueba de detección de encabezados y mapeo de columnas |
 | `tools/prototipo_cruce.py` | Prueba de las reglas de cruce contra el cuadro de ejemplo |

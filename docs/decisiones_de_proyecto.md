@@ -26,3 +26,13 @@ Registro de lo decidido con la persona responsable del proyecto. Las reglas de c
 6. **Si las dos copias son válidas pero distintas** (por ejemplo, el programa se copió a otro equipo): gana la más reciente y se avisa
    cuál se usó.
 7. La configuración no contiene datos de personas: solo nombres de columnas, instituciones, programas, equivalencias y reglas.
+
+## Dónde vive cada prueba (23-nov-2026)
+
+Las pruebas son de solo lectura y cada una está en la pantalla donde se usa; no hay una sola prueba general en Configuración.
+
+- **Previsualizar cuadro:** ventana principal, junto a Generar cuadro maestro (ver cómo quedaría el cuadro).
+- **Ver cómo se aplican:** dentro de Reglas de cruce (qué decidió cada regla y qué efecto tienen los cambios).
+- **Probar lectura de la carpeta:** dentro de Fuentes de datos (cómo lee el programa cada archivo).
+- Detalle en [diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md).
+- Los mockups definitivos se suben a Drive al aprobarse y, cuando todos estén definidos, al repositorio.

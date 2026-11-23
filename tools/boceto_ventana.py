@@ -18,6 +18,7 @@ BLANCO, LINEA, FONDO = "#FFFFFF", "#D9D9D9", "#F5F5F5"
 HOVER_CTA, PRESS_CTA = "#587425", "#4A6320"     # CTA al 85 % y 72 % de luminosidad
 TINTE_VERDE, AVISO_BG, OK_BG = "#EAF2DD", "#FFF3E3", "#EEF5E3"
 OFICINA = "Oficina de Relaciones Internacionales"
+VERSION = "Boceto v0.11 · datos ficticios"
 
 
 def fuente(nombre, px):
@@ -73,6 +74,15 @@ AYUDAS = {
             ("p", [R("Define "), B("cómo lee el programa cada Excel"), R(": columnas, filtros y reglas de cruce. "
                      "Cámbiala solo si los Excel cambiaron de formato.")]),
             ("p", [R("Dentro encontrarás el detalle de cada opción y una guía para editarla.")]),
+        ],
+    },
+    "previsualizar": {
+        "titulo": "Previsualizar cuadro",
+        "bloques": [
+            ("p", [R("Muestra "), B("cómo quedaría el cuadro"), R(" con tus archivos y la configuración actual, "
+                     "sin crear ningún archivo.")]),
+            ("p", [R("Sirve para detectar problemas antes de generar. Se activa al elegir la carpeta y el programa.")]),
+            ("p", [R("Dentro encontrarás las cifras, los avisos y las primeras filas del cuadro.")]),
         ],
     },
     "revision": {
@@ -395,21 +405,23 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     # botones
     est_g = {"generar": "hover", "generar_press": "press"}.get(hover, "normal")
     est_c = "hover" if hover == "config" else "normal"
+    est_p = "hover" if hover == "previsualizar" else "normal"
     if not estrecha:
         boton_primario(L, M, y, M + 290, y + 46, "Generar cuadro maestro", est_g)
-        boton_secundario(L, M + 304, y, M + 304 + 146, y + 46, "Configuración", est_c)
-        icono_ayuda(L, M + 304 + 146 + 10, y + 23, hover=(popover == "config"))
-        L.txt(W - M - 28, y + 23, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
-        icono_ayuda(L, W - M - 20, y + 23, hover=(popover == "revision"))
-        fin = y + 46
+        boton_secundario(L, M + 304, y, M + 304 + 190, y + 46, "Previsualizar cuadro", est_p, 13)
+        icono_ayuda(L, M + 304 + 190 + 12, y + 23, hover=(popover == "previsualizar"))
+        y += 60
     else:
         boton_primario(L, M, y, W - M, y + 46, "Generar cuadro maestro", est_g)
         y += 58
-        boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
-        icono_ayuda(L, M + 170, y + 20, hover=(popover == "config"))
-        L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
-        icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
-        fin = y + 40
+        boton_secundario(L, M, y, M + 200, y + 40, "Previsualizar cuadro", est_p, 12)
+        icono_ayuda(L, M + 212, y + 20, hover=(popover == "previsualizar"))
+        y += 52
+    boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
+    icono_ayuda(L, M + 172, y + 20, hover=(popover == "config"))
+    L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+    icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
+    fin = y + 40
 
     if H is None:                      # ajustar altura al contenido
         H = int(fin + 30 + 34)
@@ -421,7 +433,7 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     L.rect(0, H - 34, W, H, fill=FONDO)
     L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
     L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
-    L.txt(W - M, H - 17, "Boceto v0.4.1 · datos ficticios", fuente("Light", 10), GRIS, "rm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
     L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
     return L
 
@@ -554,9 +566,9 @@ hoja.paste(a, (M_, cab))
 hoja.paste(m, (a.width + 2 * M_, cab))
 hoja.save(f"{OUT}/ventana_responsiva.png")
 
-# ---------- 3) hoja con los textos de ayuda (5 tarjetas) ----------
+# ---------- 3) hoja con los textos de ayuda (6 tarjetas) ----------
 ts = [tarjeta(AYUDAS[k], 430) for k in ("carpeta", "vigencia", "archivos")]
-ts2 = [tarjeta(AYUDAS[k], 360) for k in ("config", "revision")]
+ts2 = [tarjeta(AYUDAS[k], 360) for k in ("previsualizar", "config", "revision")]
 gap = 20
 w1 = sum(t_["rgb"].width / S for t_ in ts) + 4 * gap
 h1 = max(t_["rgb"].height / S for t_ in ts)

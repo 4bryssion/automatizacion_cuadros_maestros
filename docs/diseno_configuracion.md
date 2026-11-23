@@ -16,8 +16,8 @@ Ocho tarjetas, cada una con título, signo "?", descripción, etiqueta de conteo
 | Reglas de cruce | Cómo se asigna cada registro a un convenio y cómo se cuenta |
 | Asistente con Gemini | Ayuda opcional para emparejar columnas y nombres |
 
-Acciones inferiores: **Exportar configuración** y **Probar con mis archivos** (vista previa del cruce).
-Los cambios se guardan al instante.
+Barra inferior: **Última modificación** con el enlace **Copias y almacenamiento ›**, **Exportar / importar** y **Volver al cuadro maestro**.
+La vista previa del cuadro no está aquí: vive en la ventana principal (**Previsualizar cuadro**). Los cambios se guardan al instante.
 
 ## Modal de lista editable (ejemplo: Programas)
 - Encabezado con título, "?" y conteo; buscador y botón **Crear programa**.

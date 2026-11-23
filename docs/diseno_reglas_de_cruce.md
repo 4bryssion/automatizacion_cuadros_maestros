@@ -12,7 +12,7 @@ cualquier cambio queda marcado para que no pase inadvertido.
 - Etiqueta de estado: **Confirmada · 23-nov-2026** (verde) o **Cambiada** (naranja, con borde naranja y el enlace
   **Restablecer a lo confirmado**).
 - Las opciones se cambian con desplegables e interruptores. Lo que no se puede cambiar se muestra bloqueado, con candado.
-- Abajo: **Restablecer todas a lo confirmado**, **Probar con mis archivos** (para ver el efecto antes de generar) y **Listo**.
+- Abajo: **Restablecer todas a lo confirmado**, **Ver cómo se aplican** (abre la prueba de las reglas, ver abajo) y **Listo**.
 
 ## Las 5 reglas y sus opciones
 
@@ -30,4 +30,15 @@ Los valores por defecto son los confirmados: vencidos entran solo si tuvieron re
 ## Por definir
 
 - Qué otras opciones de cada desplegable existirán (por ejemplo, otros criterios de desempate).
-- Cómo se resume el efecto de un cambio en "Probar con mis archivos" (por ejemplo, cuántos convenios entran o salen).
+
+## Ver cómo se aplican
+
+Segundo modal, se abre encima de Reglas de cruce. Imagen: `modal_reglas_ver_como_se_aplican.png`.
+Lee los archivos reales de la carpeta, **solo para leer** (no crea archivos ni guarda cambios), y explica qué decidió cada regla.
+
+- **Efecto de tus cambios:** tabla *Lo confirmado → Con tus cambios → Diferencia* (convenios en el cuadro, convenios sin resultados,
+  movilidades, actividades) y un aviso que dice qué cambio produjo la diferencia. Si no hay reglas cambiadas, dice que todo está como lo confirmó la jefatura.
+- **Qué decidió cada regla:** una fila por regla con su resultado (cuántos convenios entran, cuántos registros se asignan, qué se cuenta,
+  cuántas vigencias se calculan, cuántos activos) y la etiqueta Confirmada o Cambiada.
+- **Ejemplos reales, paso a paso:** registros concretos con la decisión y la regla que la tomó. Lo que no se pudo asignar se explica y va a Ver revisión.
+- No muestra el cuadro completo: eso es **Previsualizar cuadro**, en la ventana principal ([diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md)).

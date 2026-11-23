@@ -43,6 +43,16 @@ Dentro encontrarás el detalle de cada opción y una guía para editarla.
 
 
 
+## Previsualizar cuadro
+
+Muestra **cómo quedaría el cuadro** con tus archivos y la configuración actual, sin crear ningún archivo.
+
+Sirve para detectar problemas antes de generar. Se activa al elegir la carpeta y el programa.
+
+Dentro encontrarás las cifras, los avisos y las primeras filas del cuadro.
+
+
+
 ## Ver revisión
 
 Informe de lo que el programa **no pudo cruzar o dejó dudoso** al generar el cuadro. Se activa después de generar.
