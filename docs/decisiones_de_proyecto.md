@@ -111,3 +111,13 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - **Boceto v1.0:** los 49 mockups se regeneraron en una sola pasada con un único pie de versión y la fila de la **Matriz de convenios** en todas las ventanas principales (y en los modales que las tienen de fondo). Se corrigió un solape del nombre de la Matriz con su visto bueno en ventanas angostas.
 - Las 49 imágenes están en [`mockups/`](../mockups/) (con un índice) y en la carpeta Mockups de Drive; se generan con `tools/boceto_todos.py`.
 - La fase de diseño de pantallas queda cerrada. Sigue la construcción real: esquema de configuración con guardado doble, motor de cruce, interfaz Tkinter, pruebas con datos sintéticos, empaquetado con PyInstaller y GitHub Actions, y manual al final.
+
+## Inicio de la construcción: configuración (23-nov-2026, tarde)
+
+- **Datos de prueba:** solo datos sintéticos en el repositorio. De los Excel reales solo se usan encabezados y nombres de columnas.
+- **Repositorio:** sigue en la cuenta personal mientras no haya decisión sobre la cuenta institucional.
+- **Carpetas:** `%APPDATA%\Cuadro maestro internacional` y la subcarpeta `Configuración` junto al .exe; cada una con su carpeta `copias`.
+- **Copia automática:** antes del primer cambio de cada sesión (no en cada cambio), para no llenar las 10 copias con un solo día de trabajo.
+- **Nada se pierde al sobrescribir:** si al abrir una copia está dañada, es de una versión más nueva del programa, o es válida pero más antigua y distinta, se guarda aparte como copia de seguridad antes de reescribirla.
+- **Configuración no encontrada:** no se escribe nada hasta que la persona elija restaurar una copia o seguir con la inicial.
+- Las pruebas automáticas corren en Windows y Linux con GitHub Actions. Detalle técnico en [configuracion_tecnica.md](configuracion_tecnica.md).

@@ -3,8 +3,9 @@
 Programa portable que genera el **cuadro maestro internacional** de un programa académico a partir de los
 Excel de la Oficina de Relaciones Internacionales (Areandina, sede Pereira), sin instalación y sin enviar datos a internet.
 
-> **Estado: en diseño.** Ya están definidos el diseño de la interfaz y las reglas de negocio, y hay
-> prototipos de lectura y cruce de datos. Todavía no existe un ejecutable.
+> **Estado: en construcción.** El diseño de la interfaz (49 mockups) y las reglas de negocio están cerrados.
+> Ya existe la configuración con guardado doble y copias de seguridad; siguen la lectura, el cruce y la interfaz.
+> Todavía no existe un ejecutable.
 
 ## Qué resuelve
 
@@ -69,6 +70,9 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/hallazgos_excels_reales.md](docs/hallazgos_excels_reales.md) | Qué se encontró en los Excel reales |
 | [docs/diseno_configuracion.md](docs/diseno_configuracion.md) | Pantalla de Configuración, modales de listas y asistente con Gemini |
 | [docs/decisiones_de_proyecto.md](docs/decisiones_de_proyecto.md) | Decisiones tomadas y cómo se guarda la configuración |
+| [docs/configuracion_tecnica.md](docs/configuracion_tecnica.md) | Archivo de configuración, guardado doble y copias de seguridad (para mantenimiento) |
+| `src/cuadro_maestro/` | Código del programa (hoy: `configuracion/`) |
+| `tests/` | Pruebas automáticas (`python -m pytest`); corren en Windows y Linux en cada push |
 | [docs/diseno_campos_y_fuentes.md](docs/diseno_campos_y_fuentes.md) | Modales de Campos del cuadro maestro y Fuentes de datos |
 | [docs/diseno_equivalencias_y_tipos.md](docs/diseno_equivalencias_y_tipos.md) | Modales de Equivalencias y Tipos de persona |
 | [docs/diseno_reglas_de_cruce.md](docs/diseno_reglas_de_cruce.md) | Modal de Reglas de cruce: opciones y estado confirmada/cambiada |
@@ -102,12 +106,18 @@ Los logos, fuentes y Excel reales no se incluyen en el repositorio.
 - [x] Reglas de negocio confirmadas y verificadas con los datos de 2022
 - [x] Diseño de la pantalla de Configuración, los modales de listas y el asistente con Gemini
 - [x] Diseño de Ver revisión con recarga de archivos
-- [ ] Motor de lectura, mapeo y cruce con configuración editable
+- [x] Diseño de todas las pantallas (Boceto v1.0, 49 mockups)
+- [x] Configuración editable con guardado doble, validación y copias de seguridad
+- [ ] Motor de lectura y mapeo de columnas
+- [ ] Motor de cruce y conteo
+- [ ] Generación del Excel del cuadro maestro
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
 - [ ] Informe de revisión (lógica; el diseño ya está)
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
 - [ ] Datos de ejemplo ficticios para pruebas y capacitación
 
-## Tecnología prevista
+## Tecnología
 
-Python con Tkinter y openpyxl, empaquetado con PyInstaller en un runner de Windows de GitHub Actions.
+Python 3.11 o más reciente con Tkinter y openpyxl, empaquetado con PyInstaller en un runner de Windows de GitHub Actions.
+
+Para desarrollar: `python -m pip install -e ".[desarrollo]"` y `python -m pytest`.
