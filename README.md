@@ -42,10 +42,17 @@ vigencia, activo o no activo) y un informe de revisión.
 
 Pantalla para adaptar el programa sin tocar código:
 
-1. **Cuadro maestro:** cargar un cuadro como molde y crear, editar o eliminar campos (directo, calculado, fijo o manual).
-2. **Fuentes:** una ficha por tipo de Excel con la columna encontrada para cada campo y un semáforo (seguro, probable, no encontrado).
-3. **Equivalencias y reglas:** diccionario de nombres (instituciones, programas, tipos de persona) y reglas de conteo.
-4. **Probar:** vista previa del cruce con filas de ejemplo antes de generar.
+Ocho tarjetas; cada lista se administra en un modal con una fila por elemento (editar y eliminar dentro de la fila) y un botón Crear:
+
+1. **Programas** (25 de Pereira, tomados de la matriz).
+2. **Campos del cuadro maestro:** crear, editar o eliminar columnas (directo, calculado, fijo o manual).
+3. **Fuentes de datos:** columna encontrada para cada campo, con semáforo (seguro, por confirmar, no encontrado).
+4. **Equivalencias de instituciones** y 5. **de programas.**
+6. **Tipos de persona.**
+7. **Reglas de cruce.**
+8. **Asistente con Gemini** (opcional): el programa prepara un mensaje, se pega en Gemini y la respuesta se pega de vuelta; un modal lo explica en 4 pasos.
+
+Además: exportar la configuración y probar el cruce con los archivos antes de generar. Detalle en [docs/diseno_configuracion.md](docs/diseno_configuracion.md).
 
 ## Reglas de negocio
 
@@ -59,9 +66,11 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 |---|---|
 | [docs/reglas_de_negocio.md](docs/reglas_de_negocio.md) | Reglas confirmadas por la jefatura |
 | [docs/hallazgos_excels_reales.md](docs/hallazgos_excels_reales.md) | Qué se encontró en los Excel reales |
+| [docs/diseno_configuracion.md](docs/diseno_configuracion.md) | Pantalla de Configuración, modales de listas y asistente con Gemini |
 | [docs/identidad.md](docs/identidad.md) | Colores, tipografías, estados y comportamiento responsivo |
 | [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de los signos "?" y de la alerta de confirmación |
-| `tools/boceto_ventana.py` | Genera las imágenes del boceto de la interfaz |
+| `tools/boceto_ventana.py` | Genera las imágenes de la ventana principal y la alerta |
+| `tools/boceto_configuracion.py` | Genera las imágenes de Configuración, el modal de listas y el asistente con Gemini |
 | `tools/prototipo_mapeo.py` | Prueba de detección de encabezados y mapeo de columnas |
 | `tools/prototipo_cruce.py` | Prueba de las reglas de cruce contra el cuadro de ejemplo |
 
@@ -72,7 +81,7 @@ Los logos, fuentes y Excel reales no se incluyen en el repositorio.
 - [x] Diseño de la interfaz principal, ayudas y alerta de confirmación
 - [x] Prueba de portabilidad del ejecutable en un equipo restringido
 - [x] Reglas de negocio confirmadas y verificadas con los datos de 2022
-- [ ] Diseño de la pantalla de Configuración
+- [x] Diseño de la pantalla de Configuración, los modales de listas y el asistente con Gemini
 - [ ] Motor de lectura, mapeo y cruce con configuración editable
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
 - [ ] Informe de revisión

@@ -2,7 +2,7 @@
 
 Decididas por la jefatura de la Oficina de Relaciones Internacionales (23-nov-2026) a partir de las
 16 preguntas del documento "Cuadro maestro internacional automatizado: preguntas para definir las reglas".
-Pendiente: P15 (restricciones de protección de datos), sin respuesta todavía.
+P15 se confirmó el 23-nov-2026: no hay restricciones para procesar los reportes con el programa.
 
 ## Qué convenios entran al cuadro (P1 a P3)
 | Regla | Decisión | Cómo la aplica el programa |
@@ -28,7 +28,7 @@ Para cada registro, en este orden:
 3. Si no hay del tipo preferido, va al que exista (P8).
 4. Si hay varios del mismo tipo, va al **de inicio más reciente** (P9).
 5. Sin candidatos (sin convenio o institución fuera del cuadro): se omite y se lista en el informe de revisión (P10).
-6. Actividades de internacionalización en casa **sin institución**: se omiten y no se listan (P11). Las filas con varios programas cuentan para cada programa listado.
+6. Actividades de internacionalización en casa **sin institución**: se omiten y no se listan (P11). El resumen solo muestra una línea de conteo ("3 actividades sin institución omitidas"), sin detallarlas. Las filas con varios programas cuentan para cada programa listado.
 
 ## Presentación (P12 a P14)
 - "Nº de usuarios" y "No aplica" se dejan vacías; las llena cada programa a mano (P12).
@@ -39,6 +39,16 @@ Para cada registro, en este orden:
 ## IA externa (P16)
 Se permite usar Gemini solo con títulos de columnas y nombres de instituciones, nunca con filas de datos ni
 datos de personas. El programa debe funcionar completo sin IA.
+Decisión de diseño: el programa **no se conecta** a Gemini. Prepara el mensaje, la persona lo pega en Gemini en el
+navegador y pega la respuesta de vuelta; un modal explica los 4 pasos con ilustraciones. No hace falta clave de acceso
+ni conexión desde el programa. Las sugerencias nunca se aplican sin confirmación.
+
+## Programas y listas editables
+- La lista de programas sale de la matriz: 25 columnas "Programa - Pereira". Se pueden listar, modificar, crear y eliminar.
+- Lo mismo aplica a campos del cuadro, equivalencias de instituciones y de programas, tipos de persona y reglas de cruce:
+  cada lista se administra en un modal con una fila por elemento (editar y eliminar dentro de la fila) y un botón Crear.
+- Los nombres distintos entre matriz y reportes se resuelven con la tabla de equivalencias, que se confirma una vez.
+- Los convenios sin fecha de inicio válida van al informe de revisión.
 
 ## Verificación
 `tools/prototipo_cruce.py` aplica estas reglas a los archivos de 2022 y reproduce exactamente lo que dice el
@@ -47,7 +57,7 @@ e Internacionalización en casa 10 en el marco). La Universidad Siglo 21 y la Ac
 Conjunta quedan en la revisión.
 
 ## Casos límite detectados (por decidir)
-- 6 de 328 convenios no tienen fecha de inicio válida: no se pueden ubicar en años.
-- La matriz tiene 25 columnas de programa con sede Pereira; los nombres no siempre coinciden con los de los
-  reportes (por ejemplo "Ingeniería Industrial Distancia" frente a "Ingeniería Industrial").
+- 6 de 328 convenios no tienen fecha de inicio válida: no se pueden ubicar en años (van a la revisión).
+- Los nombres de programa no siempre coinciden entre la matriz y los reportes (por ejemplo "Ingeniería Industrial Distancia"
+  frente a "Ingeniería Industrial"): se resuelven con equivalencias.
 - Los reportes de movilidad traen un tipo de convenio "RED" que no existe en la matriz (solo marco y específico).
