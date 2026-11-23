@@ -39,8 +39,8 @@ exactas (verde), por confirmar (naranja) y sin identificar (magenta). **Agregar 
    se marca en rosa con **Elegir columna…**, y lo elegido queda guardado para los próximos archivos.
 4. **Qué filas se usan:** casillas con los filtros (solo el programa elegido; omitir actividades sin institución, que se cuentan aparte).
 
-Abajo: **Probar con un archivo…** (prueba una sola fuente), **Probar lectura de la carpeta** (prueba todos los archivos, ver
-[diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md)) y **Listo**. Los cambios se guardan al instante.
+Abajo: **Probar lectura de la carpeta** (prueba todos los archivos, ver
+[diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md)) y **Listo**. Se quitó "Probar con un archivo…": la tabla de lectura ya muestra cada archivo por separado. Los cambios se guardan al instante.
 
 ## Coherencia con otras pantallas
 

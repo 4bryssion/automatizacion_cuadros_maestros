@@ -26,7 +26,7 @@ Cada aviso pertenece a un grupo según **dónde se arregla**. Cada grupo tiene c
 | Grupo | Color | Dónde se arregla | Ejemplos |
 |---|---|---|---|
 | Corrige el Excel y recarga | Magenta | Fuera del programa, en el Excel | Convenio sin fecha de inicio válida; falta el archivo de un año; fecha de fin anterior a la de inicio |
-| Resuélvelo aquí en el programa | Naranja | Dentro del programa, sin tocar el Excel | Institución sin coincidencia; columna sin identificar |
+| Resuélvelo aquí en el programa | Naranja | Dentro del programa, sin tocar el Excel | Institución sin coincidencia; columna sin identificar; programa nuevo en la matriz que no está en la lista de Configuración (botón **Abrir Programas**) |
 | Solo informativo | Gris | No necesita acción | Movilidades sin convenio vigente en su año; actividades sin institución omitidas (solo el conteo) |
 
 ## Estructura de cada aviso
@@ -58,9 +58,10 @@ entregado por accidente.
 Si al recargar **hubo cambios** y la persona intenta salir sin generar el cuadro de nuevo, el programa la obliga a generarlo.
 
 - **Qué cuenta como "hubo cambios":** que el cuadro que saldría ahora sea distinto del último generado. Se compara el
-  resultado, no los archivos: guardar un Excel sin cambiar nada no obliga a nada.
+  resultado, no los archivos: guardar un Excel sin cambiar nada no obliga a nada. **También cuentan los cambios de configuración
+  hechos después de generar** (por ejemplo, una regla de cruce): el modal los lista ("Configuración cambiada desde que generaste: Reglas de cruce (1)").
 - **Cuándo se activa:** al cerrar la ventana, al pulsar "Volver al cuadro maestro" o al cambiar de programa mientras hay cambios sin incluir.
-- **Qué aparece:** un modal con el resumen (avisos resueltos, avisos nuevos, filas del cuadro que cambian) y dos opciones:
+- **Qué aparece:** un modal con el resumen (avisos resueltos, avisos nuevos, configuración cambiada, filas del cuadro que cambian) y dos opciones:
   **Generar cuadro de nuevo** (principal) y **Volver a la revisión**. No hay "Salir sin generar". La X del modal equivale a *Volver*.
 - **Si el programa se cierra de otra forma** (corte de luz, administrador de tareas): el estado "cambios sin incluir" queda guardado
   y el modal aparece al abrir el programa la próxima vez.
@@ -85,11 +86,23 @@ Los botones cambian de prioridad según el momento:
 
 ## Después de recargar
 
-- Aparece una franja con el resultado: "Antes 6 avisos, ahora 5" y tres contadores: **resueltos**, **siguen**, **nuevo**.
+- Aparece una franja con el resultado: "Antes 7 avisos, ahora 6" y tres contadores: **resueltos**, **siguen**, **nuevo**.
 - Los avisos resueltos se agrupan arriba, en una caja verde, con lo que se logró.
 - Cada aviso que sigue lleva una marca: **Sigue pendiente** (naranja), **Sin cambios** (gris) o **Nuevo** (magenta).
   Un aviso nuevo puede aparecer por una corrección: en el ejemplo, la fecha que se escribió quedó posterior a la de fin.
 - La barra inferior explica que el cuadro anterior no cambió y que hay que generar de nuevo.
+
+## Última generación guardada
+
+Para que **Ver revisión** y el modal de arriba funcionen al volver a abrir el programa, se guarda la **última generación**: programa, vigencia,
+carpeta, hora, avisos y si hay cambios sin incluir. Por eso Ver revisión sigue activo al reabrir (solo está desactivado si nunca se ha generado)
+y el programa sabe qué mostrar. No contiene datos de personas.
+
+## Cómo se llega a Configuración desde la revisión
+
+Los botones de los avisos (**Abrir Fuentes de datos**, **Elegir institución…**, **Abrir Programas**) abren el modal correspondiente **encima de la revisión**; no
+llevan a la pantalla de Configuración. Al cerrarlo se vuelve a la revisión y se pulsa **Recargar archivos**. Lo mismo vale para los avisos de la
+vista previa (ver [diseno_previsualizar_y_pruebas.md](diseno_previsualizar_y_pruebas.md)).
 
 ## Imágenes
 

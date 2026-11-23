@@ -89,7 +89,7 @@ AYUDAS = {
         "titulo": "Ver revisión",
         "bloques": [
             ("p", [R("Informe de lo que el programa "), B("no pudo cruzar o dejó dudoso"), R(" al generar el cuadro. "
-                     "Se activa después de generar.")]),
+                     "Se activa después de generar y se conserva al volver a abrir el programa.")]),
             ("p", [R("Dentro encontrarás el detalle de cada aviso y cómo resolverlo.")]),
         ],
     },
@@ -107,6 +107,8 @@ AYUDAS = {
             ("mal", [B("Falta este archivo: "), R("no se encontró o no se pudo abrir. Ese año quedará incompleto en el conteo.")]),
             ("p", [B("“14 de 15 encontrados”: "), R("archivos hallados sobre los esperados. Naranja = faltan; verde = completo.")]),
             ("p", [R("Puedes generar igual con archivos faltantes; lo que falte quedará anotado en la revisión.")]),
+            ("p", [R("Si agregas o cambias un archivo, pulsa "), B("Actualizar"),
+                   R(" (también se actualiza al volver a esta ventana).")]),
         ],
     },
 
@@ -206,7 +208,8 @@ AYUDAS = {
             ("p", [R("Muestra "), B("cómo quedaría el cuadro"),
                    R(" con tus archivos y la configuración actual. No crea archivos ni cambia nada.")]),
             ("b", [B("Las cuatro cifras: "), R("archivos leídos, convenios en el cuadro, movilidades contadas y avisos.")]),
-            ("b", [B("Avisos: "), R("se muestran los primeros; la lista completa está en Ver revisión, que existe después de generar.")]),
+            ("b", [B("Avisos: "), R("se muestran los primeros, con el botón para resolverlos aquí. Después de corregir, pulsa "),
+                   B("Volver a leer los archivos"), R(". La lista completa está en Ver revisión, después de generar.")]),
             ("b", [B("Ver cómo se leyó cada archivo ›"), R(" abre el detalle de la lectura.")]),
             ("p", [R("Si todo se ve bien, pulsa "), B("Generar cuadro maestro"), R(".")]),
         ],
@@ -507,6 +510,9 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     bwid = L.tw(badge, fb) + 24
     L.rect(W - M - bwid, y - 7, W - M, y + 15, fill=NARANJA, r=11)
     L.txt(W - M - bwid / 2, y + 4, badge, fb, NEGRO, "mm")
+    L.txt(W - M - bwid - 16, y + 4, "Actualizar", fuente("Bold", 11.5), VERDE_CTA, "rm")
+    L.d.line([L.P(W - M - bwid - 16 - L.tw("Actualizar", fuente("Bold", 11.5))), L.P(y + 13),
+              L.P(W - M - bwid - 16), L.P(y + 13)], fill=VERDE_CTA, width=L.P(1))
     gy = y + 26
     total = W - 2 * M
     cw = [total * 0.14] + [total * 0.286] * 3
@@ -787,8 +793,8 @@ boton_secundario(E, 28, y + 26, 198, y + 66, "Configuración", "normal"); etq(11
 boton_secundario(E, 218, y + 26, 388, y + 66, "Configuración", "hover"); etq(303, y + 78, "hover: relleno verde claro #EAF2DD")
 E.rect(408, y + 26, 578, y + 66, fill=BLANCO, line="#C8C8C8", w=1.5, r=8)
 E.txt(493, y + 46, "Previsualizar cuadro", fuente("Bold", 13), "#9A9A9A", "mm"); etq(493, y + 78, "desactivado")
-for k_, t_ in enumerate(("Previsualizar: hasta elegir", "carpeta y programa.", "Ver revisión: hasta generar.")):
-    E.txt(596, y + 34 + k_ * 16, t_, fuente("Light", 10.5), GRIS, "lm")
+for k_, t_ in enumerate(("Previsualizar: hasta elegir", "carpeta y programa.", "Ver revisión: hasta que haya", "una generación guardada.")):
+    E.txt(596, y + 26 + k_ * 16, t_, fuente("Light", 10.5), GRIS, "lm")
 y += 108
 fila("Campos", y)
 campo(E, 28, y + 26, 238, y + 58, "Fisioterapia", flecha=True); etq(133, y + 72, "normal")

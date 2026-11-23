@@ -78,7 +78,7 @@ AYUDAS = {
         "titulo": "Ver revisión",
         "bloques": [
             ("p", [R("Informe de lo que el programa "), B("no pudo cruzar o dejó dudoso"), R(" al generar el cuadro. "
-                     "Se activa después de generar.")]),
+                     "Se activa después de generar y se conserva al volver a abrir el programa.")]),
             ("p", [R("Dentro encontrarás el detalle de cada aviso y cómo resolverlo.")]),
         ],
     },
@@ -432,7 +432,7 @@ def reducir(img, f=2):
 # =====================================================================
 #  v0.5 — componentes nuevos
 # =====================================================================
-VERSION = "Boceto v0.6 · datos ficticios"
+VERSION = "Boceto v0.12 · datos ficticios"
 ROSA_SUAVE = "#FDE6F2"
 
 
@@ -1031,6 +1031,14 @@ REV_D = {
     "hacer": "Indica qué es en Fuentes de datos. Se guarda y sirve también para los próximos archivos.",
     "botones": ("Abrir Fuentes de datos",),
 }
+REV_G = {
+    "titulo": "Programa nuevo en la matriz: «Fisioterapia Distancia»",
+    "donde": "Convenios.xlsx  ·  hoja CONV_INTERNACIONALES  ·  3 convenios",
+    "paso": "Ese programa aparece en la matriz, pero no está en la lista de Configuración. Por eso no se puede elegir al generar "
+            "y esos 3 convenios no entran a ningún cuadro.",
+    "hacer": "Agrégalo en Programas. Si es otro nombre de un programa que ya existe, créale una equivalencia en Equivalencias de programas.",
+    "botones": ("Abrir Programas",),
+}
 REV_E = {
     "titulo": "Movilidades sin convenio vigente en su año",
     "donde": "Movilidad_2022.xlsx  ·  Universidad de Montreal  ·  4 movilidades",
@@ -1090,11 +1098,12 @@ def contenido_revision(W, estado):
     y += 10
 
     # B. se resuelven en el programa
-    y += encabezado_grupo(L, x0, y, x1, NARANJA, "", 2, "Resuélvelo aquí en el programa",
+    y += encabezado_grupo(L, x0, y, x1, NARANJA, "", 3, "Resuélvelo aquí en el programa",
                           "No tienes que tocar el Excel. Elige o indica la opción correcta y el programa la recuerda.",
                           NEGRO)
     y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_C) + 14
     y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_D) + 14
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_G) + 14
     y += 10
 
     # C. informativo
@@ -1151,10 +1160,10 @@ def ventana_revision(W=860, H=900, estado="antes", scroll=0):
 
     # resumen / resultado de la recarga
     if not despues:
-        L.txt(M, y + 12, "6 avisos", fuente("Bold", 14), GRIS_OSC, "lm")
-        cx = M + L.tw("6 avisos", fuente("Bold", 14)) + 16
+        L.txt(M, y + 12, "7 avisos", fuente("Bold", 14), GRIS_OSC, "lm")
+        cx = M + L.tw("7 avisos", fuente("Bold", 14)) + 16
         for txt, bg, fg in (("2 se corrigen en el Excel", ROSA_SUAVE, MAGENTA),
-                            ("2 se resuelven aquí", AVISO_BG, AVISO_TXT),
+                            ("3 se resuelven aquí", AVISO_BG, AVISO_TXT),
                             ("2 solo informativos", "#EDEDED", GRIS_OSC)):
             x_, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 24)
             cx += w_ + 8
@@ -1163,9 +1172,9 @@ def ventana_revision(W=860, H=900, estado="antes", scroll=0):
         L.rect(M, y, W - M, y + 38, fill=OK_BG, line=VERDE, w=1.2, r=10)
         L.d.ellipse([L.P(M + 12), L.P(y + 9), L.P(M + 32), L.P(y + 29)], fill=VERDE_CTA)
         L.check(M + 22, y + 19.5, BLANCO, 4.2)
-        L.txt(M + 44, y + 19, "Archivos recargados hoy 14:41.  Antes 6 avisos, ahora 5.", fuente("Bold", 12), OK_TXT, "lm")
+        L.txt(M + 44, y + 19, "Archivos recargados hoy 14:41.  Antes 7 avisos, ahora 6.", fuente("Bold", 12), OK_TXT, "lm")
         cx = W - M - 12
-        for txt, bg, fg in (("1 nuevo", ROSA_SUAVE, MAGENTA), ("4 siguen", AVISO_BG, AVISO_TXT), ("2 resueltos", TINTE_VERDE, OK_TXT)):
+        for txt, bg, fg in (("1 nuevo", ROSA_SUAVE, MAGENTA), ("5 siguen", AVISO_BG, AVISO_TXT), ("2 resueltos", TINTE_VERDE, OK_TXT)):
             x_, w_ = chip(L, cx, y + 8, txt, bg, fg, 11, "r", 22)
             cx = x_ - 8
         y += 38 + 10
@@ -1241,16 +1250,18 @@ def modal_salir_pendiente(W=600):
     for i, ln in enumerate(tit):
         L.txt(pad + 56, y + 4 + i * 25, " ".join(t[0] for t in ln), f_t, GRIS_OSC, "la")
     y += 4 + len(tit) * 25 + 18
-    y = parrafo(L, pad, y, "Recargaste los archivos y el resultado cambió. El cuadro que generaste antes quedó desactualizado, "
-                "así que para salir hay que generarlo de nuevo.", W - 2 * pad, "Regular", 12.5, NEGRO, 19) + 12
+    y = parrafo(L, pad, y, "Recargaste los archivos o cambiaste la configuración, y el resultado cambió. El cuadro que generaste "
+                "antes quedó desactualizado, así que para salir hay que generarlo de nuevo.", W - 2 * pad, "Regular", 12.5, NEGRO, 19) + 12
     # resumen de cambios
-    L.rect(pad, y, W - pad, y + 92, fill=FONDO, line=LINEA, w=1.2, r=10)
+    L.rect(pad, y, W - pad, y + 118, fill=FONDO, line=LINEA, w=1.2, r=10)
     cx = pad + 16
     for txt, bg, fg in (("2 avisos resueltos", TINTE_VERDE, OK_TXT), ("1 aviso nuevo", ROSA_SUAVE, MAGENTA)):
-        x_, w_ = chip(L, cx, y + 18, txt, bg, fg, 11, "l", 24)
+        x_, w_ = chip(L, cx, y + 16, txt, bg, fg, 11, "l", 24)
         cx += w_ + 8
-    L.txt(pad + 16, y + 70, "El cuadro nuevo cambia en 3 filas.", fuente("Bold", 12.5), GRIS_OSC, "lm")
-    y += 92 + 14
+    L.txt(pad + 16, y + 62, "Configuración cambiada desde que generaste:", fuente("Regular", 12), GRIS_OSC, "lm")
+    x_, w_ = chip(L, pad + 16 + L.tw("Configuración cambiada desde que generaste:", fuente("Regular", 12)) + 10, y + 51, "Reglas de cruce (1)", AVISO_BG, AVISO_TXT, 11, "l", 22)
+    L.txt(pad + 16, y + 92, "El cuadro nuevo cambia en 3 filas.", fuente("Bold", 12.5), GRIS_OSC, "lm")
+    y += 118 + 14
     L.txt(pad, y + 8, "Se crea un archivo nuevo. El anterior no se borra ni se modifica.", fuente("Light", 11.5), GRIS, "lm")
     y += 30
     boton_secundario(L, pad, y, pad + 190, y + 46, "Volver a la revisión", "normal", 13)

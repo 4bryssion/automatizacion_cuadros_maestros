@@ -55,7 +55,7 @@ Dentro encontrarás las cifras, los avisos y las primeras filas del cuadro.
 
 ## Ver revisión
 
-Informe de lo que el programa **no pudo cruzar o dejó dudoso** al generar el cuadro. Se activa después de generar.
+Informe de lo que el programa **no pudo cruzar o dejó dudoso** al generar el cuadro. Se activa después de generar y se conserva al volver a abrir el programa.
 
 Dentro encontrarás el detalle de cada aviso y cómo resolverlo.
 
@@ -76,6 +76,8 @@ Es la lista de comprobación antes de generar. Cada **fila** es un año de la vi
 **“14 de 15 encontrados”:** archivos hallados sobre los esperados. Naranja = faltan; verde = completo.
 
 Puedes generar igual con archivos faltantes; lo que falte quedará anotado en la revisión.
+
+Si agregas o cambias un archivo, pulsa **Actualizar** (también se actualiza al volver a esta ventana).
 
 
 
@@ -168,7 +170,7 @@ Gemini solo sugiere: no se guarda nada sin tu confirmación.
 Muestra **cómo quedaría el cuadro** con tus archivos y la configuración actual. No crea archivos ni cambia nada.
 
 - **Las cuatro cifras:** archivos leídos, convenios en el cuadro, movilidades contadas y avisos.
-- **Avisos:** se muestran los primeros; la lista completa está en Ver revisión, que existe después de generar.
+- **Avisos:** se muestran los primeros, con el botón para resolverlos aquí. Después de corregir, pulsa **Volver a leer los archivos**. La lista completa está en Ver revisión, después de generar.
 - **Ver cómo se leyó cada archivo ›** abre el detalle de la lectura.
 Si todo se ve bien, pulsa **Generar cuadro maestro**.
 

@@ -25,7 +25,7 @@ vigencia, activo o no activo) y un informe de revisión.
 1. Elegir la carpeta con los Excel.
 2. Elegir el programa.
 3. Indicar la vigencia en años completos (por ejemplo 2019 a 2023).
-4. Revisar la tabla de archivos encontrados y los que faltan.
+4. Revisar la tabla de archivos encontrados y los que faltan (**Actualizar** vuelve a leer la carpeta).
 5. Pulsar **Generar cuadro maestro** y confirmar la alerta.
 6. Abrir **Ver revisión** y resolver lo que quedó dudoso: unos avisos se corrigen en el Excel (se guarda, se cierra y se pulsa **Recargar archivos**) y otros se resuelven dentro del programa.
 7. Si hubo correcciones, pulsar **Generar cuadro de nuevo**: crea un archivo nuevo y no toca el anterior.

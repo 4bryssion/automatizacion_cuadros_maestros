@@ -350,6 +350,9 @@ def ventana(W, H=None, popover=None, hover=None, estrecha=False):
     bwid = L.tw(badge, fb) + 24
     L.rect(W - M - bwid, y - 7, W - M, y + 15, fill=NARANJA, r=11)
     L.txt(W - M - bwid / 2, y + 4, badge, fb, NEGRO, "mm")
+    L.txt(W - M - bwid - 16, y + 4, "Actualizar", fuente("Bold", 11.5), VERDE_CTA, "rm")
+    L.d.line([L.P(W - M - bwid - 16 - L.tw("Actualizar", fuente("Bold", 11.5))), L.P(y + 13),
+              L.P(W - M - bwid - 16), L.P(y + 13)], fill=VERDE_CTA, width=L.P(1))
     gy = y + 26
     total = W - 2 * M
     cw = [total * 0.14] + [total * 0.286] * 3
@@ -1198,9 +1201,8 @@ def modal_fuentes(W=980):
     y = yend + 14
     L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
     y += 14
-    boton_secundario(L, pad, y, pad + 200, y + 42, "Probar con un archivo…", "normal", 13)
-    boton_secundario(L, pad + 212, y, pad + 212 + 250, y + 42, "Probar lectura de la carpeta", "normal", 13)
-    L.txt(pad + 478, y + 21, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
+    boton_secundario(L, pad, y, pad + 250, y + 42, "Probar lectura de la carpeta", "normal", 13)
+    L.txt(pad + 266, y + 21, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
     boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
     H = int(y + 42 + 26)
     recortar(L, H)
@@ -1942,7 +1944,7 @@ def modal_previsualizar(W=980):
     gap = 12
     cw = (x1 - x0 - 3 * gap) / 4
     stats = [("14 de 15", "archivos por año leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
-             ("412", "movilidades contadas", VERDE_CTA, None), ("6", "avisos para revisar", MAGENTA, "Ver abajo")]
+             ("412", "movilidades contadas", VERDE_CTA, None), ("7", "avisos para revisar", MAGENTA, "Ver abajo")]
     for i, (num, lbl, col, extra) in enumerate(stats):
         sx = x0 + i * (cw + gap)
         L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
@@ -1965,20 +1967,21 @@ def modal_previsualizar(W=980):
     y += 46 + 24
     # avisos
     L.txt(x0, y + 10, "Avisos de la vista previa", fuente("Bold", 14), GRIS_OSC, "lm")
-    L.txt(x1, y + 10, "Mostrando 3 de 6", fuente("Light", 11.5), GRIS, "rm")
+    L.txt(x1, y + 10, "Mostrando 3 de 7", fuente("Light", 11.5), GRIS, "rm")
     y += 30
-    avisos = [(MAGENTA, "Falta Movilidad_2021.xlsx: el año 2021 quedará incompleto en el conteo."),
-              (NARANJA, "Movilidad_2022.xlsx: la columna «Programa» necesita confirmación."),
-              (MAGENTA, "UNIVERSIDAD DE LOS ANDES (VE): 4 registros de 2022 sin convenio que cubra el año.")]
+    avisos = [(MAGENTA, "Convenio sin fecha de inicio válida: Universidad de Guadalajara (Convenios.xlsx, fila 112).", "Abrir Convenios.xlsx"),
+              (MAGENTA, "Falta el archivo de Movilidad 2021: ese año quedará incompleto en el conteo.", "Abrir carpeta"),
+              (NARANJA, "Institución sin coincidencia: «Universidad Autónoma deSinaloa» (Movilidad_2022.xlsx, 3 movilidades).", "Elegir institución…")]
     top = y
-    for i, (col, t) in enumerate(avisos):
-        rh = 40
+    for i, (col, t, acc) in enumerate(avisos):
+        rh = 46
         L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
         punto(L, x0 + 22, y + rh / 2, col)
-        L.txt(x0 + 42, y + rh / 2, recortar_texto(L, t, fuente("Regular", 12), x1 - x0 - 70), fuente("Regular", 12), NEGRO, "lm")
+        L.txt(x0 + 42, y + rh / 2, recortar_texto(L, t, fuente("Regular", 12), x1 - x0 - 70 - 190), fuente("Regular", 12), NEGRO, "lm")
+        boton_secundario(L, x1 - 14 - 176, y + 8, x1 - 14, y + rh - 8, acc, "normal", 11.5)
         y += rh
     L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
-    L.txt(x0, y + 16, "y 3 avisos más. Los verás completos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(x0, y + 16, "y 4 avisos más. Resuelve estos aquí o ve todos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
     y += 38
     # cuadro
     L.txt(x0, y + 10, "Así quedaría el cuadro", fuente("Bold", 14), GRIS_OSC, "lm")
@@ -2009,7 +2012,8 @@ def modal_previsualizar(W=980):
     L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
     y = pie_modal(L, W, pad, y + 18)
     boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
-    L.txt(pad + 136, y + 21, "Si algo no cuadra, corrígelo en Configuración y vuelve a previsualizar.", fuente("Light", 11.5), GRIS, "lm")
+    boton_secundario(L, pad + 132, y, pad + 132 + 230, y + 42, "Volver a leer los archivos", "normal", 13)
+    L.txt(pad + 378, y + 21, "Después de corregir algo, vuelve a leer.", fuente("Light", 11.5), GRIS, "lm")
     boton_primario(L, W - pad - 270, y, W - pad, y + 42, "Generar cuadro maestro")
     H = int(y + 42 + 26)
     recortar(L, H)
@@ -2109,7 +2113,7 @@ def modal_aplican(W=980):
 # ------------------------------------------------------------------
 #  Fuentes de datos › Probar lectura de la carpeta
 # ------------------------------------------------------------------
-def modal_lectura(W=980):
+def modal_lectura(W=980, desde=None):
     L = modal_base(W, 1500, "Probar lectura de la carpeta")
     pad = 28
     x0, x1 = pad, W - pad
@@ -2153,8 +2157,12 @@ def modal_lectura(W=980):
     L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
     L.txt(x0, y + 16, "Mostrando 7 de 16 · «Arreglar» abre la fuente para confirmar o elegir la columna. Lo que falta se agrega a la carpeta.", fuente("Light", 11.5), GRIS, "lm")
     y = pie_modal(L, W, pad, y + 36)
-    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
-    L.txt(W - pad, y + 21, "Para ver cómo queda el cuadro, usa Previsualizar cuadro en la ventana principal.", fuente("Light", 11.5), GRIS, "rm")
+    if desde == "vista_previa":
+        boton_primario(L, W - pad - 260, y, W - pad, y + 42, "Volver a la vista previa")
+        L.txt(pad, y + 21, "Estás viendo el detalle de la vista previa. Al volver, pulsa «Volver a leer los archivos» si arreglaste algo.", fuente("Light", 11.5), GRIS, "lm")
+    else:
+        boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+        L.txt(W - pad, y + 21, "Para ver cómo queda el cuadro, usa Previsualizar cuadro en la ventana principal.", fuente("Light", 11.5), GRIS, "rm")
     H = int(y + 42 + 26)
     recortar(L, H)
     cerrar_modal(L)
@@ -2169,6 +2177,7 @@ reducir(sobre(sobre(ventana_config(1000, hover=("btn", 6)).img, modal_reglas(900
 reducir(sobre(ventana_config(1000, hover=("btn", 6)).img, modal_reglas(900).img)).save(f"{OUT}/modal_reglas_de_cruce.png")
 reducir(sobre(ventana_config(1000, hover=("btn", 2)).img, modal_fuentes(980).img)).save(f"{OUT}/modal_fuentes.png")
 reducir(sobre(sobre(ventana_config(1000, hover=("btn", 2)).img, modal_fuentes(980).img), modal_lectura(980).img)).save(f"{OUT}/modal_fuentes_probar_lectura.png")
+reducir(sobre(sobre(ventana(1060).img, modal_previsualizar(980).img), modal_lectura(980, "vista_previa").img)).save(f"{OUT}/vista_previa_con_lectura_encima.png")
 reducir(sobre(ventana_config(1060).img, modal_exportar_importar(980).img)).save(f"{OUT}/modal_exportar_importar.png")
 reducir(sobre(ventana_config(1000).img, modal_almacenamiento(900).img)).save(f"{OUT}/modal_copias_y_almacenamiento.png")
 reducir(ventana_config(760).img).save(f"{OUT}/configuracion.png")

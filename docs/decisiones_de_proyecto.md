@@ -44,3 +44,20 @@ Las pruebas son de solo lectura y cada una está en la pantalla donde se usa; no
 - **Alerta de confirmación:** incluye la sugerencia de usar **Previsualizar cuadro** antes de generar. Solo aparece si todavía no se usó la vista previa en esa sesión.
 - **Ayudas "?":** todas las tarjetas de Configuración y sus modales, la vista previa, las pruebas, Exportar/importar y Copias tienen su texto de ayuda en [textos_ayuda.md](textos_ayuda.md). La tarjeta de Configuración y su modal muestran la misma ayuda.
 - **Versión del boceto:** v0.12.
+
+## Correcciones de flujo (23-nov-2026, tarde)
+
+Revisión de incongruencias entre pantallas; las siete se aprobaron.
+
+| # | Qué se detectó | Decisión |
+|---|---|---|
+| 1 | Ver revisión solo existía "después de generar", pero el estado de cambios pendientes se guarda y se pide al reabrir | Se guarda la **última generación** (programa, vigencia, carpeta, hora, avisos, pendientes). Ver revisión sigue activo al reabrir. |
+| 2 | Los avisos de la vista previa no se podían resolver sin generar | Cada aviso lleva su botón de acción y la vista previa tiene **Volver a leer los archivos**. |
+| 3 | Camino de vuelta desde Configuración | Los modales de Configuración se abren **encima** de la revisión o de la vista previa y su botón final dice a dónde vuelven. No hay "Volver a la revisión" en la pantalla de Configuración. |
+| 4 | La tabla de archivos no se podía refrescar | Enlace **Actualizar**; además se actualiza al volver a la ventana. |
+| 5 | Cambios de configuración posteriores a generar no obligaban a regenerar | Cuentan igual que los cambios de archivos; el modal de salida los lista. |
+| 6 | "Probar con un archivo…" duplicaba la prueba de lectura | Se quitó; quedan las tres pruebas definidas. |
+| 7 | Un programa nuevo en la matriz no avisaba | Nuevo aviso en Ver revisión (grupo "Resuélvelo aquí") con **Abrir Programas**. |
+
+Otros ajustes: la sugerencia de Previsualizar en la alerta solo se muestra si no se usó la vista previa en la sesión; el aviso de "movilidades sin convenio" aparece
+como informativo (gris) en todas las pantallas; versión del boceto v0.12.
