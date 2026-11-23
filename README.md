@@ -27,7 +27,8 @@ vigencia, activo o no activo) y un informe de revisión.
 3. Indicar la vigencia en años completos (por ejemplo 2019 a 2023).
 4. Revisar la tabla de archivos encontrados y los que faltan.
 5. Pulsar **Generar cuadro maestro** y confirmar la alerta.
-6. Abrir **Ver revisión** y resolver lo que quedó dudoso antes de entregar el cuadro.
+6. Abrir **Ver revisión** y resolver lo que quedó dudoso: unos avisos se corrigen en el Excel (se guarda, se cierra y se pulsa **Recargar archivos**) y otros se resuelven dentro del programa.
+7. Si hubo correcciones, pulsar **Generar cuadro de nuevo**: crea un archivo nuevo y no toca el anterior.
 
 ## Principios de diseño
 
@@ -67,10 +68,12 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/reglas_de_negocio.md](docs/reglas_de_negocio.md) | Reglas confirmadas por la jefatura |
 | [docs/hallazgos_excels_reales.md](docs/hallazgos_excels_reales.md) | Qué se encontró en los Excel reales |
 | [docs/diseno_configuracion.md](docs/diseno_configuracion.md) | Pantalla de Configuración, modales de listas y asistente con Gemini |
+| [docs/diseno_revision.md](docs/diseno_revision.md) | Pantalla Ver revisión: avisos, cómo resolverlos y recarga |
 | [docs/identidad.md](docs/identidad.md) | Colores, tipografías, estados y comportamiento responsivo |
 | [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de los signos "?" y de la alerta de confirmación |
 | `tools/boceto_ventana.py` | Genera las imágenes de la ventana principal y la alerta |
 | `tools/boceto_configuracion.py` | Genera las imágenes de Configuración, el modal de listas y el asistente con Gemini |
+| `tools/boceto_revision.py` | Genera las imágenes de Ver revisión, antes y después de recargar |
 | `tools/prototipo_mapeo.py` | Prueba de detección de encabezados y mapeo de columnas |
 | `tools/prototipo_cruce.py` | Prueba de las reglas de cruce contra el cuadro de ejemplo |
 
@@ -82,9 +85,10 @@ Los logos, fuentes y Excel reales no se incluyen en el repositorio.
 - [x] Prueba de portabilidad del ejecutable en un equipo restringido
 - [x] Reglas de negocio confirmadas y verificadas con los datos de 2022
 - [x] Diseño de la pantalla de Configuración, los modales de listas y el asistente con Gemini
+- [x] Diseño de Ver revisión con recarga de archivos
 - [ ] Motor de lectura, mapeo y cruce con configuración editable
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
-- [ ] Informe de revisión
+- [ ] Informe de revisión (lógica; el diseño ya está)
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
 - [ ] Datos de ejemplo ficticios para pruebas y capacitación
 
