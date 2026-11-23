@@ -88,3 +88,11 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - Los cambios hechos con el programa cerrado (Excel editados) no se detectan; Previsualizar o Recargar los revelan.
 - La tabla de archivos depende de carpeta y vigencia, no del programa. Detalle en [diseno_apertura.md](diseno_apertura.md).
 - **Decidido:** al cambiar la **carpeta**, el **programa** o la **vigencia** con cambios sin incluir se muestra un aviso (mockup 38) con **Generar cuadro de nuevo** y **Cancelar el cambio**. Tras generar se aplica el cambio y se vuelve a leer la tabla de archivos. Sin cambios sin incluir, los tres campos se cambian libremente.
+
+## Estados vacíos (23-nov-2026, tarde)
+
+- **Matriz de convenios** visible en la ventana principal, como fila aparte; sin ella se desactivan Generar y Previsualizar. Los archivos por año faltantes no bloquean.
+- **Carpeta sin archivos reconocibles:** cuadro con los nombres esperados y tres acciones (otra carpeta, abrir carpeta, revisar nombres en Fuentes de datos).
+- **Revisión sin avisos:** pantalla propia, con Recargar archivos y Abrir cuadro.
+- **Programa sin convenios:** la vista previa lo explica y bloquea Generar; la generación directa se detiene con el mismo mensaje.
+- **Pendiente al cerrar la fase de mockups:** regenerar con una sola versión todos los mockups de la ventana principal (y los que la tienen de fondo) para incluir la fila de la Matriz. Detalle en [diseno_estados_vacios.md](diseno_estados_vacios.md).
