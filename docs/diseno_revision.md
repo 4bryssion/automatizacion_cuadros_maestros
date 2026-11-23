@@ -53,6 +53,21 @@ Todas las tarjetas tienen la misma forma, para que se lean igual:
 Decisión de diseño: separar *recargar* (solo mira) de *generar* (crea un archivo) evita sobrescribir un cuadro
 entregado por accidente.
 
+## Salir sin generar de nuevo: no se permite
+
+Si al recargar **hubo cambios** y la persona intenta salir sin generar el cuadro de nuevo, el programa la obliga a generarlo.
+
+- **Qué cuenta como "hubo cambios":** que el cuadro que saldría ahora sea distinto del último generado. Se compara el
+  resultado, no los archivos: guardar un Excel sin cambiar nada no obliga a nada.
+- **Cuándo se activa:** al cerrar la ventana, al pulsar "Volver al cuadro maestro" o al cambiar de programa mientras hay cambios sin incluir.
+- **Qué aparece:** un modal con el resumen (avisos resueltos, avisos nuevos, filas del cuadro que cambian) y dos opciones:
+  **Generar cuadro de nuevo** (principal) y **Volver a la revisión**. No hay "Salir sin generar". La X del modal equivale a *Volver*.
+- **Si el programa se cierra de otra forma** (corte de luz, administrador de tareas): el estado "cambios sin incluir" queda guardado
+  y el modal aparece al abrir el programa la próxima vez.
+- **Si la generación falla** (por ejemplo, el archivo de salida está abierto): el programa explica la causa y deja salir; el estado
+  pendiente se conserva para la próxima apertura.
+- Imagen: `revision_salir.png`.
+
 ## Pantalla
 
 - **Fijo arriba:** encabezado, volver al cuadro maestro, contexto (programa, vigencia, hora de generación),
@@ -83,6 +98,7 @@ Los botones cambian de prioridad según el momento:
 | `revision_antes_arriba.png` | Primera vista, con los avisos que se corrigen en el Excel |
 | `revision_antes_abajo.png` | Final de la lista: avisos del programa e informativos |
 | `revision_despues.png` | Estado después de recargar: resueltos, pendientes y nuevo |
+| `revision_salir.png` | Modal que obliga a generar de nuevo al salir con cambios sin incluir |
 
 ## Por definir
 

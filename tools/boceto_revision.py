@@ -1227,10 +1227,46 @@ def ventana_revision(W=860, H=900, estado="antes", scroll=0):
     return L
 
 
+
+
+# ---------- modal: salir con cambios sin incluir en el cuadro ----------
+def modal_salir_pendiente(W=600):
+    L = modal_base(W, 700, "Cambios sin incluir en el cuadro")
+    pad = 30
+    y = 32 + 26
+    L.d.ellipse([L.P(pad), L.P(y), L.P(pad + 40), L.P(y + 40)], fill=NARANJA)
+    L.txt(pad + 20, y + 21, "!", fuente("Bold", 24), NEGRO, "mm")
+    f_t = fuente("Bold", 19)
+    tit = partir(L, [("Hay correcciones que aún no están en tu cuadro", True)], f_t, f_t, W - 2 * pad - 60)
+    for i, ln in enumerate(tit):
+        L.txt(pad + 56, y + 4 + i * 25, " ".join(t[0] for t in ln), f_t, GRIS_OSC, "la")
+    y += 4 + len(tit) * 25 + 18
+    y = parrafo(L, pad, y, "Recargaste los archivos y el resultado cambió. El cuadro que generaste antes quedó desactualizado, "
+                "así que para salir hay que generarlo de nuevo.", W - 2 * pad, "Regular", 12.5, NEGRO, 19) + 12
+    # resumen de cambios
+    L.rect(pad, y, W - pad, y + 92, fill=FONDO, line=LINEA, w=1.2, r=10)
+    cx = pad + 16
+    for txt, bg, fg in (("2 avisos resueltos", TINTE_VERDE, OK_TXT), ("1 aviso nuevo", ROSA_SUAVE, MAGENTA)):
+        x_, w_ = chip(L, cx, y + 18, txt, bg, fg, 11, "l", 24)
+        cx += w_ + 8
+    L.txt(pad + 16, y + 70, "El cuadro nuevo cambia en 3 filas.", fuente("Bold", 12.5), GRIS_OSC, "lm")
+    y += 92 + 14
+    L.txt(pad, y + 8, "Se crea un archivo nuevo. El anterior no se borra ni se modifica.", fuente("Light", 11.5), GRIS, "lm")
+    y += 30
+    boton_secundario(L, pad, y, pad + 190, y + 46, "Volver a la revisión", "normal", 13)
+    boton_primario(L, W - pad - 270, y, W - pad, y + 46, "Generar cuadro de nuevo")
+    y += 46 + 14
+    parrafo(L, pad, y, "Si el programa se cierra de otra forma, esto se pedirá al abrirlo la próxima vez.", W - 2 * pad, "Light", 11, GRIS, 15)
+    H = int(y + 15 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
 # =====================================================================
 #  generación
 # =====================================================================
 reducir(ventana_revision(860, 900, "antes", 0).img).save(f"{OUT}/revision_antes_arriba.png")
 reducir(ventana_revision(860, 900, "antes", "fin").img).save(f"{OUT}/revision_antes_abajo.png")
 reducir(ventana_revision(860, 900, "despues", 0).img).save(f"{OUT}/revision_despues.png")
+reducir(sobre(ventana_revision(860, 900, "despues", 0).img, modal_salir_pendiente(600).img)).save(f"{OUT}/revision_salir.png")
 print("listo")
