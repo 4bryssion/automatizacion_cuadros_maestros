@@ -540,7 +540,7 @@ TARJETAS = [
     ("Equivalencias de instituciones", "12 guardadas", "Nombres distintos que son la misma universidad (por ejemplo, con un error de escritura).", "Administrar", None),
     ("Equivalencias de programas", "9 guardadas", "Por ejemplo: Ingeniería Industrial Distancia = Ingeniería Industrial.", "Administrar", None),
     ("Tipos de persona", "8 tipos", "Cómo se nombra cada tipo en el cuadro: Docente saliente, Experto internacional…", "Administrar", None),
-    ("Reglas de cruce", "5 reglas", "Cómo se asigna cada registro a un convenio y cómo se cuenta.", "Administrar", None),
+    ("Reglas de cruce", "5 reglas · 1 cambiada", "Cómo se asigna cada registro a un convenio y cómo se cuenta.", "Administrar", "aviso"),
     ("Asistente con Gemini", "Opcional", "Ayuda a emparejar columnas y nombres. Solo usa títulos de columnas y nombres de instituciones.", "Abrir asistente", "gris"),
 ]
 
@@ -578,6 +578,8 @@ def ventana_config(W=760, hover=None):
         boton_secundario(L, cx + cw - 14 - bw, by, cx + cw - 14, by + 30, boton, est, 12)
         if extra == "gris":
             chip(L, cx + 16, by + 4, cuenta, "#EDEDED", GRIS, 10.5, "l", 22)
+        elif extra == "aviso":
+            chip(L, cx + 16, by + 4, cuenta, AVISO_BG, AVISO_TXT, 10.5, "l", 22)
         else:
             x0_, w_ = chip(L, cx + 16, by + 4, cuenta, TINTE_VERDE, VERDE_CTA, 10.5, "l", 22)
             if extra == "semaforo":      # estado de las fuentes
@@ -589,7 +591,7 @@ def ventana_config(W=760, hover=None):
     filas = (len(TARJETAS) + 1) // 2
     y += filas * (alto_card + 14) + 2
     # barra de acciones
-    L.txt(M, y + 12, "Última modificación: 12-nov-2026", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(M, y + 12, "Última modificación: hoy, 13:52", fuente("Light", 11.5), GRIS, "lm")
     L.txt(M, y + 32, "Copias y almacenamiento ›", fuente("Bold", 11.5), VERDE_CTA, "lm")
     boton_secundario(L, W - M - 250 - 170 - 12, y + 4, W - M - 250 - 12, y + 40, "Exportar / importar", "normal", 12)
     boton_primario(L, W - M - 250, y + 4, W - M, y + 40, "Volver al cuadro maestro")
@@ -1939,7 +1941,7 @@ def modal_previsualizar(W=980):
                      "No crea ningún archivo ni cambia tu configuración.") + 16
     gap = 12
     cw = (x1 - x0 - 3 * gap) / 4
-    stats = [("14 de 15", "archivos leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
+    stats = [("14 de 15", "archivos por año leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
              ("412", "movilidades contadas", VERDE_CTA, None), ("6", "avisos para revisar", MAGENTA, "Ver abajo")]
     for i, (num, lbl, col, extra) in enumerate(stats):
         sx = x0 + i * (cw + gap)
@@ -1955,7 +1957,7 @@ def modal_previsualizar(W=980):
     ft = fuente("Bold", 12.5)
     L.txt(x0 + 16, y + 23, "Lectura de archivos", ft, GRIS_OSC, "lm")
     xs = x0 + 16 + L.tw("Lectura de archivos", ft) + 16
-    for txt, bg, fg in (("12 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+    for txt, bg, fg in (("13 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
                         ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
         _, w_ = chip(L, xs, y + 12, txt, bg, fg, 10.5, "l", 22)
         xs += w_ + 8
@@ -2117,7 +2119,7 @@ def modal_lectura(W=980):
                      "No crea archivos ni cambia tu configuración.") + 18
     # resumen y filtro
     cx = x0
-    for txt, bg, fg in (("12 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+    for txt, bg, fg in (("13 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
                         ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
         _, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 26)
         cx += w_ + 8
@@ -2170,4 +2172,11 @@ reducir(sobre(sobre(ventana_config(1000, hover=("btn", 2)).img, modal_fuentes(98
 reducir(sobre(ventana_config(1060).img, modal_exportar_importar(980).img)).save(f"{OUT}/modal_exportar_importar.png")
 reducir(sobre(ventana_config(1000).img, modal_almacenamiento(900).img)).save(f"{OUT}/modal_copias_y_almacenamiento.png")
 reducir(ventana_config(760).img).save(f"{OUT}/configuracion.png")
+reducir(sobre(ventana_config(760, hover=("btn", 0)).img, modal_programas(640).img)).save(f"{OUT}/modal_programas.png")
+reducir(sobre(ventana_config(900, hover=("btn", 7)).img, modal_gemini_pasos(756).img)).save(f"{OUT}/gemini_pasos.png")
+reducir(sobre(ventana_config(900).img, modal_gemini_respuesta(700).img)).save(f"{OUT}/gemini_respuesta.png")
+reducir(sobre(ventana_config(1000, hover=("btn", 1)).img, modal_campos(900).img)).save(f"{OUT}/modal_campos.png")
+reducir(sobre(ventana_config(1060, hover=("btn", 3)).img, modal_equivalencias_instituciones(980).img)).save(f"{OUT}/modal_equivalencias_instituciones.png")
+reducir(sobre(ventana_config(1060, hover=("btn", 4)).img, modal_equivalencias_programas(980).img)).save(f"{OUT}/modal_equivalencias_programas.png")
+reducir(sobre(ventana_config(1060, hover=("btn", 5)).img, modal_tipos_persona(980).img)).save(f"{OUT}/modal_tipos_persona.png")
 print("listo")

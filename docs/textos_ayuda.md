@@ -87,7 +87,7 @@ Ventana modal: el usuario debe confirmar o cancelar. El foco inicial está en **
 - Programa: Fisioterapia
 - Vigencia: 2019 a 2023
 - Archivos: 14 de 15 encontrados
-- Configuración: modificada el 12-nov-2026
+- Configuración: modificada hoy, 13:52
 
 > ⚠ Falta 1 de 15 archivos (Movilidad 2021). Ese año quedará incompleto en el conteo. *(solo aparece si faltan archivos)*
 

@@ -446,7 +446,7 @@ def reducir(img, f=2):
 ALERTA = {
     "titulo": "¿Generar el cuadro maestro?",
     "resumen": [("Programa", "Fisioterapia"), ("Vigencia", "2019 a 2023"),
-                ("Archivos", "14 de 15 encontrados"), ("Configuración", "modificada el 12-nov-2026")],
+                ("Archivos", "14 de 15 encontrados"), ("Configuración", "modificada hoy, 13:52")],
     "aviso": "Falta 1 de 15 archivos (Movilidad 2021). Ese año quedará incompleto en el conteo.",
     "bloques": [
         ("p", [R("Se usará la "), B("configuración de cruce de datos actual"),
@@ -613,7 +613,9 @@ fila("Botón secundario", y)
 boton_secundario(E, 28, y + 26, 198, y + 66, "Configuración", "normal"); etq(113, y + 78, "normal")
 boton_secundario(E, 218, y + 26, 388, y + 66, "Configuración", "hover"); etq(303, y + 78, "hover: relleno verde claro #EAF2DD")
 E.rect(408, y + 26, 578, y + 66, fill=BLANCO, line="#C8C8C8", w=1.5, r=8)
-E.txt(493, y + 46, "Ver revisión", fuente("Bold", 13), "#9A9A9A", "mm"); etq(493, y + 78, "desactivado (hasta generar)")
+E.txt(493, y + 46, "Previsualizar cuadro", fuente("Bold", 13), "#9A9A9A", "mm"); etq(493, y + 78, "desactivado")
+for k_, t_ in enumerate(("Previsualizar: hasta elegir", "carpeta y programa.", "Ver revisión: hasta generar.")):
+    E.txt(596, y + 34 + k_ * 16, t_, fuente("Light", 10.5), GRIS, "lm")
 y += 108
 fila("Campos", y)
 campo(E, 28, y + 26, 238, y + 58, "Fisioterapia", flecha=True); etq(133, y + 72, "normal")
