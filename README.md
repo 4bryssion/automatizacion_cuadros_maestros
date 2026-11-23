@@ -68,6 +68,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/reglas_de_negocio.md](docs/reglas_de_negocio.md) | Reglas confirmadas por la jefatura |
 | [docs/hallazgos_excels_reales.md](docs/hallazgos_excels_reales.md) | Qué se encontró en los Excel reales |
 | [docs/diseno_configuracion.md](docs/diseno_configuracion.md) | Pantalla de Configuración, modales de listas y asistente con Gemini |
+| [docs/decisiones_de_proyecto.md](docs/decisiones_de_proyecto.md) | Decisiones tomadas y cómo se guarda la configuración |
 | [docs/diseno_revision.md](docs/diseno_revision.md) | Pantalla Ver revisión: avisos, cómo resolverlos y recarga |
 | [docs/identidad.md](docs/identidad.md) | Colores, tipografías, estados y comportamiento responsivo |
 | [docs/textos_ayuda.md](docs/textos_ayuda.md) | Textos de los signos "?" y de la alerta de confirmación |
