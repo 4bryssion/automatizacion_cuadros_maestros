@@ -1,6 +1,6 @@
 # Estados vacíos
 
-Boceto v0.13. Imágenes generadas con `tools/boceto_estados_vacios.py` (`python3 -I tools/boceto_estados_vacios.py <carpeta_marca> <salida>`).
+Boceto v1.0. Todas las imágenes están en [`mockups/`](../mockups/) y se regeneran con `tools/boceto_todos.py`.
 
 ## La Matriz de convenios en la ventana principal
 

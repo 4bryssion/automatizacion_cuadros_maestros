@@ -1,6 +1,6 @@
 # Primera apertura y reapertura
 
-Boceto v0.13. Imágenes generadas con `tools/boceto_apertura.py` (`python3 -I tools/boceto_apertura.py <carpeta_marca> <salida>`).
+Boceto v1.0. Todas las imágenes están en [`mockups/`](../mockups/) y se regeneran con `tools/boceto_todos.py`.
 
 ## Primera apertura (34)
 

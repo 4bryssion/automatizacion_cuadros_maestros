@@ -105,3 +105,9 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - **Excel abierto (`~$nombre.xlsx` presente):** aviso informativo gris en la revisión, sin detener la generación.
 - **Al abrir:** avisos de configuración restaurada (46), configuración no encontrada con restauración de copias (47) y carpeta no encontrada (48). **Abrir cuadro** sin archivo muestra el aviso 49.
 - Mockups 43 a 49 subidos a Drive. Detalle en [diseno_errores.md](diseno_errores.md).
+
+## Cierre de la fase de mockups (23-nov-2026, tarde)
+
+- **Boceto v1.0:** los 49 mockups se regeneraron en una sola pasada con un único pie de versión y la fila de la **Matriz de convenios** en todas las ventanas principales (y en los modales que las tienen de fondo). Se corrigió un solape del nombre de la Matriz con su visto bueno en ventanas angostas.
+- Las 49 imágenes están en [`mockups/`](../mockups/) (con un índice) y en la carpeta Mockups de Drive; se generan con `tools/boceto_todos.py`.
+- La fase de diseño de pantallas queda cerrada. Sigue la construcción real: esquema de configuración con guardado doble, motor de cruce, interfaz Tkinter, pruebas con datos sintéticos, empaquetado con PyInstaller y GitHub Actions, y manual al final.

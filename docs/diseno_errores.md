@@ -1,6 +1,6 @@
 # Hoja de errores y avisos de arranque
 
-Boceto v0.13. Imágenes generadas con `tools/boceto_errores.py` (`python3 -I tools/boceto_errores.py <carpeta_marca> <salida>`).
+Boceto v1.0. Todas las imágenes están en [`mockups/`](../mockups/) y se regeneran con `tools/boceto_todos.py`.
 
 ## Generación detenida y Hoja de errores (43, 44, 45)
 

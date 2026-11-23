@@ -1,7 +1,6 @@
 # Previsualizar cuadro, pruebas, exportar/importar y copias
 
-Boceto v0.11. Imágenes generadas con `tools/boceto_previsualizar_y_pruebas.py` (la ventana principal, con su botón nuevo, con
-`tools/boceto_ventana.py`). Cómo se guarda la configuración está en [decisiones_de_proyecto.md](decisiones_de_proyecto.md).
+Boceto v1.0. Todas las imágenes están en [`mockups/`](../mockups/) y se regeneran con `tools/boceto_todos.py`. Cómo se guarda la configuración está en [decisiones_de_proyecto.md](decisiones_de_proyecto.md).
 
 ## Cada prueba vive donde se usa
 

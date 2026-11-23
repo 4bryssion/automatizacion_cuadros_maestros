@@ -1,6 +1,6 @@
 # Generación del cuadro: progreso y cuadro generado
 
-Boceto v0.13. Imágenes generadas con `tools/boceto_generacion.py` (`python3 -I tools/boceto_generacion.py <carpeta_marca> <salida>`).
+Boceto v1.0. Todas las imágenes están en [`mockups/`](../mockups/) y se regeneran con `tools/boceto_todos.py`.
 Tras la alerta de confirmación ("Sí, generar cuadro maestro") se abren estos modales sobre la ventana desde la que se generó.
 
 ## Dónde se guarda el cuadro
