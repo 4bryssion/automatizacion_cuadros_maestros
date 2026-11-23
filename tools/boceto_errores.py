@@ -1,0 +1,3253 @@
+# -*- coding: utf-8 -*-
+"""Boceto v13 (identidad Areandina): Progreso de generación y Cuadro generado (3 variantes).
+Uso: python3 -I boceto_generacion.py <carpeta_marca> <carpeta_salida>"""
+import os
+import sys
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+MARCA, OUT = sys.argv[1], sys.argv[2]
+os.makedirs(OUT, exist_ok=True)
+S = 3
+
+# ---------- paleta (manual de marca) y estados derivados ----------
+VERDE, VERDE_CTA = "#7fb536", "#67882c"
+MAGENTA, NARANJA = "#e6007e", "#F59C2F"
+NEGRO, GRIS, GRIS_OSC = "#000000", "#606060", "#282828"
+BLANCO, LINEA, FONDO = "#FFFFFF", "#D9D9D9", "#F5F5F5"
+HOVER_CTA, PRESS_CTA = "#587425", "#4A6320"     # CTA al 85 % y 72 % de luminosidad
+TINTE_VERDE, AVISO_BG, OK_BG = "#EAF2DD", "#FFF3E3", "#EEF5E3"
+OFICINA = "Oficina de Relaciones Internacionales"
+
+
+def fuente(nombre, px):
+    return ImageFont.truetype(f"{MARCA}/fuentes/BrownStd-{nombre}.otf", max(1, int(round(px * S))))
+
+
+def logo(nombre, alto):
+    im = Image.open(f"{MARCA}/logos/1. Logotipo Institucional /{nombre}").convert("RGBA")
+    im = im.crop(im.getchannel("A").getbbox())
+    r = int(alto * S) / im.height
+    return im.resize((int(im.width * r), int(alto * S)), Image.LANCZOS)
+
+
+# ---------- textos de ayuda (se usan en el boceto, en la imagen y en el .md) ----------
+def R(t): return (t, False)
+def B(t): return (t, True)
+
+
+AYUDAS = {
+    "carpeta": {
+        "titulo": "Carpeta con los Excel",
+        "bloques": [
+            ("p", [R("Reúne en "), B("una sola carpeta"), R(" todos los Excel que usará el programa: el de convenios y, "
+                    "por cada año de la vigencia, el de movilidad y los dos de internacionalización en casa.")]),
+            ("p", [B("Por qué: "), R("el programa lee la carpeta completa y elige solo los archivos del rango que pidas. "
+                    "Si están repartidos en varias carpetas no los encuentra y tendrías que buscarlos uno por uno.")]),
+            ("p", [B("Cómo nombrarlos "), R("(propuesta; se ajusta en Configuración):")]),
+            ("chips", ["Convenios.xlsx", "Movilidad_2021.xlsx", "IntCasa_2021-1.xlsx", "IntCasa_2021-2.xlsx"]),
+            ("p", [R("El "), B("año debe ir en el nombre"), R(": de ahí lo lee el programa.")]),
+            ("h", "Para evitar errores"),
+            ("b", [R("Cierra los Excel antes de generar.")]),
+            ("b", [R("Un solo archivo por año y tipo: sin “copia”, “(1)” ni “final2”.")]),
+            ("b", [R("Formato .xlsx y sin contraseña.")]),
+            ("b", [R("Si la carpeta está en OneDrive o Drive, que los archivos estén descargados en el equipo.")]),
+            ("b", [R("Evita símbolos como # % & en los nombres y rutas muy largas.")]),
+        ],
+    },
+    "vigencia": {
+        "titulo": "Vigencia (años completos)",
+        "bloques": [
+            ("p", [R("La vigencia se pide en "), B("años completos"), R(": del año inicial al año final, "),
+                   B("ambos incluidos"), R(". De 2019 a 2023 son 5 años.")]),
+            ("p", [R("Cada año aporta 3 archivos: la movilidad anual y los dos semestres de internacionalización en casa. "
+                     "Por eso "), B("no se aceptan rangos a mitad de año"), R(", ni fechas con día o mes, ni un solo semestre.")]),
+            ("p", [R("Si el programa te entrega fechas con mes o día, confirma con la oficina qué años corresponden "
+                     "antes de generar.")]),
+            ("p", [R("“Desde” no puede ser mayor que “Hasta”. No hay límite de años: de 2019 a 2026 son 8 años y 24 archivos.")]),
+        ],
+    },
+    "config": {
+        "titulo": "Configuración",
+        "bloques": [
+            ("p", [R("Define "), B("cómo lee el programa cada Excel"), R(": columnas, filtros y reglas de cruce. "
+                     "Cámbiala solo si los Excel cambiaron de formato.")]),
+            ("p", [R("Dentro encontrarás el detalle de cada opción y una guía para editarla.")]),
+        ],
+    },
+    "revision": {
+        "titulo": "Ver revisión",
+        "bloques": [
+            ("p", [R("Informe de lo que el programa "), B("no pudo cruzar o dejó dudoso"), R(" al generar el cuadro. "
+                     "Se activa después de generar.")]),
+            ("p", [R("Dentro encontrarás el detalle de cada aviso y cómo resolverlo.")]),
+        ],
+    },
+    "archivos": {
+        "titulo": "Archivos que se usarán",
+        "bloques": [
+            ("p", [R("Es la lista de comprobación antes de generar. Cada "), B("fila"), R(" es un año de la vigencia y cada "),
+                   B("columna"), R(" es un archivo que el programa necesita:")]),
+            ("b", [B("Movilidad (anual): "), R("movilidad entrante y saliente de personas de todo el año.")]),
+            ("b", [B("Int. en casa · 1.º y 2.º semestre: "), R("internacionalización en casa, un archivo por semestre.")]),
+            ("p", [B("Para qué sirve: "), R("con estos archivos el programa cuenta cuántas personas, y de qué tipo, "
+                     "pertenecen a cada convenio del programa durante su vigencia.")]),
+            ("h", "Qué significa cada marca"),
+            ("ok", [B("Encontrado: "), R("el archivo está en la carpeta y se puede leer.")]),
+            ("mal", [B("Falta este archivo: "), R("no se encontró o no se pudo abrir. Ese año quedará incompleto en el conteo.")]),
+            ("p", [B("“14 de 15 encontrados”: "), R("archivos hallados sobre los esperados. Naranja = faltan; verde = completo.")]),
+            ("p", [R("Puedes generar igual con archivos faltantes; lo que falte quedará anotado en la revisión.")]),
+        ],
+    },
+}
+
+
+# ---------- lienzo ----------
+class Lienzo:
+    def __init__(self, W, H, fondo=BLANCO):
+        self.W, self.H = W, H
+        self.img = Image.new("RGB", (int(W * S), int(H * S)), fondo)
+        self.d = ImageDraw.Draw(self.img)
+
+    @staticmethod
+    def P(v):
+        return int(round(v * S))
+
+    def rect(self, x0, y0, x1, y1, fill=None, line=None, w=1, r=0, corners=None):
+        P = self.P
+        box = [P(x0), P(y0), P(x1), P(y1)]
+        if r:
+            self.d.rounded_rectangle(box, radius=P(r), fill=fill, outline=line,
+                                     width=P(w) if line else 0, corners=corners)
+        else:
+            self.d.rectangle(box, fill=fill, outline=line, width=P(w) if line else 0)
+
+    def txt(self, x, y, s, f, color=NEGRO, anchor="la"):
+        self.d.text((self.P(x), self.P(y)), s, font=f, fill=color, anchor=anchor)
+
+    def tw(self, s, f):
+        return self.d.textlength(s, font=f) / S
+
+    def check(self, cx, cy, color=VERDE_CTA, s=7):
+        P = self.P
+        self.d.line([P(cx - s), P(cy), P(cx - s / 3), P(cy + s * .8), P(cx + s), P(cy - s * .8)],
+                    fill=color, width=P(2.4), joint="curve")
+
+    def cross(self, cx, cy, color=MAGENTA, s=6, w=2.4):
+        P = self.P
+        self.d.line([P(cx - s), P(cy - s), P(cx + s), P(cy + s)], fill=color, width=P(w))
+        self.d.line([P(cx - s), P(cy + s), P(cx + s), P(cy - s)], fill=color, width=P(w))
+
+    def flecha(self, cx, cy, color=GRIS_OSC):
+        P = self.P
+        self.d.polygon([(P(cx - 6), P(cy - 3)), (P(cx + 6), P(cy - 3)), (P(cx), P(cy + 4))], fill=color)
+
+    def pegar(self, im, x, y):
+        self.img.paste(im, (self.P(x), self.P(y)), im if im.mode == "RGBA" else None)
+
+
+# ---------- componentes ----------
+def boton_primario(L, x0, y0, x1, y1, texto, estado="normal"):
+    col = {"normal": VERDE_CTA, "hover": HOVER_CTA, "press": PRESS_CTA}[estado]
+    L.rect(x0, y0, x1, y1, fill=col, r=8)
+    L.txt((x0 + x1) / 2, (y0 + y1) / 2, texto, fuente("Bold", 14), BLANCO, "mm")
+
+
+def boton_secundario(L, x0, y0, x1, y1, texto, estado="normal", size=13):
+    fill = TINTE_VERDE if estado == "hover" else BLANCO
+    L.rect(x0, y0, x1, y1, fill=fill, line=VERDE_CTA, w=1.5, r=8)
+    L.txt((x0 + x1) / 2, (y0 + y1) / 2, texto, fuente("Bold", size), VERDE_CTA, "mm")
+
+
+def campo(L, x0, y0, x1, y1, texto, flecha=False, foco=False):
+    L.rect(x0, y0, x1, y1, fill=BLANCO, line=(VERDE_CTA if foco else GRIS), w=(2 if foco else 1), r=6)
+    L.txt(x0 + 12, (y0 + y1) / 2, texto, fuente("Regular", 12), NEGRO, "lm")
+    if flecha:
+        L.flecha(x1 - 18, (y0 + y1) / 2)
+
+
+def icono_ayuda(L, x, y, hover=False):
+    """Círculo con '?' centrado verticalmente en y; x = borde izquierdo."""
+    cx, cy, r = x + 10, y, 10
+    P = L.P
+    if hover:
+        L.d.ellipse([P(cx - r), P(cy - r), P(cx + r), P(cy + r)], fill=VERDE_CTA)
+        L.txt(cx, cy, "?", fuente("Bold", 12), BLANCO, "mm")
+    else:
+        L.d.ellipse([P(cx - r), P(cy - r), P(cx + r), P(cy + r)], fill=BLANCO, outline=VERDE_CTA, width=P(1.6))
+        L.txt(cx, cy, "?", fuente("Bold", 12), VERDE_CTA, "mm")
+    return x + 2 * r
+
+
+def etiqueta_con_ayuda(L, x, y, texto, hover=False):
+    f = fuente("Bold", 13)
+    L.txt(x, y, texto, f, GRIS_OSC, "lm")
+    return icono_ayuda(L, x + L.tw(texto, f) + 8, y, hover)
+
+
+# ---------- tarjeta de ayuda (popover) ----------
+def partir(L, segs, f_r, f_b, ancho):
+    """Reparte segmentos (texto, negrita) en líneas de palabras con su fuente."""
+    import re
+    tokens, pend = [], False          # (palabra, negrita, hay_espacio_antes)
+    for t, neg in segs:
+        for m in re.finditer(r"\s+|\S+", t):
+            s = m.group(0)
+            if s.isspace():
+                pend = True
+            else:
+                tokens.append((s, neg, pend and bool(tokens)))
+                pend = False
+    lineas, actual, wlin = [], [], 0
+    esp = L.tw(" ", f_r)
+    for s, neg, sp in tokens:
+        f = f_b if neg else f_r
+        ancho_w = L.tw(s, f)
+        extra = esp if (sp and actual) else 0
+        if actual and wlin + extra + ancho_w > ancho:
+            lineas.append(actual)
+            actual, wlin, extra, sp = [], 0, 0, False
+        wlin += extra + ancho_w
+        actual.append((s, neg, bool(sp and actual)))
+    if actual:
+        lineas.append(actual)
+    return lineas
+
+
+def tarjeta(ayuda, ancho=430):
+    """Devuelve una imagen RGBA (con sombra) de la tarjeta de ayuda."""
+    tmp = Lienzo(10, 10)
+    f_r, f_b, f_h, f_t, f_c = fuente("Regular", 11.5), fuente("Bold", 11.5), fuente("Bold", 12), fuente("Bold", 14), fuente("Regular", 10.5)
+    pad, lh, inner = 18, 17.5, ancho - 36
+    cmds, y = [], pad
+    cmds.append(("titulo", ayuda["titulo"], y)); y += 28
+    for tipo, dato in ayuda["bloques"]:
+        if tipo == "h":
+            y += 4; cmds.append(("h", dato, y)); y += 22
+        elif tipo == "chips":
+            x, fila = 0, y
+            chips = []
+            for c in dato:
+                w = tmp.tw(c, f_c) + 18
+                if x + w > inner:
+                    x, fila = 0, fila + 26
+                chips.append((c, x, fila, w)); x += w + 8
+            cmds.append(("chips", chips, y)); y = fila + 28
+        else:
+            sangria = 16 if tipo in ("b", "ok", "mal") else 0
+            lineas = partir(tmp, dato, f_r, f_b, inner - sangria)
+            cmds.append((tipo, lineas, y)); y += len(lineas) * lh + 7
+    alto = y + pad - 2
+    marg = 14
+    base = Lienzo(ancho + 2 * marg, alto + 2 * marg, fondo=BLANCO)
+    sombra = Image.new("L", base.img.size, 0)
+    sd = ImageDraw.Draw(sombra)
+    sd.rounded_rectangle([marg * S, (marg + 4) * S, (marg + ancho) * S, (marg + alto + 4) * S], radius=12 * S, fill=70)
+    sombra = sombra.filter(ImageFilter.GaussianBlur(7 * S))
+    L = base
+    L.rect(marg, marg, marg + ancho, marg + alto, fill=BLANCO, line=VERDE, w=1.5, r=12)
+    for cmd in cmds:
+        tipo, dato, y0 = cmd
+        X, Y = marg + pad, marg + y0
+        if tipo == "titulo":
+            L.txt(X, Y + 8, dato, f_t, GRIS_OSC, "lm")
+            L.rect(X, Y + 22, X + 46, Y + 24.5, fill=VERDE)
+        elif tipo == "h":
+            L.txt(X, Y + 8, dato, f_h, VERDE_CTA, "lm")
+        elif tipo == "chips":
+            for c, cx, cy, w in dato:
+                L.rect(X + cx, marg + cy, X + cx + w, marg + cy + 22, fill=FONDO, line=LINEA, w=1, r=6)
+                L.txt(X + cx + w / 2, marg + cy + 11, c, f_c, GRIS_OSC, "mm")
+        else:
+            sang = 16 if tipo in ("b", "ok", "mal") else 0
+            if tipo == "b":
+                L.d.ellipse([L.P(X + 3), L.P(Y + 6), L.P(X + 8), L.P(Y + 11)], fill=VERDE_CTA)
+            elif tipo == "ok":
+                L.check(X + 5, Y + 8, VERDE_CTA, 5)
+            elif tipo == "mal":
+                L.cross(X + 5, Y + 8, MAGENTA, 4.2, 2)
+            for i, linea in enumerate(dato):
+                cx = X + sang
+                for w, neg, sp in linea:
+                    f = f_b if neg else f_r
+                    if sp:
+                        cx += L.tw(" ", f_r)
+                    L.txt(cx, Y + 8 + i * lh, w, f, NEGRO, "lm")
+                    cx += L.tw(w, f)
+    mascara = Image.new("L", L.img.size, 0)
+    ImageDraw.Draw(mascara).rounded_rectangle([marg * S, marg * S, (marg + ancho) * S, (marg + alto) * S],
+                                              radius=12 * S, fill=255)
+    return {"rgb": L.img, "mascara": mascara, "sombra": sombra}
+
+
+def poner(dest, t, x, y):
+    """Pega la tarjeta (sombra suave + tarjeta con esquinas redondeadas) en dest, en px lógicos."""
+    pos = (int(x * S), int(y * S))
+    dest.paste(Image.new("RGB", t["rgb"].size, "#000000"), pos, t["sombra"])
+    dest.paste(t["rgb"], pos, t["mascara"])
+
+
+# ---------- ventana completa ----------
+def ventana(W, H=None, popover=None, hover=None, estrecha=False, revision_activa=False, completo=False, ultimo=None, vacio=False, bienvenida=False, carpeta_mala=False, matriz_falta=False, programa="Fisioterapia"):
+    """H=None: la altura se ajusta al contenido (ventana mínima necesaria)."""
+    L = Lienzo(W, H or 1300)
+    M = 20 if estrecha else 28
+    # barra de título (la dibuja Windows)
+    L.rect(0, 0, W, 32, fill="#EDEDED")
+    L.txt(12, 16, "Cuadro maestro internacional", fuente("Regular", 11), GRIS_OSC, "lm")
+    for i, k in enumerate(("min", "max", "x")):
+        cx = W - 100 + i * 34 + 17
+        if k == "min":
+            L.d.line([L.P(cx - 5), L.P(16), L.P(cx + 5), L.P(16)], fill=GRIS_OSC, width=L.P(1))
+        elif k == "max":
+            L.rect(cx - 5, 11, cx + 5, 21, line=GRIS_OSC, w=1)
+        else:
+            L.cross(cx, 16, GRIS_OSC, 5, 1.2)
+    # encabezado
+    lg = logo("_LOGOS-05.png", 34)
+    L.pegar(lg, M, 32 + 18)
+    L.txt(W - M, 32 + 22, "Cuadro maestro internacional", fuente("Bold", 20), GRIS_OSC, "ra")
+    L.txt(W - M, 32 + 48, OFICINA, fuente("Light", 12), GRIS, "ra")
+    L.rect(0, 32 + 78, W, 32 + 81, fill=VERDE)
+    y = 32 + 81 + 22
+    if bienvenida:
+        y += banner_info(L, M, y, W - M, "Bienvenido. Para empezar, elige la carpeta con tus Excel, el programa y la vigencia. "
+                         "El programa ya trae la configuración inicial (25 programas de Pereira); puedes ajustarla en Configuración. "
+                         "Tus ajustes se guardan solos.") + 18
+
+    # 1. carpeta
+    etiqueta_con_ayuda(L, M, y + 8, "1. Carpeta con los Excel", hover=(popover == "carpeta"))
+    bw = 150
+    if vacio:
+        campo(L, M, y + 26, W - M - bw - 14, y + 58, "", foco=True)
+        L.txt(M + 12, y + 42, "Elige la carpeta donde están tus Excel", fuente("Regular", 12), "#9A9A9A", "lm")
+    else:
+        campo(L, M, y + 26, W - M - bw - 14, y + 58, "C:\\Documentos\\Reportes_varios" if carpeta_mala else "C:\\Fuentes\\Movilidad_IeC", foco=False)
+    est = "hover" if hover == "buscar" else "normal"
+    boton_secundario(L, W - M - bw, y + 26, W - M, y + 58, "Elegir carpeta…", est, 12)
+    y += 80
+
+    # 2 y 3. programa y vigencia
+    if not estrecha:
+        pw = int((W - 2 * M) * 0.46)
+        L.txt(M, y + 8, "2. Programa", fuente("Bold", 13), GRIS_OSC, "lm")
+        campo(L, M, y + 26, M + pw, y + 58, "" if vacio else programa, flecha=True)
+        if vacio:
+            L.txt(M + 12, y + 42, "Elige un programa", fuente("Regular", 12), "#9A9A9A", "lm")
+        vx = M + pw + 32
+        etiqueta_con_ayuda(L, vx, y + 8, "3. Vigencia (años completos)", hover=(popover == "vigencia"))
+        mitad = (W - M - vx - 20) / 2
+        for k, (etq, val) in enumerate((("Desde", "2019"), ("Hasta", "2023"))):
+            x0 = vx + k * (mitad + 20)
+            L.txt(x0, y + 42, etq, fuente("Regular", 12), GRIS_OSC, "lm")
+            campo(L, x0 + 50, y + 26, x0 + mitad, y + 58, "" if vacio else val, flecha=True)
+            if vacio:
+                L.txt(x0 + 62, y + 42, "Año", fuente("Regular", 12), "#9A9A9A", "lm")
+        y += 82
+    else:
+        L.txt(M, y + 8, "2. Programa", fuente("Bold", 13), GRIS_OSC, "lm")
+        campo(L, M, y + 26, W - M, y + 58, "Fisioterapia", flecha=True)
+        y += 74
+        etiqueta_con_ayuda(L, M, y + 8, "3. Vigencia (años completos)", hover=(popover == "vigencia"))
+        mitad = (W - 2 * M - 16) / 2
+        for k, (etq, val) in enumerate((("Desde", "2019"), ("Hasta", "2023"))):
+            x0 = M + k * (mitad + 16)
+            L.txt(x0, y + 42, etq, fuente("Regular", 12), GRIS_OSC, "lm")
+            campo(L, x0 + 50, y + 26, x0 + mitad, y + 58, val, flecha=True)
+        y += 82
+
+    # panel de archivos
+    if carpeta_mala:
+        etiqueta_con_ayuda(L, M, y + 4, "Archivos que se usarán", hover=(popover == "archivos"))
+        badge = "0 de 15 encontrados"
+        fb = fuente("Bold", 11)
+        bwid = L.tw(badge, fb) + 24
+        L.rect(W - M - bwid, y - 7, W - M, y + 15, fill=MAGENTA, r=11)
+        L.txt(W - M - bwid / 2, y + 4, badge, fb, BLANCO, "mm")
+        L.txt(W - M - bwid - 16, y + 4, "Actualizar", fuente("Bold", 11.5), VERDE_CTA, "rm")
+        L.d.line([L.P(W - M - bwid - 16 - L.tw("Actualizar", fuente("Bold", 11.5))), L.P(y + 13),
+                  L.P(W - M - bwid - 16), L.P(y + 13)], fill=VERDE_CTA, width=L.P(1))
+        gy = y + 26
+        L.rect(M, gy, W - M, gy + 34, fill=BLANCO, line=LINEA, w=1, r=8)
+        L.txt(M + 12, gy + 17, "Matriz de convenios", fuente("Bold", 11.5), GRIS_OSC, "lm")
+        L.cross(M + (W - 2 * M) * 0.14 + 22, gy + 17)
+        L.txt(M + (W - 2 * M) * 0.14 + 38, gy + 17, "No se encontró", fuente("Bold", 11), MAGENTA, "lm")
+        gy += 34 + 10
+        L.rect(M, gy, W - M, gy + 176, fill=FONDO, line=LINEA, w=1.2, r=8)
+        L.txt(M + 20, gy + 26, "No se reconoció ningún archivo en esta carpeta", fuente("Bold", 13.5), GRIS_OSC, "lm")
+        L.txt(M + 20, gy + 52, "El programa busca archivos con nombres como estos (se pueden cambiar en Fuentes de datos):", fuente("Light", 12), GRIS, "lm")
+        cx_ = M + 20
+        for nm in ("Convenios.xlsx", "Movilidad_2019.xlsx", "IntCasa_2019-1.xlsx", "IntCasa_2019-2.xlsx"):
+            _, w_ = chip(L, cx_, gy + 68, nm, BLANCO, GRIS_OSC, 11, "l", 26)
+            L.rect(cx_, gy + 68, cx_ + w_, gy + 68 + 26, line=LINEA, w=1.2, r=13)
+            cx_ += w_ + 8
+        bx = M + 20
+        for t_, w_ in (("Elegir otra carpeta…", 190), ("Abrir esta carpeta", 170), ("Revisar nombres en Fuentes de datos", 290)):
+            boton_secundario(L, bx, gy + 118, bx + w_, gy + 118 + 38, t_, "normal", 12)
+            bx += w_ + 12
+        y = gy + 176 + 14
+    elif vacio:
+        etiqueta_con_ayuda(L, M, y + 4, "Archivos que se usarán", hover=(popover == "archivos"))
+        gy = y + 26
+        L.rect(M, gy, W - M, gy + 96, fill=FONDO, line=LINEA, w=1.2, r=8)
+        L.txt(W / 2, gy + 36, "Todavía no hay carpeta elegida", fuente("Bold", 13), GRIS_OSC, "mm")
+        L.txt(W / 2, gy + 62, "Cuando la elijas, aquí verás qué archivos de cada año encontró el programa.", fuente("Light", 12), GRIS, "mm")
+        y = gy + 96 + 14
+    else:
+        etiqueta_con_ayuda(L, M, y + 4, "Archivos que se usarán", hover=(popover == "archivos"))
+        badge = "15 de 15 encontrados" if completo else "14 de 15 encontrados"
+        fb = fuente("Bold", 11)
+        bwid = L.tw(badge, fb) + 24
+        L.rect(W - M - bwid, y - 7, W - M, y + 15, fill=(VERDE_CTA if completo else NARANJA), r=11)
+        L.txt(W - M - bwid / 2, y + 4, badge, fb, (BLANCO if completo else NEGRO), "mm")
+        L.txt(W - M - bwid - 16, y + 4, "Actualizar", fuente("Bold", 11.5), VERDE_CTA, "rm")
+        L.d.line([L.P(W - M - bwid - 16 - L.tw("Actualizar", fuente("Bold", 11.5))), L.P(y + 13),
+                  L.P(W - M - bwid - 16), L.P(y + 13)], fill=VERDE_CTA, width=L.P(1))
+        gy = y + 26
+        total = W - 2 * M
+        L.rect(M, gy, W - M, gy + 34, fill=BLANCO, line=LINEA, w=1, r=8)
+        L.txt(M + 12, gy + 17, "Matriz de convenios", fuente("Bold", 11.5), GRIS_OSC, "lm")
+        if matriz_falta:
+            L.cross(M + total * 0.14 + 22, gy + 17)
+            L.txt(M + total * 0.14 + 38, gy + 17, "No se encontró", fuente("Bold", 11), MAGENTA, "lm")
+        else:
+            L.check(M + total * 0.14 + 22, gy + 17)
+            L.txt(M + total * 0.14 + 38, gy + 17, "Convenios.xlsx", fuente("Light", 11), GRIS, "lm")
+        gy += 34 + 8
+        cw = [total * 0.14] + [total * 0.286] * 3
+        xs = [M]
+        for w in cw[:-1]:
+            xs.append(xs[-1] + w)
+        cabeceras = ("Año", "Movilidad (anual)", "Int. en casa · 1.º sem.", "Int. en casa · 2.º sem.") if estrecha else \
+                    ("Año", "Movilidad (anual)", "Int. en casa · 1.º semestre", "Int. en casa · 2.º semestre")
+        L.rect(M, gy, W - M, gy + 30, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+        for x, t in zip(xs, cabeceras):
+            L.txt(x + 12, gy + 15, t, fuente("Bold", 10.5 if estrecha else 11), BLANCO, "lm")
+        filas = [("2019", 1, 1, 1), ("2020", 1, 1, 1), ("2021", 1 if completo else 0, 1, 1), ("2022", 1, 1, 1), ("2023", 1, 1, 1)]
+        for i, (anio, *oks) in enumerate(filas):
+            ry = gy + 30 + i * 30
+            ultima = i == len(filas) - 1
+            L.rect(M, ry, W - M, ry + 30, fill=(BLANCO if i % 2 == 0 else FONDO), r=8 if ultima else 0,
+                   corners=(False, False, True, True) if ultima else None)
+            L.txt(xs[0] + 12, ry + 15, anio, fuente("Regular", 12), NEGRO, "lm")
+            for k, ok in enumerate(oks, start=1):
+                if ok:
+                    L.check(xs[k] + 22, ry + 15)
+                    if cw[k] >= 150:
+                        L.txt(xs[k] + 38, ry + 15, "Encontrado", fuente("Light", 11), GRIS, "lm")
+                else:
+                    L.cross(xs[k] + 22, ry + 15)
+                    L.txt(xs[k] + 38, ry + 15, "Falta" if estrecha else "Falta este archivo", fuente("Bold", 11), MAGENTA, "lm")
+        L.rect(M, gy, W - M, gy + 30 + 5 * 30, line=LINEA, w=1, r=8)
+        y = gy + 30 + 5 * 30 + 14
+
+    if completo or vacio:
+        y += 4
+    elif carpeta_mala or matriz_falta:
+        msg = ("No se puede generar todavía: falta la Matriz de convenios. Sin ella el programa no sabe qué convenios contar."
+               if not carpeta_mala else
+               "No se puede generar todavía: falta la Matriz de convenios y no hay archivos de movilidad ni de internacionalización en casa.")
+        f_av = fuente("Regular", 12)
+        lineas = partir(L, [R(msg)], f_av, f_av, W - 2 * M - 62)
+        ah = 20 + 17 * len(lineas) + 3
+        L.rect(M, y, W - M, y + ah, fill=ROSA_SUAVE, line=MAGENTA, w=1, r=8)
+        L.d.ellipse([L.P(M + 12), L.P(y + ah / 2 - 8), L.P(M + 28), L.P(y + ah / 2 + 8)], fill=MAGENTA)
+        L.txt(M + 20, y + ah / 2, "!", fuente("Bold", 11), BLANCO, "mm")
+        for i, ln in enumerate(lineas):
+            L.txt(M + 40, y + 12 + 8.5 + i * 17, " ".join(t[0] for t in ln), f_av, NEGRO, "lm")
+        y += ah + 18
+    else:
+        # aviso
+        msg = "Falta Movilidad 2021. Puedes generar igual: quedará anotado en la revisión."
+        f_av = fuente("Regular", 12)
+        lineas = partir(L, [R(msg)], f_av, f_av, W - 2 * M - 62)
+        ah = 20 + 17 * len(lineas) + 3
+        L.rect(M, y, W - M, y + ah, fill=AVISO_BG, line=NARANJA, w=1, r=8)
+        L.d.ellipse([L.P(M + 12), L.P(y + ah / 2 - 8), L.P(M + 28), L.P(y + ah / 2 + 8)], fill=NARANJA)
+        L.txt(M + 20, y + ah / 2, "!", fuente("Bold", 11), NEGRO, "mm")
+        for i, ln in enumerate(lineas):
+            L.txt(M + 40, y + 12 + 8.5 + i * 17, " ".join(t[0] for t in ln), f_av, NEGRO, "lm")
+        y += ah + 18
+
+    if ultimo:
+        pend = ultimo == "pendiente"
+        sh = 46
+        L.rect(M, y, W - M, y + sh, fill=(AVISO_BG if pend else FONDO), line=(NARANJA if pend else LINEA), w=1.2, r=8)
+        if pend:
+            L.d.ellipse([L.P(M + 12), L.P(y + sh / 2 - 8), L.P(M + 28), L.P(y + sh / 2 + 8)], fill=NARANJA)
+            L.txt(M + 20, y + sh / 2 + 0.5, "!", fuente("Bold", 11), NEGRO, "mm")
+        else:
+            punto(L, M + 20, y + sh / 2, VERDE_CTA, 6)
+        fb_ = fuente("Bold", 12)
+        fr_ = fuente("Regular", 12)
+        L.txt(M + 38, y + sh / 2, "Último cuadro:", fb_, GRIS_OSC, "lm")
+        tx = M + 38 + L.tw("Último cuadro:", fb_) + 8
+        if pend:
+            L.txt(tx, y + sh / 2, "Fisioterapia · 2019–2023 · ayer 14:32 · tiene cambios sin incluir. Genera de nuevo para incluirlos.", fr_, NEGRO, "lm")
+        else:
+            L.txt(tx, y + sh / 2, "Fisioterapia · 2019–2023 · ayer 14:32 · 8 avisos", fr_, NEGRO, "lm")
+            xr = W - M - 16
+            for t_ in ("Abrir carpeta", "Abrir cuadro"):
+                L.txt(xr, y + sh / 2, t_, fb_, VERDE_CTA, "rm")
+                wt = L.tw(t_, fb_)
+                L.d.line([L.P(xr - wt), L.P(y + sh / 2 + 10), L.P(xr), L.P(y + sh / 2 + 10)], fill=VERDE_CTA, width=L.P(1))
+                xr -= wt + 22
+        y += sh + 16
+
+    # botones
+    est_g = {"generar": "hover", "generar_press": "press"}.get(hover, "normal")
+    est_c = "hover" if hover == "config" else "normal"
+    est_p = "hover" if hover == "previsualizar" else "normal"
+    if not estrecha:
+        boton_primario(L, M, y, M + 290, y + 46, "Generar cuadro maestro", est_g)
+        boton_secundario(L, M + 304, y, M + 304 + 190, y + 46, "Previsualizar cuadro", est_p, 13)
+        icono_ayuda(L, M + 304 + 190 + 12, y + 23, hover=(popover == "previsualizar"))
+        if vacio or carpeta_mala or matriz_falta:
+            L.rect(M - 2, y - 2, M + 292, y + 48, fill=BLANCO)
+            L.rect(M, y, M + 290, y + 46, fill="#E0E0E0", r=8)
+            L.txt(M + 145, y + 23, "Generar cuadro maestro", fuente("Bold", 14), "#9A9A9A", "mm")
+            L.rect(M + 302, y - 2, M + 496, y + 48, fill=BLANCO)
+            L.rect(M + 304, y, M + 494, y + 46, fill=BLANCO, line="#D0D0D0", w=1.5, r=8)
+            L.txt(M + 399, y + 23, "Previsualizar cuadro", fuente("Bold", 13), "#9A9A9A", "mm")
+            L.txt(M + 304 + 190 + 12 + 24, y + 23, "Se activan al completar los pasos 1, 2 y 3." if vacio else "Se activan cuando el programa encuentre la Matriz de convenios.", fuente("Light", 11.5), GRIS, "lm")
+        y += 60
+    else:
+        boton_primario(L, M, y, W - M, y + 46, "Generar cuadro maestro", est_g)
+        y += 58
+        boton_secundario(L, M, y, M + 200, y + 40, "Previsualizar cuadro", est_p, 12)
+        icono_ayuda(L, M + 212, y + 20, hover=(popover == "previsualizar"))
+        y += 52
+    boton_secundario(L, M, y, M + 160, y + 40, "Configuración", est_c, 12)
+    icono_ayuda(L, M + 172, y + 20, hover=(popover == "config"))
+    if revision_activa:
+        fr_ = fuente("Bold", 12)
+        L.txt(W - M - 28, y + 20, "Ver revisión", fr_, VERDE_CTA, "rm")
+        L.d.line([L.P(W - M - 28 - L.tw("Ver revisión", fr_)), L.P(y + 30), L.P(W - M - 28), L.P(y + 30)], fill=VERDE_CTA, width=L.P(1))
+    else:
+        L.txt(W - M - 28, y + 20, "Ver revisión", fuente("Regular", 12), "#9A9A9A", "rm")
+    icono_ayuda(L, W - M - 20, y + 20, hover=(popover == "revision"))
+    fin = y + 40
+
+    if H is None:                      # ajustar altura al contenido
+        H = int(fin + 30 + 34)
+        L.img = L.img.crop((0, 0, int(W * S), int(H * S)))
+        L.d = ImageDraw.Draw(L.img)
+        L.H = H
+
+    # pie
+    L.rect(0, H - 34, W, H, fill=FONDO)
+    L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
+    L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
+    L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    return L
+
+
+def reducir(img, f=2):
+    return img.resize((img.width * f // S, img.height * f // S), Image.LANCZOS)
+
+
+# =====================================================================
+#  v0.5 — componentes nuevos
+# =====================================================================
+VERSION = "Boceto v0.5 · datos ficticios"
+ROSA_SUAVE = "#FDE6F2"
+
+
+def lapiz(L, cx, cy, color=GRIS, s=1.0):
+    P = L.P
+    L.d.line([P(cx - 3 * s), P(cy + 3 * s), P(cx + 5 * s), P(cy - 5 * s)], fill=color, width=P(3.6 * s))
+    L.d.polygon([(P(cx - 7 * s), P(cy + 7 * s)), (P(cx - 6 * s), P(cy + 2 * s)), (P(cx - 2 * s), P(cy + 6 * s))], fill=color)
+
+
+def papelera(L, cx, cy, color=GRIS, s=1.0):
+    P = L.P
+    w = P(1.7 * s)
+    L.d.line([P(cx - 7 * s), P(cy - 4 * s), P(cx + 7 * s), P(cy - 4 * s)], fill=color, width=w)
+    L.d.line([P(cx - 2.5 * s), P(cy - 6.5 * s), P(cx + 2.5 * s), P(cy - 6.5 * s)], fill=color, width=w)
+    L.d.rounded_rectangle([P(cx - 5 * s), P(cy - 3 * s), P(cx + 5 * s), P(cy + 7 * s)], radius=P(1.5), outline=color, width=w)
+    L.d.line([P(cx - 1.8 * s), P(cy), P(cx - 1.8 * s), P(cy + 4.5 * s)], fill=color, width=P(1.3 * s))
+    L.d.line([P(cx + 1.8 * s), P(cy), P(cx + 1.8 * s), P(cy + 4.5 * s)], fill=color, width=P(1.3 * s))
+
+
+def lupa(L, cx, cy, color=GRIS):
+    P = L.P
+    L.d.ellipse([P(cx - 6), P(cy - 6), P(cx + 4), P(cy + 4)], outline=color, width=P(1.8))
+    L.d.line([P(cx + 3), P(cy + 3), P(cx + 8), P(cy + 8)], fill=color, width=P(2))
+
+
+def mas(L, cx, cy, color=BLANCO, s=6):
+    P = L.P
+    L.d.line([P(cx - s), P(cy), P(cx + s), P(cy)], fill=color, width=P(2.4))
+    L.d.line([P(cx), P(cy - s), P(cx), P(cy + s)], fill=color, width=P(2.4))
+
+
+def portapapeles(L, cx, cy, color=VERDE_CTA, s=1.0):
+    P = L.P
+    L.d.rounded_rectangle([P(cx - 6 * s), P(cy - 6 * s), P(cx + 6 * s), P(cy + 8 * s)], radius=P(2), outline=color, width=P(1.7))
+    L.d.rounded_rectangle([P(cx - 3 * s), P(cy - 8 * s), P(cx + 3 * s), P(cy - 4 * s)], radius=P(1.5), fill=color)
+    L.d.line([P(cx - 3 * s), P(cy + 1 * s), P(cx + 3 * s), P(cy + 1 * s)], fill=color, width=P(1.4))
+    L.d.line([P(cx - 3 * s), P(cy + 4 * s), P(cx + 1 * s), P(cy + 4 * s)], fill=color, width=P(1.4))
+
+
+def flecha_der(L, x0, y, x1, color=GRIS, w=2):
+    P = L.P
+    L.d.line([P(x0), P(y), P(x1), P(y)], fill=color, width=P(w))
+    L.d.polygon([(P(x1 + 5), P(y)), (P(x1 - 3), P(y - 5)), (P(x1 - 3), P(y + 5))], fill=color)
+
+
+def flecha_abajo(L, x, y0, y1, color=GRIS, w=2):
+    P = L.P
+    L.d.line([P(x), P(y0), P(x), P(y1)], fill=color, width=P(w))
+    L.d.polygon([(P(x), P(y1 + 5)), (P(x - 5), P(y1 - 3)), (P(x + 5), P(y1 - 3))], fill=color)
+
+
+def chip(L, x, y, texto, bg=TINTE_VERDE, fg=VERDE_CTA, size=11, alineado="l", h=22):
+    f = fuente("Bold", size)
+    w = L.tw(texto, f) + 20
+    x0 = x - w if alineado == "r" else x
+    L.rect(x0, y, x0 + w, y + h, fill=bg, r=h / 2)
+    L.txt(x0 + w / 2, y + h / 2, texto, f, fg, "mm")
+    return x0, w
+
+
+def casilla(L, x, y, marcada=True, s=16):
+    if marcada:
+        L.rect(x, y, x + s, y + s, fill=VERDE_CTA, r=4)
+        L.check(x + s / 2, y + s / 2 + 0.5, BLANCO, 4.2)
+    else:
+        L.rect(x, y, x + s, y + s, fill=BLANCO, line=GRIS, w=1.5, r=4)
+
+
+def parrafo(L, x, y, texto, ancho, fam="Light", px=12, color=GRIS_OSC, lh=None, negrita_en=None):
+    """Texto con ajuste de línea. Devuelve la y final."""
+    f = fuente(fam, px)
+    lh = lh or px * 1.5
+    for ln in partir(L, [(texto, False)], f, f, ancho):
+        L.txt(x, y, " ".join(t[0] for t in ln), f, color, "la")
+        y += lh
+    return y
+
+
+def barra_ventana(L, W, titulo):
+    L.rect(0, 0, W, 32, fill="#EDEDED")
+    L.txt(12, 16, titulo, fuente("Regular", 11), GRIS_OSC, "lm")
+    for i, k in enumerate(("min", "max", "x")):
+        cx = W - 100 + i * 34 + 17
+        if k == "min":
+            L.d.line([L.P(cx - 5), L.P(16), L.P(cx + 5), L.P(16)], fill=GRIS_OSC, width=L.P(1))
+        elif k == "max":
+            L.rect(cx - 5, 11, cx + 5, 21, line=GRIS_OSC, w=1)
+        else:
+            L.cross(cx, 16, GRIS_OSC, 5, 1.2)
+
+
+def recortar(L, H):
+    L.img = L.img.crop((0, 0, int(L.W * S), int(H * S)))
+    L.d = ImageDraw.Draw(L.img)
+    L.H = H
+
+
+# ---------- ventana: Configuración ----------
+TARJETAS = [
+    ("Programas", "25 programas", "Los programas que se pueden elegir al generar un cuadro: se listan, se modifican, se crean o se eliminan.", "Administrar", None),
+    ("Campos del cuadro maestro", "8 campos", "Las columnas del cuadro. Crea, edita o elimina campos y elige de dónde sale cada uno.", "Administrar", None),
+    ("Fuentes de datos", "3 fuentes", "Cómo lee el programa cada Excel: fila de encabezados, columnas y filtros.", "Administrar", "semaforo"),
+    ("Equivalencias de instituciones", "12 guardadas", "Nombres distintos que son la misma universidad (por ejemplo, con un error de escritura).", "Administrar", None),
+    ("Equivalencias de programas", "9 guardadas", "Por ejemplo: Ingeniería Industrial Distancia = Ingeniería Industrial.", "Administrar", None),
+    ("Tipos de persona", "8 tipos", "Cómo se nombra cada tipo en el cuadro: Docente saliente, Experto internacional…", "Administrar", None),
+    ("Reglas de cruce", "5 reglas · 1 cambiada", "Cómo se asigna cada registro a un convenio y cómo se cuenta.", "Administrar", "aviso"),
+    ("Asistente con Gemini", "Opcional", "Ayuda a emparejar columnas y nombres. Solo usa títulos de columnas y nombres de instituciones.", "Abrir asistente", "gris"),
+]
+
+
+def ventana_config(W=760, hover=None):
+    L = Lienzo(W, 1000)
+    M = 28
+    barra_ventana(L, W, "Cuadro maestro internacional · Configuración")
+    L.pegar(logo("_LOGOS-05.png", 34), M, 32 + 18)
+    L.txt(W - M, 32 + 22, "Configuración", fuente("Bold", 20), GRIS_OSC, "ra")
+    L.txt(W - M, 32 + 48, OFICINA, fuente("Light", 12), GRIS, "ra")
+    L.rect(0, 32 + 78, W, 32 + 81, fill=VERDE)
+    y = 32 + 81 + 18
+    # volver + intro
+    L.txt(M, y + 10, "‹  Volver al cuadro maestro", fuente("Bold", 12.5), VERDE_CTA, "lm")
+    y += 32
+    y = parrafo(L, M, y, "Aquí adaptas el programa a cambios en los Excel. Todo se puede listar, modificar, crear y eliminar, "
+               "y se guarda al instante.", W - 2 * M, "Light", 12.5) + 10
+    cw, gap = (W - 2 * M - 16) / 2, 16
+    f_t, f_d = fuente("Bold", 14), fuente("Light", 11.5)
+    alto_card = 128
+    for i, (tit, cuenta, desc, boton, extra) in enumerate(TARJETAS):
+        cx = M + (i % 2) * (cw + gap)
+        cy = y + (i // 2) * (alto_card + 14)
+        L.rect(cx, cy, cx + cw, cy + alto_card, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.txt(cx + 16, cy + 22, tit, f_t, GRIS_OSC, "lm")
+        icono_ayuda(L, cx + 16 + L.tw(tit, f_t) + 8, cy + 22, hover=(hover == ("ayuda", i)))
+        ty = cy + 42
+        for ln in partir(L, [(desc, False)], f_d, f_d, cw - 32)[:3]:
+            L.txt(cx + 16, ty, " ".join(t[0] for t in ln), f_d, GRIS, "la")
+            ty += 16.5
+        by = cy + alto_card - 14 - 30
+        bw = 118 if boton == "Administrar" else 136
+        est = "hover" if hover == ("btn", i) else "normal"
+        boton_secundario(L, cx + cw - 14 - bw, by, cx + cw - 14, by + 30, boton, est, 12)
+        if extra == "gris":
+            chip(L, cx + 16, by + 4, cuenta, "#EDEDED", GRIS, 10.5, "l", 22)
+        elif extra == "aviso":
+            chip(L, cx + 16, by + 4, cuenta, AVISO_BG, AVISO_TXT, 10.5, "l", 22)
+        else:
+            x0_, w_ = chip(L, cx + 16, by + 4, cuenta, TINTE_VERDE, VERDE_CTA, 10.5, "l", 22)
+            if extra == "semaforo":      # estado de las fuentes
+                sx = cx + 16 + w_ + 12
+                for col, n in ((VERDE, "20"), (NARANJA, "1"), (MAGENTA, "1")):
+                    L.d.ellipse([L.P(sx), L.P(by + 11), L.P(sx + 8), L.P(by + 19)], fill=col)
+                    L.txt(sx + 13, by + 15, n, fuente("Bold", 11), GRIS_OSC, "lm")
+                    sx += 38
+    filas = (len(TARJETAS) + 1) // 2
+    y += filas * (alto_card + 14) + 2
+    # barra de acciones
+    L.txt(M, y + 12, "Última modificación: hoy, 13:52", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(M, y + 32, "Copias y almacenamiento ›", fuente("Bold", 11.5), VERDE_CTA, "lm")
+    boton_secundario(L, W - M - 250 - 170 - 12, y + 4, W - M - 250 - 12, y + 40, "Exportar / importar", "normal", 12)
+    boton_primario(L, W - M - 250, y + 4, W - M, y + 40, "Volver al cuadro maestro")
+    H = int(y + 40 + 28 + 34)
+    recortar(L, H)
+    L.rect(0, H - 34, W, H, fill=FONDO)
+    L.d.line([0, L.P(H - 34), L.P(W), L.P(H - 34)], fill=LINEA, width=L.P(1))
+    L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
+    L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    return L
+
+
+# ---------- modales ----------
+RADIO = 16
+
+
+def modal_base(W, H, titulo):
+    L = Lienzo(W, H)
+    L.rect(0, 0, W, 32, fill="#EDEDED")
+    L.txt(14, 16, titulo, fuente("Regular", 11), GRIS_OSC, "lm")
+    L.cross(W - 24, 16, GRIS_OSC, 5, 1.2)
+    return L
+
+
+def cerrar_modal(L):
+    L.rect(0.5, 0.5, L.W - 0.5, L.H - 0.5, line="#9A9A9A", w=1, r=RADIO)
+    return L.img
+
+
+def sobre(base_rgb, dl, dy_extra=0):
+    """Atenúa la ventana de fondo y pone el modal redondeado con sombra, centrado."""
+    base = Image.blend(base_rgb, Image.new("RGB", base_rgb.size, "#000000"), 0.45)
+    dx = int((base.width - dl.width) / 2)
+    dy = max(int(8 * S), int((base.height - dl.height) / 2)) + dy_extra
+    if dy + dl.height > base.height:                 # el modal es más alto que la ventana: ampliar el fondo
+        nuevo = Image.new("RGB", (base.width, dy + dl.height + int(16 * S)), "#4A4A4A")
+        nuevo.paste(base, (0, 0))
+        base = nuevo
+    mk = Image.new("L", dl.size, 0)
+    ImageDraw.Draw(mk).rounded_rectangle([0, 0, dl.width - 1, dl.height - 1], radius=RADIO * S, fill=255)
+    m3 = 40 * S // 3
+    sm = Image.new("L", (dl.width + 2 * m3, dl.height + 2 * m3), 0)
+    ImageDraw.Draw(sm).rounded_rectangle([m3, m3 + 12, sm.width - m3, sm.height - m3 + 12], radius=RADIO * S, fill=120)
+    sm = sm.filter(ImageFilter.GaussianBlur(14))
+    base.paste(Image.new("RGB", sm.size, "#000000"), (dx - m3, dy - m3), sm)
+    base.paste(dl, (dx, dy), mk)
+    return base
+
+
+# ---------- modal CRUD de programas ----------
+PROGRAMAS = ["Administración de empresas", "Administración de negocios internacionales", "Arquitectura",
+             "Comunicación Audiovisual y Digital", "Contaduría Pública", "Derecho", "Enfermería",
+             "Entrenamiento Deportivo", "Especialización en Auditoria en Salud"]
+
+
+def fila_programa(L, x0, y, x1, texto, estado):
+    """Una fila = un input con sus acciones dentro. Devuelve (alto, posición del lápiz)."""
+    f = fuente("Regular", 12.5)
+    h = 38
+    if estado == "editando":
+        L.rect(x0, y, x1, y + h, fill=BLANCO, line=VERDE_CTA, w=2, r=7)
+        L.txt(x0 + 14, y + h / 2, texto, f, NEGRO, "lm")
+        cx = x0 + 14 + L.tw(texto, f) + 1
+        L.d.line([L.P(cx), L.P(y + 9), L.P(cx), L.P(y + h - 9)], fill=NEGRO, width=L.P(1.4))
+        L.rect(x1 - 70, y + 6, x1 - 40, y + h - 6, fill=TINTE_VERDE, r=6)
+        L.check(x1 - 55, y + h / 2 + 0.5, VERDE_CTA, 5.5)
+        L.cross(x1 - 21, y + h / 2, GRIS, 5, 1.8)
+        L.txt(x0 + 4, y + h + 11, "Enter guarda · Esc cancela", fuente("Light", 11), GRIS, "lm")
+        return h + 22, None
+    if estado == "eliminar":
+        L.rect(x0, y, x1, y + h + 4, fill=AVISO_BG, line=NARANJA, w=1.4, r=7)
+        L.d.ellipse([L.P(x0 + 12), L.P(y + 11), L.P(x0 + 30), L.P(y + 29)], fill=NARANJA)
+        L.txt(x0 + 21, y + 20, "!", fuente("Bold", 12), NEGRO, "mm")
+        L.txt(x0 + 40, y + 20, "¿Eliminar este programa?", fuente("Bold", 12.5), GRIS_OSC, "lm")
+        boton_secundario(L, x1 - 178, y + 6, x1 - 98, y + h - 2 + 2, "Cancelar", "normal", 11.5)
+        L.rect(x1 - 90, y + 6, x1 - 10, y + h - 2 + 2, fill=MAGENTA, r=8)
+        L.txt(x1 - 50, y + 21, "Eliminar", fuente("Bold", 11.5), BLANCO, "mm")
+        L.txt(x0 + 4, y + h + 15, "Solo se quita de la lista; tus Excel no se tocan.", fuente("Light", 11), GRIS, "lm")
+        return h + 26, None
+    hov = estado == "hover"
+    L.rect(x0, y, x1, y + h, fill=BLANCO, line=(VERDE_CTA if hov else GRIS), w=(1.6 if hov else 1), r=7)
+    L.txt(x0 + 14, y + h / 2, texto, f, NEGRO, "lm")
+    px, ppx = x1 - 62, x1 - 28
+    if hov:
+        L.d.ellipse([L.P(px - 14), L.P(y + h / 2 - 14), L.P(px + 14), L.P(y + h / 2 + 14)], fill=TINTE_VERDE)
+    lapiz(L, px, y + h / 2, VERDE_CTA if hov else GRIS)
+    papelera(L, ppx, y + h / 2, GRIS)
+    return h, (px, y)
+
+
+def modal_programas(W=640):
+    L = modal_base(W, 900, "Programas")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Programas", fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw("Programas", fuente("Bold", 20)) + 10, y + 12)
+    chip(L, W - pad, y + 1, "25 programas · sede Pereira", TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 36
+    y = parrafo(L, pad, y, "Son los programas que podrás elegir al generar un cuadro. Cambia un nombre con el lápiz, "
+                "quita uno con la papelera o crea uno nuevo.", W - 2 * pad, "Light", 12.5) + 8
+    # buscar + crear
+    L.rect(pad, y, pad + 372, y + 38, fill=BLANCO, line=GRIS, w=1, r=7)
+    lupa(L, pad + 20, y + 18, GRIS)
+    L.txt(pad + 40, y + 19, "Buscar programa…", fuente("Regular", 12.5), "#9A9A9A", "lm")
+    L.rect(W - pad - 190, y, W - pad, y + 38, fill=VERDE_CTA, r=8)
+    mas(L, W - pad - 190 + 26, y + 19, BLANCO, 6)
+    L.txt(W - pad - 190 + 42, y + 19, "Crear programa", fuente("Bold", 13.5), BLANCO, "lm")
+    y += 54
+    # lista con desplazamiento
+    ly0 = y
+    ix0, ix1 = pad + 12, W - pad - 28
+    y += 12
+    estados = ["normal", "hover", "editando", "eliminar", "normal", "normal", "normal", "normal", "normal"]
+    textos = list(PROGRAMAS)
+    textos[2] = "Arquitectura y Urbanismo"
+    lapiz_pos = None
+    for t, e in zip(textos, estados):
+        h, pos = fila_programa(L, ix0, y, ix1, t, e)
+        if pos and e == "hover":
+            lapiz_pos = pos
+        y += h + 8
+    ly1 = y + 4
+    L.rect(pad, ly0, W - pad, ly1, line=LINEA, w=1.2, r=10)
+    # barra de desplazamiento (se dibuja sobre el borde derecho de la lista)
+    L.rect(W - pad - 16, ly0 + 12, W - pad - 8, ly1 - 12, fill="#ECECEC", r=4)
+    L.rect(W - pad - 16, ly0 + 12, W - pad - 8, ly0 + 12 + int((ly1 - ly0 - 24) * 0.36), fill="#A8A8A8", r=4)
+    # tooltip sobre el lápiz en hover
+    if lapiz_pos:
+        tx, ty = lapiz_pos[0] - 24, lapiz_pos[1] + 19
+        L.rect(tx - 52, ty - 12, tx, ty + 12, fill=GRIS_OSC, r=6)
+        L.d.polygon([(L.P(tx - 1), L.P(ty - 5)), (L.P(tx - 1), L.P(ty + 5)), (L.P(tx + 5), L.P(ty))], fill=GRIS_OSC)
+        L.txt(tx - 26, ty, "Editar", fuente("Regular", 11), BLANCO, "mm")
+    y = ly1 + 14
+    L.txt(pad, y + 18, "Mostrando 9 de 25 · desplázate para ver más", fuente("Light", 11.5), GRIS, "lm")
+    L.txt(pad, y + 38, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
+    boton_primario(L, W - pad - 130, y + 6, W - pad, y + 46, "Listo")
+    H = int(y + 46 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ---------- modal: asistente con Gemini (4 pasos) ----------
+def ilustracion(L, n, ox, oy, w=330, h=108):
+    L.rect(ox, oy, ox + w, oy + h, fill=FONDO, r=10)
+    f9, f10b = fuente("Light", 9.5), fuente("Bold", 10.5)
+    if n == 1:                                           # mensaje preparado + botón copiar
+        L.rect(ox + 22, oy + 14, ox + 176, oy + 94, fill=BLANCO, line=LINEA, w=1.2, r=7)
+        L.txt(ox + 32, oy + 28, "Mensaje para Gemini", f10b, GRIS_OSC, "lm")
+        for i, ancho in enumerate((124, 108, 118, 80)):
+            L.rect(ox + 32, oy + 42 + i * 12, ox + 32 + ancho, oy + 47 + i * 12, fill="#D9D9D9", r=3)
+        flecha_der(L, ox + 184, oy + 54, ox + 202, GRIS, 1.6)
+        L.rect(ox + 212, oy + 30, ox + 316, oy + 66, fill=BLANCO, line=VERDE_CTA, w=1.6, r=8)
+        portapapeles(L, ox + 230, oy + 48, VERDE_CTA, 0.9)
+        L.txt(ox + 244, oy + 48, "Copiar", fuente("Bold", 11.5), VERDE_CTA, "lm")
+        chip(L, ox + w - 14, oy + 74, "Sin datos de personas", "#EDEDED", GRIS_OSC, 9.5, "r", 20)
+    elif n == 2:                                         # navegador con Gemini
+        L.rect(ox + 36, oy + 12, ox + w - 36, oy + 96, fill=BLANCO, line=GRIS, w=1.2, r=9)
+        L.rect(ox + 36, oy + 12, ox + w - 36, oy + 32, fill="#EDEDED", r=9, corners=(True, True, False, False))
+        for i in range(3):
+            L.d.ellipse([L.P(ox + 48 + i * 11), L.P(oy + 18), L.P(ox + 54 + i * 11), L.P(oy + 24)], fill="#B8B8B8")
+        L.rect(ox + 96, oy + 16, ox + w - 56, oy + 28, fill=BLANCO, r=6)
+        L.txt(ox + 106, oy + 22, "gemini.google.com", f9, GRIS, "lm")
+        L.txt(ox + w / 2, oy + 52, "Gemini", fuente("Bold", 15), GRIS_OSC, "mm")
+        L.rect(ox + 70, oy + 68, ox + w - 70, oy + 88, fill="#F5F5F5", line=LINEA, w=1, r=10)
+        L.txt(ox + 82, oy + 78, "Escribe aquí tu mensaje…", f9, "#9A9A9A", "lm")
+    elif n == 3:                                         # pegar y enviar
+        for i, t in enumerate(("Ctrl", "V")):
+            kx = ox + w / 2 - 38 + i * 48
+            L.rect(kx, oy + 10, kx + (44 if i == 0 else 32), oy + 32, fill=BLANCO, line=GRIS, w=1.3, r=5)
+            L.txt(kx + (22 if i == 0 else 16), oy + 21, t, fuente("Bold", 11), GRIS_OSC, "mm")
+        L.txt(ox + w / 2 - 41, oy + 21, "", f9, GRIS, "mm")
+        flecha_abajo(L, ox + w / 2, oy + 36, oy + 56, VERDE_CTA, 2)
+        L.rect(ox + 36, oy + 62, ox + w - 36, oy + 98, fill=BLANCO, line=GRIS, w=1.3, r=18)
+        L.txt(ox + 52, oy + 80, "Ayúdame a emparejar estos nombres de…", f9, GRIS_OSC, "lm")
+        L.d.ellipse([L.P(ox + w - 68), L.P(oy + 68), L.P(ox + w - 42), L.P(oy + 92)], fill=VERDE_CTA)
+        L.d.line([L.P(ox + w - 55), L.P(oy + 86), L.P(ox + w - 55), L.P(oy + 74)], fill=BLANCO, width=L.P(2))
+        L.d.polygon([(L.P(ox + w - 55), L.P(oy + 72)), (L.P(ox + w - 60), L.P(oy + 78)), (L.P(ox + w - 50), L.P(oy + 78))], fill=BLANCO)
+    else:                                                # copiar respuesta y pegar en el programa
+        L.rect(ox + 18, oy + 12, ox + 150, oy + 96, fill=BLANCO, line=LINEA, w=1.2, r=10)
+        L.txt(ox + 28, oy + 26, "Respuesta", f10b, GRIS_OSC, "lm")
+        for i, ancho in enumerate((106, 90, 100, 70)):
+            L.rect(ox + 28, oy + 40 + i * 12, ox + 28 + ancho, oy + 45 + i * 12, fill="#D9D9D9", r=3)
+        portapapeles(L, ox + 136, oy + 24, VERDE_CTA, 0.75)
+        flecha_der(L, ox + 156, oy + 54, ox + 176, GRIS, 1.6)
+        L.rect(ox + 186, oy + 12, ox + w - 14, oy + 96, fill=BLANCO, line=VERDE_CTA, w=1.6, r=8)
+        L.txt(ox + 196, oy + 25, "Pegar respuesta", f10b, GRIS_OSC, "lm")
+        L.rect(ox + 196, oy + 36, ox + w - 24, oy + 62, fill="#F5F5F5", line=LINEA, w=1, r=5)
+        L.rect(ox + 196, oy + 70, ox + w - 24, oy + 88, fill=VERDE_CTA, r=6)
+        L.txt(ox + 186 + (w - 14 - 186) / 2, oy + 79, "Revisar sugerencias", fuente("Bold", 9.5), BLANCO, "mm")
+
+
+PASOS = [
+    ("Copia el mensaje", "El programa lo prepara por ti con títulos de columnas y nombres de instituciones. Pulsa Copiar."),
+    ("Abre Gemini", "Se abre en tu navegador. Inicia sesión con tu cuenta y abre un chat nuevo."),
+    ("Pega y envía", "Pega el mensaje con Ctrl + V y envíalo. Gemini responde con una lista de coincidencias."),
+    ("Vuelve y pega la respuesta", "Copia la respuesta de Gemini, vuelve aquí, pégala y pulsa Revisar sugerencias."),
+]
+
+
+def modal_gemini_pasos(W=756):
+    L = modal_base(W, 1000, "Asistente con Gemini")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Asistente con Gemini", fuente("Bold", 20), GRIS_OSC, "lm")
+    chip(L, pad + L.tw("Asistente con Gemini", fuente("Bold", 20)) + 12, y + 1, "Opcional", "#EDEDED", GRIS, 11, "l", 24)
+    y += 38
+    y = parrafo(L, pad, y, "Gemini te ayuda a emparejar columnas y nombres de instituciones que el programa no reconoció. "
+                "Son 4 pasos y no necesitas instalar nada.", W - 2 * pad, "Light", 12.5) + 10
+    cw, gap = (W - 2 * pad - 16) / 2, 16
+    f_t, f_d = fuente("Bold", 14), fuente("Light", 11.5)
+    lin_max = max(len(partir(L, [(d_, False)], f_d, f_d, cw - 28)) for _, d_ in PASOS)
+    alto_card = 6 + 108 + 14 + 36 + lin_max * 16.5 + 16
+    for i, (tit, desc) in enumerate(PASOS):
+        cx = pad + (i % 2) * (cw + gap)
+        cy = y + (i // 2) * (alto_card + 14)
+        L.rect(cx, cy, cx + cw, cy + alto_card, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        ilustracion(L, i + 1, cx + 6, cy + 6, cw - 12, 108)
+        ty = cy + 6 + 108 + 14
+        L.d.ellipse([L.P(cx + 14), L.P(ty), L.P(cx + 14 + 26), L.P(ty + 26)], fill=VERDE_CTA)
+        L.txt(cx + 27, ty + 13, str(i + 1), fuente("Bold", 13), BLANCO, "mm")
+        L.txt(cx + 50, ty + 13, tit, f_t, GRIS_OSC, "lm")
+        ty += 36
+        for ln in partir(L, [(desc, False)], f_d, f_d, cw - 28)[:3]:
+            L.txt(cx + 14, ty, " ".join(t[0] for t in ln), f_d, GRIS, "la")
+            ty += 16.5
+    y += 2 * (alto_card + 14)
+    # avisos
+    L.rect(pad, y, W - pad, y + 66, fill=AVISO_BG, line=NARANJA, w=1, r=8)
+    L.d.ellipse([L.P(pad + 12), L.P(y + 12), L.P(pad + 30), L.P(y + 30)], fill=NARANJA)
+    L.txt(pad + 21, y + 21, "!", fuente("Bold", 12), NEGRO, "mm")
+    L.txt(pad + 42, y + 21, "Gemini solo sugiere: nada se aplica sin tu confirmación.", fuente("Bold", 12), GRIS_OSC, "lm")
+    L.txt(pad + 42, y + 44, "No pegues nombres, documentos ni correos de personas. El mensaje que prepara el programa ya no los incluye.",
+          fuente("Regular", 11.5), NEGRO, "lm")
+    y += 66 + 18
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    L.txt(pad + 140, y + 21, "Ya tengo la respuesta", fuente("Bold", 12.5), VERDE_CTA, "lm")
+    boton_primario(L, W - pad - 310, y, W - pad, y + 42, "Copiar mensaje y abrir Gemini")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ---------- modal: pegar respuesta y confirmar sugerencias ----------
+SUGERENCIAS = [
+    ("Universidad Autónoma deSinaloa", "UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", True),
+    ("Benemérita Universidad Autónoma de Puebla", "BENEMERITA UNIVERSIDAD AUTONOMA DE PUEBLA - BUAP", True),
+    ("Universidad Autónoma del Estado de México", "UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO - UAEMEX", True),
+    ("Universidad Nacional Autónoma de México", "UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO - UNAM", True),
+    ("Universidad de Montreal", None, False),
+]
+
+
+def modal_gemini_respuesta(W=700):
+    L = modal_base(W, 1000, "Asistente con Gemini · Paso 4 de 4")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Pega la respuesta de Gemini", fuente("Bold", 20), GRIS_OSC, "lm")
+    chip(L, W - pad, y + 1, "Paso 4 de 4", TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 40
+    L.rect(pad, y, W - pad, y + 96, fill=BLANCO, line=VERDE_CTA, w=2, r=8)
+    f = fuente("Regular", 11)
+    for i, t in enumerate(("1. Universidad Autónoma deSinaloa → UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)",
+                           "2. Benemérita Universidad Autónoma de Puebla → BENEMERITA UNIVERSIDAD AUTONOMA DE PUEBLA - BUAP",
+                           "3. Universidad Autónoma del Estado de México → UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO…",
+                           "4. Universidad Nacional Autónoma de México → UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO…",
+                           "5. Universidad de Montreal → sin coincidencia")):
+        L.txt(pad + 14, y + 14 + i * 16.5, t, f, GRIS_OSC, "lm")
+    y += 96 + 12
+    boton_primario(L, W - pad - 190, y, W - pad, y + 38, "Revisar sugerencias")
+    L.txt(pad, y + 19, "Pegado: 5 líneas", fuente("Light", 11.5), GRIS, "lm")
+    y += 38 + 22
+    L.txt(pad, y + 10, "Sugerencias (5)", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(W - pad, y + 10, "Marca las que quieres guardar", fuente("Light", 11.5), GRIS, "rm")
+    y += 28
+    # tabla
+    cols = [pad, pad + 44, pad + 300, W - pad - 130]
+    L.rect(pad, y, W - pad, y + 34, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    for x, t in ((cols[1], "El Excel dice"), (cols[2], "Gemini propone"), (cols[3], "Estado")):
+        L.txt(x, y + 17, t, fuente("Bold", 11.5), BLANCO, "lm")
+    casilla(L, pad + 14, y + 9, True, 16)
+    y += 34
+    f_c = fuente("Regular", 11.5)
+    for i, (orig, prop, ok) in enumerate(SUGERENCIAS):
+        fh = 44
+        L.rect(pad, y, W - pad, y + fh, fill=(FONDO if i % 2 else BLANCO))
+        casilla(L, pad + 14, y + 14, ok, 16)
+        L.txt(cols[1], y + fh / 2, orig, f_c, NEGRO, "lm")
+        if prop:
+            ln = partir(L, [(prop, False)], f_c, f_c, cols[3] - cols[2] - 16)
+            ty = y + fh / 2 - (len(ln) - 1) * 7.5
+            for j, l_ in enumerate(ln[:2]):
+                L.txt(cols[2], ty + j * 15, " ".join(t[0] for t in l_), f_c, NEGRO, "lm")
+            chip(L, cols[3], y + 11, "Por confirmar", AVISO_BG, "#9A5B00", 10.5, "l", 22)
+        else:
+            L.txt(cols[2], y + fh / 2, "—", f_c, GRIS, "lm")
+            chip(L, cols[3], y + 11, "No coincide", ROSA_SUAVE, MAGENTA, 10.5, "l", 22)
+        y += fh
+    L.rect(pad, y - 44 * len(SUGERENCIAS) - 34, W - pad, y, line=LINEA, w=1.2, r=8)
+    y += 12
+    y = parrafo(L, pad, y, "Las equivalencias que guardes aparecen en Configuración → Equivalencias de instituciones y el programa "
+                "no vuelve a preguntarlas. Lo que no coincide queda en Ver revisión.", W - 2 * pad, "Light", 11.5) + 8
+    L.txt(pad, y + 21, "4 de 5 seleccionadas", fuente("Bold", 12), GRIS_OSC, "lm")
+    boton_secundario(L, W - pad - 190 - 12 - 120, y, W - pad - 190 - 12, y + 42, "Cancelar", "normal", 13)
+    boton_primario(L, W - pad - 190, y, W - pad, y + 42, "Guardar 4 equivalencias")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+
+
+# =====================================================================
+#  v0.7 — Campos del cuadro maestro y Fuentes de datos
+# =====================================================================
+VERSION = "Boceto v0.7 · datos ficticios"
+OK_TXT = "#4A6320"
+AVISO_TXT = "#9A5B00"
+
+
+def agarre(L, cx, cy, color="#A8A8A8"):
+    """Seis puntos para arrastrar."""
+    P = L.P
+    for dx in (-3, 3):
+        for dy in (-5, 0, 5):
+            L.d.ellipse([P(cx + dx - 1.3), P(cy + dy - 1.3), P(cx + dx + 1.3), P(cy + dy + 1.3)], fill=color)
+
+
+def candado(L, cx, cy, color=GRIS):
+    P = L.P
+    L.d.rounded_rectangle([P(cx - 5), P(cy - 1), P(cx + 5), P(cy + 6)], radius=P(1.5), fill=color)
+    L.d.arc([P(cx - 3.5), P(cy - 7), P(cx + 3.5), P(cy + 1)], start=180, end=360, fill=color, width=P(1.7))
+
+
+def tooltip(L, x_der, y, texto, size=11):
+    """Globo oscuro a la izquierda del punto (x_der, y) con flecha hacia la derecha."""
+    f = fuente("Regular", size)
+    w = L.tw(texto, f) + 20
+    L.rect(x_der - w - 6, y - 12, x_der - 6, y + 12, fill=GRIS_OSC, r=6)
+    L.d.polygon([(L.P(x_der - 7), L.P(y - 5)), (L.P(x_der - 7), L.P(y + 5)), (L.P(x_der - 1), L.P(y))], fill=GRIS_OSC)
+    L.txt(x_der - 6 - w / 2, y, texto, f, BLANCO, "mm")
+
+
+def tooltip_arriba(L, x_der, y_base, texto, size=11):
+    """Globo oscuro sobre el punto: su borde derecho en x_der y la flecha hacia abajo."""
+    f = fuente("Regular", size)
+    w = L.tw(texto, f) + 20
+    L.rect(x_der - w, y_base - 24, x_der, y_base, fill=GRIS_OSC, r=6)
+    L.d.polygon([(L.P(x_der - 20), L.P(y_base)), (L.P(x_der - 10), L.P(y_base)), (L.P(x_der - 15), L.P(y_base + 6))], fill=GRIS_OSC)
+    L.txt(x_der - w / 2, y_base - 12, texto, f, BLANCO, "mm")
+
+
+def desplegable(L, x0, y0, x1, y1, texto, foco=False, color=NEGRO):
+    L.rect(x0, y0, x1, y1, fill=BLANCO, line=(VERDE_CTA if foco else GRIS), w=(2 if foco else 1), r=6)
+    L.txt(x0 + 12, (y0 + y1) / 2, texto, fuente("Regular", 12), color, "lm")
+    L.flecha(x1 - 18, (y0 + y1) / 2)
+
+
+FUENTE_CHIP = {
+    "Matriz": (TINTE_VERDE, OK_TXT),
+    "Reportes": (AVISO_BG, AVISO_TXT),
+    "Calculado": ("#EDEDED", GRIS_OSC),
+    "Vacío": (BLANCO, GRIS),
+}
+
+# nombre, fuente, detalle, tipo, base
+CAMPOS = [
+    ("No.", "Calculado", "Número consecutivo", "Número", False),
+    ("Institución", "Matriz", "Nombre de la institución", "Texto", True),
+    ("Breve objeto", "Matriz", "Objeto del convenio", "Texto", False),
+    ("Resultados concretos", "Calculado", "Movilidad + int. en casa, por año y tipo", "Texto calculado", True),
+    ("Vigencia (años)", "Matriz", "Fechas de inicio y fin / vigencia", "Número", True),
+    ("Activo", "Matriz", "Estado del convenio hoy", "Opciones", True),
+    ("Nº de usuarios", "Vacío", "No se llena", "Número", False),
+    ("No aplica", "Vacío", "No se llena", "Texto", False),
+]
+
+
+def modal_campos(W=900):
+    L = modal_base(W, 1200, "Campos del cuadro maestro")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Campos del cuadro maestro", fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw("Campos del cuadro maestro", fuente("Bold", 20)) + 10, y + 12)
+    chip(L, W - pad, y + 1, "8 campos", TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 36
+    y = parrafo(L, pad, y, "Son las columnas del cuadro que se genera, en el orden en que aparecen. Cada campo dice de dónde "
+                "sale su dato. Arrástralos para ordenarlos, edítalos con el lápiz o crea uno nuevo.", W - 2 * pad, "Light", 12.5) + 8
+    # barra de herramientas
+    f_h = fuente("Light", 11.5)
+    L.txt(pad, y + 19, "Arrastra", f_h, GRIS, "lm")
+    gx = pad + L.tw("Arrastra", f_h) + 16
+    agarre(L, gx, y + 19, "#A8A8A8")
+    L.txt(gx + 14, y + 19, "para cambiar el orden en el cuadro", f_h, GRIS, "lm")
+    L.rect(W - pad - 170, y, W - pad, y + 38, fill=VERDE_CTA, r=8)
+    mas(L, W - pad - 170 + 26, y + 19, BLANCO, 6)
+    L.txt(W - pad - 170 + 42, y + 19, "Crear campo", fuente("Bold", 13.5), BLANCO, "lm")
+    y += 54
+    # tabla
+    x0, x1 = pad, W - pad
+    cx = [x0 + 14, x0 + 50, x0 + 82, x0 + 292, x0 + 640]       # agarre, #, nombre, origen, tipo
+    L.rect(x0, y, x1, y + 34, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    for xx, t in ((cx[1], "#"), (cx[2], "Nombre en el cuadro"), (cx[3], "De dónde sale el dato"), (cx[4], "Tipo")):
+        L.txt(xx, y + 17, t, fuente("Bold", 11.5), BLANCO, "lm")
+    top = y
+    y += 34
+    f_n, f_d = fuente("Bold", 12.5), fuente("Regular", 11.5)
+    tooltip_pos = None
+    for i, (nom, fu, det, tipo, base) in enumerate(CAMPOS):
+        editando = (i == 1)
+        hover = (i == 3)
+        fh = 48
+        fondo = BLANCO if i % 2 == 0 else FONDO
+        if hover:
+            fondo = "#F1F7E7"
+        L.rect(x0, y, x1, y + fh, fill=fondo)
+        agarre(L, cx[0] + 4, y + fh / 2, VERDE_CTA if hover else "#A8A8A8")
+        L.txt(cx[1], y + fh / 2, str(i + 1), f_d, GRIS, "lm")
+        L.txt(cx[2], y + fh / 2, nom, f_n, GRIS_OSC, "lm")
+        bg, fg = FUENTE_CHIP[fu]
+        if fu == "Vacío":
+            L.rect(cx[3], y + 13, cx[3] + L.tw(fu, fuente("Bold", 10.5)) + 20, y + 35, fill=BLANCO, line=LINEA, w=1.2, r=11)
+            L.txt(cx[3] + (L.tw(fu, fuente("Bold", 10.5)) + 20) / 2, y + 24, fu, fuente("Bold", 10.5), GRIS, "mm")
+            wchip = L.tw(fu, fuente("Bold", 10.5)) + 20
+        else:
+            _, wchip = chip(L, cx[3], y + 13, fu, bg, fg, 10.5, "l", 22)
+        L.txt(cx[3] + wchip + 10, y + fh / 2, det, f_d, NEGRO, "lm")
+        L.txt(cx[4], y + fh / 2, tipo, f_d, GRIS_OSC, "lm")
+        px, ppx = x1 - 64, x1 - 30
+        if hover:
+            L.d.ellipse([L.P(px - 14), L.P(y + fh / 2 - 14), L.P(px + 14), L.P(y + fh / 2 + 14)], fill=TINTE_VERDE)
+        lapiz(L, px, y + fh / 2, VERDE_CTA if hover else GRIS)
+        if base:
+            candado(L, ppx, y + fh / 2, GRIS)
+            if hover:
+                tooltip_pos = (ppx + 17, y + 10)
+        else:
+            papelera(L, ppx, y + fh / 2, GRIS)
+        if editando:
+            # fila en edición: panel que se abre debajo
+            L.rect(x0, y, x1, y + fh, fill=TINTE_VERDE)
+            agarre(L, cx[0] + 4, y + fh / 2, "#A8A8A8")
+            L.txt(cx[1], y + fh / 2, str(i + 1), f_d, GRIS, "lm")
+            L.txt(cx[2], y + fh / 2, "Editando: " + nom, f_n, OK_TXT, "lm")
+            y += fh
+            ph = 252
+            L.rect(x0, y, x1, y + ph, fill=TINTE_VERDE)
+            L.rect(x0 + 16, y + 6, x1 - 16, y + ph - 14, fill=BLANCO, line=VERDE_CTA, w=1.6, r=10)
+            ix = x0 + 36
+            colw = (x1 - x0 - 72 - 20) / 2
+            L.txt(ix, y + 28, "Nombre en el cuadro", fuente("Bold", 12), GRIS_OSC, "lm")
+            campo(L, ix, y + 40, ix + colw, y + 72, nom, foco=True)
+            L.txt(ix + colw + 20, y + 28, "Tipo de dato", fuente("Bold", 12), GRIS_OSC, "lm")
+            desplegable(L, ix + colw + 20, y + 40, ix + 2 * colw + 20, y + 72, tipo)
+            L.txt(ix, y + 92, "Fuente del dato", fuente("Bold", 12), GRIS_OSC, "lm")
+            desplegable(L, ix, y + 104, ix + colw, y + 136, "Matriz de convenios")
+            L.txt(ix + colw + 20, y + 92, "Columna del Excel", fuente("Bold", 12), GRIS_OSC, "lm")
+            desplegable(L, ix + colw + 20, y + 104, ix + 2 * colw + 20, y + 136, "Nombre de la institución")
+            chip(L, ix + colw + 20, y + 146, "Exacta", TINTE_VERDE, OK_TXT, 10, "l", 20)
+            L.txt(ix + colw + 20 + 66, y + 156, "Encontrada con este nombre en la matriz", fuente("Light", 11), GRIS, "lm")
+            L.txt(ix, y + 158, "Campo base: se puede renombrar, no eliminar.", fuente("Light", 11), GRIS, "lm")
+            boton_secundario(L, x1 - 36 - 120 - 12 - 120, y + ph - 14 - 50, x1 - 36 - 120 - 12, y + ph - 14 - 12, "Cancelar", "normal", 12)
+            boton_primario(L, x1 - 36 - 120, y + ph - 14 - 50, x1 - 36, y + ph - 14 - 12, "Guardar")
+            y += ph
+        else:
+            y += fh
+    bottom = y
+    L.rect(x0, top, x1, bottom, line=LINEA, w=1.2, r=8)
+    if tooltip_pos:
+        tooltip_arriba(L, tooltip_pos[0], tooltip_pos[1], "Campo base: no se puede eliminar")
+    y += 16
+    y = parrafo(L, pad, y, "Los campos base son los que el programa necesita para calcular. Los demás se pueden quitar o agregar. "
+                "Los cambios se guardan al instante.", W - 2 * pad - 150, "Light", 11.5, GRIS) + 2
+    boton_primario(L, W - pad - 130, y - 36, W - pad, y + 4, "Listo")
+    H = int(y + 4 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ---------- Fuentes de datos ----------
+FUENTES = [
+    ("Matriz de convenios", "Un archivo · hoja CONV_INTERNACIONALES", [(VERDE, "8 exactas")]),
+    ("Movilidad", "Un archivo por año", [(VERDE, "6 exactas"), (NARANJA, "1 por confirmar")]),
+    ("Internacionalización en casa", "Dos archivos por año (1.º y 2.º semestre)", [(VERDE, "6 exactas"), (MAGENTA, "1 sin identificar")]),
+]
+
+COLS_IC = [
+    ("Año", "AÑO", "exacta"),
+    ("Semestre", "SEMESTRE", "exacta"),
+    ("Programa", "PROGRAMA ACADÉMICO", "exacta"),
+    ("Institución", "INSTITUCIÓN ALIADA", "exacta"),
+    ("Tipo de actividad", "TIPO DE ACTIVIDAD", "exacta"),
+    ("Participantes", "NO. PARTICIPANTES", "exacta"),
+    ("Tipo de persona", None, "sin"),
+]
+
+
+def modal_fuentes(W=980):
+    L = modal_base(W, 1300, "Fuentes de datos")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Fuentes de datos", fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw("Fuentes de datos", fuente("Bold", 20)) + 10, y + 12)
+    cx_ = W - pad
+    for txt, bg, fg in (("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 por confirmar", AVISO_BG, AVISO_TXT), ("20 exactas", TINTE_VERDE, OK_TXT)):
+        x_, w_ = chip(L, cx_, y + 1, txt, bg, fg, 11, "r", 24)
+        cx_ = x_ - 8
+    y += 36
+    y = parrafo(L, pad, y, "Aquí dices cómo reconoce el programa cada tipo de Excel: qué archivos son, dónde están los encabezados y "
+                "qué columna trae cada dato. Lo exacto se aplica solo; lo dudoso te lo pide confirmar.", W - 2 * pad, "Light", 12.5) + 10
+    ytop = y
+    lw = 290
+    # lista izquierda
+    f_t, f_s = fuente("Bold", 13.5), fuente("Light", 11)
+    cy = y
+    for i, (tit, sub, estados) in enumerate(FUENTES):
+        sel = i == 2
+        ch = 112
+        L.rect(pad, cy, pad + lw, cy + ch, fill=(TINTE_VERDE if sel else BLANCO), line=(VERDE_CTA if sel else LINEA),
+               w=(2 if sel else 1.2), r=12)
+        L.txt(pad + 16, cy + 24, tit, f_t, GRIS_OSC, "lm")
+        sl = partir(L, [(sub, False)], f_s, f_s, lw - 32)
+        for j, ln in enumerate(sl):
+            L.txt(pad + 16, cy + 46 + j * 15, " ".join(t[0] for t in ln), f_s, GRIS, "la")
+        ey = cy + 46 + len(sl) * 15 + 8
+        ex = pad + 16
+        for col, txt in estados:
+            L.d.ellipse([L.P(ex), L.P(ey + 6), L.P(ex + 9), L.P(ey + 15)], fill=col)
+            L.txt(ex + 14, ey + 10.5, txt, fuente("Bold", 10.5), GRIS_OSC, "lm")
+            ex += 14 + L.tw(txt, fuente("Bold", 10.5)) + 14
+        cy += ch + 12
+    L.rect(pad, cy, pad + lw, cy + 40, fill=BLANCO, line=VERDE_CTA, w=1.5, r=8)
+    mas(L, pad + 60, cy + 20, VERDE_CTA, 6)
+    L.txt(pad + 78, cy + 20, "Agregar fuente", fuente("Bold", 13), VERDE_CTA, "lm")
+    cy += 52
+    # panel derecho
+    rx0, rx1 = pad + lw + 20, W - pad
+    ry = y
+    L.txt(rx0, ry + 14, "Internacionalización en casa", fuente("Bold", 16), GRIS_OSC, "lm")
+    L.rect(rx1 - 100, ry, rx1, ry + 28, fill=BLANCO, line=VERDE_CTA, w=1.4, r=8)
+    L.txt(rx1 - 50, ry + 14, "Cambiar nombre", fuente("Bold", 10.5), VERDE_CTA, "mm")
+    ry += 36
+    # cómo se encuentra el archivo
+    L.txt(rx0, ry + 10, "1  Cómo se encuentra el archivo", fuente("Bold", 13), VERDE_CTA, "lm")
+    ry += 28
+    mid = (rx1 - rx0 - 16) / 2
+    L.txt(rx0, ry + 8, "El nombre del archivo contiene", fuente("Bold", 11.5), GRIS_OSC, "lm")
+    campo(L, rx0, ry + 20, rx0 + mid, ry + 50, "IntCasa")
+    L.txt(rx0 + mid + 16, ry + 8, "Año y semestre", fuente("Bold", 11.5), GRIS_OSC, "lm")
+    desplegable(L, rx0 + mid + 16, ry + 20, rx1, ry + 50, "Se leen del nombre (2022-1)")
+    ry += 66
+    # fila de encabezados
+    L.txt(rx0, ry + 10, "2  Fila de encabezados", fuente("Bold", 13), VERDE_CTA, "lm")
+    ry += 28
+    L.rect(rx0, ry, rx0 + 40, ry + 22, fill=VERDE_CTA, r=11)
+    L.d.ellipse([L.P(rx0 + 21), L.P(ry + 3), L.P(rx0 + 37), L.P(ry + 19)], fill=BLANCO)
+    L.txt(rx0 + 52, ry + 11, "Detectarla automáticamente", fuente("Bold", 12), GRIS_OSC, "lm")
+    chip(L, rx1, ry - 1, "Detectada: fila 1 en 2022-1 · fila 2 en 2022-2", "#EDEDED", GRIS_OSC, 10.5, "r", 24)
+    ry += 40
+    # columnas
+    L.txt(rx0, ry + 10, "3  Qué columna trae cada dato", fuente("Bold", 13), VERDE_CTA, "lm")
+    ry += 28
+    c0, c1, c2 = rx0 + 14, rx0 + 180, rx0 + 340
+    L.rect(rx0, ry, rx1, ry + 32, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    for xx, t in ((c0, "Dato que necesita"), (c1, "Columna en el Excel"), (c2, "Estado")):
+        L.txt(xx, ry + 16, t, fuente("Bold", 11.5), BLANCO, "lm")
+    t0 = ry
+    ry += 32
+    fr = fuente("Regular", 12)
+    for i, (dato, col, est) in enumerate(COLS_IC):
+        rh = 40
+        L.rect(rx0, ry, rx1, ry + rh, fill=(ROSA_SUAVE if est == "sin" else (BLANCO if i % 2 == 0 else FONDO)))
+        L.txt(c0, ry + rh / 2, dato, fuente("Bold", 12), GRIS_OSC, "lm")
+        if est == "exacta":
+            L.txt(c1, ry + rh / 2, col, fr, NEGRO, "lm")
+            L.check(c2 + 6, ry + rh / 2, VERDE_CTA, 5)
+            L.txt(c2 + 20, ry + rh / 2, "Exacta", fuente("Bold", 11.5), OK_TXT, "lm")
+        else:
+            L.txt(c1, ry + rh / 2, "—", fr, GRIS, "lm")
+            L.cross(c2 + 6, ry + rh / 2, MAGENTA, 4.5, 2)
+            L.txt(c2 + 20, ry + rh / 2, "Sin identificar", fuente("Bold", 11.5), MAGENTA, "lm")
+            bw = L.tw("Elegir columna…", fuente("Bold", 11.5)) + 28
+            boton_secundario(L, rx1 - 14 - bw, ry + 6, rx1 - 14, ry + rh - 6, "Elegir columna…", "normal", 11.5)
+        ry += rh
+    L.rect(rx0, t0, rx1, ry, line=LINEA, w=1.2, r=8)
+    ry += 12
+    ry = parrafo(L, rx0, ry, "El programa buscó esa columna por nombre y no encontró una que se parezca lo bastante. "
+                 "Elige cuál trae el tipo de persona (por ejemplo, el vínculo SNIES); se guarda para los próximos archivos.",
+                 rx1 - rx0, "Light", 11.5, GRIS, 16) + 6
+    # filtros
+    L.txt(rx0, ry + 10, "4  Qué filas se usan", fuente("Bold", 13), VERDE_CTA, "lm")
+    ry += 28
+    for txt, marcada in (("Solo las filas del programa elegido al generar", True),
+                         ("Omitir las actividades sin institución (se cuentan aparte, no se listan)", True)):
+        casilla(L, rx0, ry + 2, marcada, 16)
+        L.txt(rx0 + 26, ry + 10, txt, fuente("Regular", 12), NEGRO, "lm")
+        ry += 28
+    yend = max(ry, cy)
+    y = yend + 14
+    L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
+    y += 14
+    boton_secundario(L, pad, y, pad + 250, y + 42, "Probar lectura de la carpeta", "normal", 13)
+    L.txt(pad + 266, y + 21, "Los cambios se guardan al instante.", fuente("Light", 11.5), GRIS, "lm")
+    boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+# =====================================================================
+#  v0.8 — Equivalencias de instituciones, de programas y Tipos de persona
+# =====================================================================
+VERSION = "Boceto v0.8 · datos ficticios"
+
+
+def recortar_texto(L, s, f, ancho):
+    if L.tw(s, f) <= ancho:
+        return s
+    while s and L.tw(s + "…", f) > ancho:
+        s = s[:-1]
+    return s.rstrip() + "…"
+
+
+ORIGEN_CHIP = {
+    "Tú": (TINTE_VERDE, OK_TXT),
+    "Gemini": ("#EDEDED", GRIS_OSC),
+    "Revisión": (AVISO_BG, AVISO_TXT),
+}
+
+
+def cabecera_pares(L, x0, x1, y, t_izq, t_der, t_ori="Origen"):
+    L.rect(x0, y, x1, y + 34, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    L.txt(x0 + 14, y + 17, t_izq, fuente("Bold", 11.5), BLANCO, "lm")
+    L.txt(x0 + 340, y + 17, t_der, fuente("Bold", 11.5), BLANCO, "lm")
+    L.txt(x1 - 215, y + 17, t_ori, fuente("Bold", 11.5), BLANCO, "lm")
+    return 34
+
+
+def fila_par(L, x0, x1, y, izq, der, origen, estado="normal", idx=0, et_izq="", et_der=""):
+    """Una fila 'nombre en el Excel → nombre correcto'. Devuelve el alto usado."""
+    f = fuente("Regular", 12)
+    h = 46
+    fondo = BLANCO if idx % 2 == 0 else FONDO
+    if estado == "hover":
+        fondo = "#F1F7E7"
+    if estado == "editando":
+        L.rect(x0, y, x1, y + h, fill=TINTE_VERDE)
+        L.txt(x0 + 14, y + h / 2, "Editando equivalencia", fuente("Bold", 12.5), OK_TXT, "lm")
+        ph = 250
+        L.rect(x0, y + h, x1, y + h + ph, fill=TINTE_VERDE)
+        L.rect(x0 + 16, y + h + 2, x1 - 16, y + h + ph - 14, fill=BLANCO, line=VERDE_CTA, w=1.6, r=10)
+        ix = x0 + 36
+        colw = (x1 - x0 - 72 - 24) / 2
+        yy = y + h + 22
+        L.txt(ix, yy, et_izq, fuente("Bold", 12), GRIS_OSC, "lm")
+        campo(L, ix, yy + 12, ix + colw, yy + 44, izq, foco=True)
+        L.txt(ix, yy + 58, "Escríbelo tal cual aparece en el Excel, con sus errores.", fuente("Light", 11), GRIS, "lm")
+        flecha_der(L, ix + colw + 5, yy + 28, ix + colw + 17, GRIS, 1.8)
+        rx = ix + colw + 24
+        L.txt(rx, yy, et_der, fuente("Bold", 12), GRIS_OSC, "lm")
+        desplegable(L, rx, yy + 12, rx + colw, yy + 44, der, foco=True)
+        # resultados de la búsqueda
+        opts = ["UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", "UNIVERSIDAD AUTÓNOMA DE NUEVO LEÓN (UANL)",
+                "UNIVERSIDAD AUTÓNOMA DEL CARMEN (UNACAR)"] if "Sinaloa" in izq else []
+        oy = yy + 48
+        if opts:
+            L.rect(rx, oy, rx + colw, oy + 3 * 30 + 6, fill=BLANCO, line=LINEA, w=1.2, r=8)
+            for k, o in enumerate(opts):
+                if k == 0:
+                    L.rect(rx + 4, oy + 4, rx + colw - 4, oy + 4 + 30, fill=TINTE_VERDE, r=6)
+                L.txt(rx + 14, oy + 19 + k * 30, recortar_texto(L, o, fuente("Regular", 11.5), colw - 28),
+                      fuente("Bold" if k == 0 else "Regular", 11.5), NEGRO, "lm")
+        by = y + h + ph - 14 - 12 - 40
+        boton_secundario(L, x1 - 36 - 130 - 12 - 120, by, x1 - 36 - 130 - 12, by + 40, "Cancelar", "normal", 12.5)
+        boton_primario(L, x1 - 36 - 130, by, x1 - 36, by + 40, "Guardar")
+        return h + ph
+    if estado == "eliminar":
+        L.rect(x0, y, x1, y + 70, fill=AVISO_BG, line=NARANJA, w=1.4)
+        L.d.ellipse([L.P(x0 + 14), L.P(y + 13), L.P(x0 + 32), L.P(y + 31)], fill=NARANJA)
+        L.txt(x0 + 23, y + 22, "!", fuente("Bold", 12), NEGRO, "mm")
+        L.txt(x0 + 44, y + 22, "¿Eliminar esta equivalencia?", fuente("Bold", 12.5), GRIS_OSC, "lm")
+        L.txt(x0 + 44, y + 46, "El programa volverá a preguntar la próxima vez que encuentre este nombre. Tus Excel no se tocan.",
+              fuente("Light", 11.5), GRIS_OSC, "lm")
+        boton_secundario(L, x1 - 196, y + 14, x1 - 106, y + 44, "Cancelar", "normal", 11.5)
+        L.rect(x1 - 98, y + 14, x1 - 14, y + 44, fill=MAGENTA, r=8)
+        L.txt(x1 - 56, y + 29, "Eliminar", fuente("Bold", 11.5), BLANCO, "mm")
+        return 70
+    L.rect(x0, y, x1, y + h, fill=fondo)
+    L.txt(x0 + 14, y + h / 2, recortar_texto(L, izq, f, 285), f, NEGRO, "lm")
+    flecha_der(L, x0 + 304, y + h / 2, x0 + 318, GRIS, 1.8)
+    L.txt(x0 + 340, y + h / 2, recortar_texto(L, der, fuente("Bold", 12), x1 - x0 - 340 - 225), fuente("Bold", 12), GRIS_OSC, "lm")
+    bg, fg = ORIGEN_CHIP[origen]
+    chip(L, x1 - 215, y + 12, origen, bg, fg, 10.5, "l", 22)
+    px, ppx = x1 - 62, x1 - 28
+    if estado == "hover":
+        L.d.ellipse([L.P(px - 14), L.P(y + h / 2 - 14), L.P(px + 14), L.P(y + h / 2 + 14)], fill=TINTE_VERDE)
+    lapiz(L, px, y + h / 2, VERDE_CTA if estado == "hover" else GRIS)
+    papelera(L, ppx, y + h / 2, GRIS)
+    return h
+
+
+def modal_pares(W, titulo, chip_txt, intro, ejemplos, t_izq, t_der, et_izq, et_der, buscar, crear, nota, estados, pie_mostrando):
+    L = modal_base(W, 1500, titulo)
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, titulo, fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw(titulo, fuente("Bold", 20)) + 10, y + 12)
+    chip(L, W - pad, y + 1, chip_txt, TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 36
+    y = parrafo(L, pad, y, intro, W - 2 * pad, "Light", 12.5) + 8
+    # buscar + crear
+    L.rect(pad, y, pad + 372, y + 38, fill=BLANCO, line=GRIS, w=1, r=7)
+    lupa(L, pad + 20, y + 18, GRIS)
+    L.txt(pad + 40, y + 19, buscar, fuente("Regular", 12.5), "#9A9A9A", "lm")
+    cw = L.tw(crear, fuente("Bold", 13.5)) + 70
+    L.rect(W - pad - cw, y, W - pad, y + 38, fill=VERDE_CTA, r=8)
+    mas(L, W - pad - cw + 26, y + 19, BLANCO, 6)
+    L.txt(W - pad - cw + 42, y + 19, crear, fuente("Bold", 13.5), BLANCO, "lm")
+    y += 54
+    x0, x1 = pad, W - pad
+    top = y
+    y += cabecera_pares(L, x0, x1, y, t_izq, t_der)
+    hover_pos = None
+    for i, (izq, der, ori) in enumerate(ejemplos):
+        est = estados.get(i, "normal")
+        h = fila_par(L, x0, x1, y, izq, der, ori, est, i, et_izq, et_der)
+        if est == "hover":
+            hover_pos = (x1 - 62, y)
+        y += h
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    if hover_pos:
+        tx, ty = hover_pos[0] - 24, hover_pos[1] + 23
+        L.rect(tx - 52, ty - 12, tx, ty + 12, fill=GRIS_OSC, r=6)
+        L.d.polygon([(L.P(tx - 1), L.P(ty - 5)), (L.P(tx - 1), L.P(ty + 5)), (L.P(tx + 5), L.P(ty))], fill=GRIS_OSC)
+        L.txt(tx - 26, ty, "Editar", fuente("Regular", 11), BLANCO, "mm")
+    y += 16
+    L.txt(pad, y + 8, pie_mostrando, fuente("Light", 11.5), GRIS, "lm")
+    y = parrafo(L, pad, y + 28, nota, W - 2 * pad - 160, "Light", 11.5, GRIS) + 2
+    boton_primario(L, W - pad - 130, y - 42, W - pad, y - 2, "Listo")
+    H = int(y + 6 + 24)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+INST = [
+    ("Universidad Autónoma deSinaloa", "UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", "Gemini"),
+    ("Univ. del Istmo", "UNIVERSIDAD DEL ISTMO", "Tú"),
+    ("BUAP", "BENEMÉRITA UNIVERSIDAD AUTÓNOMA DE PUEBLA - BUAP", "Tú"),
+    ("Universidad Autónoma del Edo. de México", "UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO - UAEMEX", "Gemini"),
+    ("UNAM", "UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO - UNAM", "Revisión"),
+    ("Universidad de Carabobo ", "UNIVERSIDAD DE CARABOBO", "Tú"),
+    ("Universidad Metodista", "UNIVERSIDAD METODISTA DE SAO PAULO", "Revisión"),
+]
+
+
+def modal_equivalencias_instituciones(W=980):
+    return modal_pares(
+        W, "Equivalencias de instituciones", "12 guardadas",
+        "Nombres que en un Excel se escriben distinto pero son la misma institución. El programa los trata como una sola y no "
+        "vuelve a preguntar.",
+        INST, "Como aparece en el Excel", "Es la institución", "Como aparece en el Excel", "Institución de la matriz de convenios",
+        "Buscar equivalencia…", "Crear equivalencia",
+        "Las equivalencias se aplican a todos los archivos, de este año y de otros. Los cambios se guardan al instante.",
+        {1: "normal", 2: "hover", 0: "editando", 4: "eliminar"}, "Mostrando 7 de 12 · desplázate para ver más")
+
+
+PROG = [
+    ("Ingeniería Industrial Distancia", "Ingeniería Industrial", "Tú"),
+    ("Administración de Empresas (Distancia)", "Administración de empresas", "Tú"),
+    ("Contaduría Pública Distancia", "Contaduría Pública", "Gemini"),
+    ("Fisioterapia ", "Fisioterapia", "Revisión"),
+    ("Enfermería Pereira", "Enfermería", "Tú"),
+    ("Comunicación Audiovisual", "Comunicación Audiovisual y Digital", "Revisión"),
+    ("Negocios Internacionales", "Administración de negocios internacionales", "Tú"),
+]
+
+
+def modal_equivalencias_programas(W=980):
+    return modal_pares(
+        W, "Equivalencias de programas", "9 guardadas",
+        "Nombres de programa que cambian entre la matriz de convenios y los reportes, por ejemplo una modalidad o un espacio de más. "
+        "Así el programa sabe que son el mismo.",
+        PROG, "Como aparece en los reportes", "Es el programa", "Como aparece en los reportes", "Programa de la matriz de convenios",
+        "Buscar equivalencia…", "Crear equivalencia",
+        "Los programas de la matriz se administran en Configuración → Programas. Los cambios se guardan al instante.",
+        {2: "hover"}, "Mostrando 7 de 9 · desplázate para ver más")
+
+
+# ---------- Tipos de persona ----------
+TIPOS = [
+    ("Estudiante saliente", ["Estudiantes en el exterior", "Estudiante saliente", "Estudiante de intercambio"], False),
+    ("Estudiante entrante", ["Estudiantes extranjeros", "Estudiante entrante"], False),
+    ("Experto internacional", ["Experto Internacional", "Experto invitado"], False),
+    ("Docente saliente", ["Docente saliente", "Profesor en el exterior"], False),
+    ("Docente entrante", ["Docente entrante", "Profesor visitante"], False),
+    ("Administrativo saliente", ["Administrativo saliente"], False),
+    ("Administrativo entrante", ["Administrativo entrante"], False),
+    ("Internacionalización en casa", None, True),
+]
+
+
+def chip_valor(L, x, y, texto, con_x=False, h=26):
+    f = fuente("Regular", 11.5)
+    w = L.tw(texto, f) + 20 + (18 if con_x else 0)
+    L.rect(x, y, x + w, y + h, fill=FONDO, line=LINEA, w=1.2, r=h / 2)
+    L.txt(x + 10, y + h / 2, texto, f, GRIS_OSC, "lm")
+    if con_x:
+        L.cross(x + w - 14, y + h / 2, GRIS, 3.6, 1.6)
+    return w
+
+
+def chip_agregar(L, x, y, h=26):
+    f = fuente("Bold", 11)
+    w = L.tw("Agregar valor", f) + 36
+    L.rect(x, y, x + w, y + h, fill=BLANCO, line=VERDE_CTA, w=1.4, r=h / 2)
+    mas(L, x + 14, y + h / 2, VERDE_CTA, 4.2)
+    L.txt(x + 26, y + h / 2, "Agregar valor", f, VERDE_CTA, "lm")
+    return w
+
+
+def modal_tipos_persona(W=980):
+    L = modal_base(W, 1500, "Tipos de persona")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Tipos de persona", fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw("Tipos de persona", fuente("Bold", 20)) + 10, y + 12)
+    chip(L, W - pad, y + 1, "8 tipos", TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 36
+    y = parrafo(L, pad, y, "El cuadro agrupa a las personas en estos tipos. Cada tipo reconoce los valores que aparecen en la columna de vínculo "
+                "de los Excel. Si aparece un valor nuevo, agrégalo al tipo que le corresponde.", W - 2 * pad, "Light", 12.5) + 8
+    L.rect(pad, y, pad + 372, y + 38, fill=BLANCO, line=GRIS, w=1, r=7)
+    lupa(L, pad + 20, y + 18, GRIS)
+    L.txt(pad + 40, y + 19, "Buscar tipo o valor…", fuente("Regular", 12.5), "#9A9A9A", "lm")
+    cw = L.tw("Crear tipo", fuente("Bold", 13.5)) + 70
+    L.rect(W - pad - cw, y, W - pad, y + 38, fill=VERDE_CTA, r=8)
+    mas(L, W - pad - cw + 26, y + 19, BLANCO, 6)
+    L.txt(W - pad - cw + 42, y + 19, "Crear tipo", fuente("Bold", 13.5), BLANCO, "lm")
+    y += 54
+    x0, x1 = pad, W - pad
+    top = y
+    L.rect(x0, y, x1, y + 34, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    L.txt(x0 + 16, y + 17, "Tipo en el cuadro", fuente("Bold", 11.5), BLANCO, "lm")
+    L.txt(x0 + 280, y + 17, "Valores que reconoce en el Excel", fuente("Bold", 11.5), BLANCO, "lm")
+    y += 34
+    area0, area1 = x0 + 280, x1 - 96
+    hover_pos = None
+    for i, (nom, vals, base) in enumerate(TIPOS):
+        editando = i == 0
+        # alto según las líneas de chips
+        if vals is None:
+            h = 52
+        else:
+            xx, lineas = area0, 1
+            for v in vals:
+                w = L.tw(v, fuente("Regular", 11.5)) + 20 + (18 if editando else 0)
+                if xx + w > area1:
+                    xx, lineas = area0, lineas + 1
+                xx += w + 8
+            if xx + 140 > area1:
+                lineas += 1
+            h = max(52, 14 + lineas * 34)
+        if editando:
+            h += 112
+        fondo = TINTE_VERDE if editando else (BLANCO if i % 2 == 0 else FONDO)
+        L.rect(x0, y, x1, y + h, fill=fondo)
+        L.txt(x0 + 16, y + 26, nom, fuente("Bold", 12.5), (OK_TXT if editando else GRIS_OSC), "lm")
+        if vals is None:
+            L.txt(area0, y + 26, "Todo lo que viene del reporte de internacionalización en casa", fuente("Regular", 11.5), GRIS, "lm")
+        else:
+            xx, yy = area0, y + 13
+            for v in vals:
+                w = L.tw(v, fuente("Regular", 11.5)) + 20 + (18 if editando else 0)
+                if xx + w > area1:
+                    xx, yy = area0, yy + 34
+                chip_valor(L, xx, yy, v, con_x=editando)
+                xx += w + 8
+            if not editando:
+                pass
+            else:
+                if xx + 140 > area1:
+                    xx, yy = area0, yy + 34
+                chip_agregar(L, xx, yy)
+        px, ppx = x1 - 64, x1 - 30
+        if i == 2:
+            L.d.ellipse([L.P(px - 14), L.P(y + 26 - 14), L.P(px + 14), L.P(y + 26 + 14)], fill=TINTE_VERDE)
+            hover_pos = (px, y + 26)
+        lapiz(L, px, y + 26, VERDE_CTA if i == 2 else GRIS)
+        if base:
+            candado(L, ppx, y + 26, GRIS)
+        else:
+            papelera(L, ppx, y + 26, GRIS)
+        if editando:
+            by = y + h - 112
+            L.rect(area0 - 14, by + 4, x1 - 16, y + h - 12, fill=BLANCO, line=VERDE_CTA, w=1.6, r=10)
+            L.txt(area0, by + 24, "Valores que el programa vio y no reconoció", fuente("Bold", 11.5), GRIS_OSC, "lm")
+            xx = area0
+            for v in ("Estudiante Posgrado Exterior", "Intercambio"):
+                w = L.tw("+  " + v, fuente("Regular", 11.5)) + 20
+                L.rect(xx, by + 36, xx + w, by + 62, fill=AVISO_BG, line=NARANJA, w=1.2, r=13)
+                L.txt(xx + 10, by + 49, "+  " + v, fuente("Regular", 11.5), AVISO_TXT, "lm")
+                xx += w + 8
+            L.txt(area0, by + 82, "Toca un valor para agregarlo a este tipo.", fuente("Light", 11), GRIS, "lm")
+            boton_primario(L, x1 - 30 - 110, by + 62, x1 - 30, by + 62 + 34, "Guardar")
+            boton_secundario(L, x1 - 30 - 110 - 10 - 110, by + 62, x1 - 30 - 110 - 10, by + 62 + 34, "Cancelar", "normal", 12.5)
+        y += h
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    if hover_pos:
+        tx, ty = hover_pos[0] - 24, hover_pos[1]
+        L.rect(tx - 52, ty - 12, tx, ty + 12, fill=GRIS_OSC, r=6)
+        L.d.polygon([(L.P(tx - 1), L.P(ty - 5)), (L.P(tx - 1), L.P(ty + 5)), (L.P(tx + 5), L.P(ty))], fill=GRIS_OSC)
+        L.txt(tx - 26, ty, "Editar", fuente("Regular", 11), BLANCO, "mm")
+    y += 16
+    y = parrafo(L, pad, y, "El tipo Internacionalización en casa es base: se asigna a todo el reporte de internacionalización en casa y no se elimina. "
+                "Los cambios se guardan al instante.", W - 2 * pad - 160, "Light", 11.5, GRIS) + 2
+    boton_primario(L, W - pad - 130, y - 42, W - pad, y - 2, "Listo")
+    H = int(y + 6 + 24)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+
+# =====================================================================
+#  v0.9 — Reglas de cruce
+# =====================================================================
+VERSION = "Boceto v0.9 · datos ficticios"
+
+
+def interruptor(L, x, y, on=True, bloqueado=False):
+    col = VERDE_CTA if on else "#B8B8B8"
+    if bloqueado:
+        col = "#C9D9B0" if on else "#D9D9D9"
+    L.rect(x, y, x + 40, y + 22, fill=col, r=11)
+    cx = x + 29 if on else x + 11
+    L.d.ellipse([L.P(cx - 8), L.P(y + 3), L.P(cx + 8), L.P(y + 19)], fill=BLANCO)
+
+
+def fila_opcion(L, x0, x1, y, label, tipo, valor="", cambiado=False, medir=False):
+    """Una opción de una regla. tipo: 'sel' (desplegable), 'sw' (interruptor), 'fijo' (valor bloqueado)."""
+    f = fuente("Regular", 12)
+    ancho_lbl = (x1 - x0) - 360 - 24
+    lineas = partir(L, [(label, False)], f, f, ancho_lbl)
+    h = max(44, len(lineas) * 17 + 20)
+    if medir:
+        return h
+    ty = y + h / 2 - (len(lineas) - 1) * 8.5
+    for i, ln in enumerate(lineas):
+        L.txt(x0, ty + i * 17, " ".join(t[0] for t in ln), f, NEGRO, "lm")
+    cx0 = x1 - 360
+    if tipo == "sel":
+        L.rect(cx0, y + h / 2 - 17, x1, y + h / 2 + 17, fill=BLANCO, line=(NARANJA if cambiado else GRIS),
+               w=(2 if cambiado else 1), r=6)
+        L.txt(cx0 + 12, y + h / 2, recortar_texto(L, valor, fuente("Regular", 12), 360 - 44), fuente("Regular", 12), NEGRO, "lm")
+        L.flecha(x1 - 18, y + h / 2)
+    elif tipo == "sw":
+        interruptor(L, x1 - 40, y + h / 2 - 11, True)
+        L.txt(x1 - 52, y + h / 2, "Sí", fuente("Bold", 12), GRIS_OSC, "rm")
+    else:
+        L.rect(cx0, y + h / 2 - 17, x1, y + h / 2 + 17, fill="#F0F0F0", line=LINEA, w=1, r=6)
+        L.txt(cx0 + 12, y + h / 2, valor, fuente("Regular", 12), GRIS, "lm")
+        candado(L, x1 - 18, y + h / 2, GRIS)
+    return h
+
+
+def tarjeta_regla(L, x0, x1, y, num, titulo, desc, filas, nota=None, cambiada=False):
+    pad = 22
+    f_d = fuente("Light", 12)
+    ld = partir(L, [(desc, False)], f_d, f_d, x1 - x0 - 2 * pad)
+    hh = 20 + 26 + len(ld) * 17 + 10
+    hs = sum(fila_opcion(L, x0 + pad, x1 - pad, 0, fl[0], fl[1], medir=True) for fl in filas)
+    hn = 0
+    if nota:
+        fn = fuente("Regular", 11.5)
+        lnn = partir(L, [(nota, False)], fn, fn, x1 - x0 - 2 * pad - 36)
+        hn = len(lnn) * 16 + 22 + 10
+    h = hh + hs + hn + 14
+    L.rect(x0, y, x1, y + h, fill=BLANCO, line=(NARANJA if cambiada else LINEA), w=(1.8 if cambiada else 1.2), r=12)
+    # título
+    L.d.ellipse([L.P(x0 + pad), L.P(y + 18), L.P(x0 + pad + 28), L.P(y + 46)], fill=VERDE_CTA)
+    L.txt(x0 + pad + 14, y + 32.5, str(num), fuente("Bold", 14), BLANCO, "mm")
+    L.txt(x0 + pad + 40, y + 32, titulo, fuente("Bold", 14.5), GRIS_OSC, "lm")
+    if cambiada:
+        xr, _ = chip(L, x1 - pad, y + 20, "Cambiada", AVISO_BG, AVISO_TXT, 10.5, "r", 24)
+        L.txt(xr - 14, y + 32, "Restablecer a lo confirmado", fuente("Bold", 11.5), VERDE_CTA, "rm")
+    else:
+        chip(L, x1 - pad, y + 20, "Confirmada · 23-nov-2026", TINTE_VERDE, OK_TXT, 10.5, "r", 24)
+    yy = y + 20 + 26 + 4
+    for ln in ld:
+        L.txt(x0 + pad, yy, " ".join(t[0] for t in ln), f_d, GRIS, "la")
+        yy += 17
+    yy += 10
+    for i, fl in enumerate(filas):
+        if i > 0:
+            L.d.line([L.P(x0 + pad), L.P(yy), L.P(x1 - pad), L.P(yy)], fill="#EDEDED", width=L.P(1))
+        label, tipo = fl[0], fl[1]
+        valor = fl[2] if len(fl) > 2 else ""
+        camb = fl[3] if len(fl) > 3 else False
+        yy += fila_opcion(L, x0 + pad, x1 - pad, yy, label, tipo, valor, camb)
+    if nota:
+        yy += 6
+        L.rect(x0 + pad, yy, x1 - pad, yy + hn - 10, fill=FONDO, r=8)
+        L.d.ellipse([L.P(x0 + pad + 10), L.P(yy + (hn - 10) / 2 - 8), L.P(x0 + pad + 26), L.P(yy + (hn - 10) / 2 + 8)], fill=GRIS)
+        L.txt(x0 + pad + 18, yy + (hn - 10) / 2, "i", fuente("Bold", 10.5), BLANCO, "mm")
+        for i, ln_ in enumerate(lnn):
+            L.txt(x0 + pad + 36, yy + 12 + i * 16 + 3, " ".join(t[0] for t in ln_), fuente("Regular", 11.5), GRIS_OSC, "lm")
+    return h
+
+
+def modal_reglas(W=900):
+    L = modal_base(W, 1800, "Reglas de cruce")
+    pad = 28
+    y = 32 + 24
+    L.txt(pad, y + 12, "Reglas de cruce", fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw("Reglas de cruce", fuente("Bold", 20)) + 10, y + 12)
+    chip(L, W - pad, y + 1, "5 reglas · 1 cambiada", TINTE_VERDE, VERDE_CTA, 11, "r", 24)
+    y += 36
+    y = parrafo(L, pad, y, "Definen qué convenios entran al cuadro, a cuál se asigna cada registro y qué se cuenta. Vienen confirmadas por la "
+                "jefatura. Cámbialas solo si la regla cambió; lo que cambies queda marcado.", W - 2 * pad, "Light", 12.5) + 10
+    x0, x1 = pad, W - pad
+    y += tarjeta_regla(L, x0, x1, y, 1, "Qué convenios entran al cuadro",
+                       "Un convenio entra si la columna de su programa en la matriz dice que aplica.",
+                       [("Valor que significa que aplica", "sel", "APLICA"),
+                        ("Convenios vigentes", "sel", "Entran con o sin resultados"),
+                        ("Convenios vencidos", "sel", "Entran todos", True)], cambiada=True) + 14
+    y += tarjeta_regla(L, x0, x1, y, 2, "A qué convenio va cada registro",
+                       "El cruce se hace por el nombre de la institución. Cada registro se asigna a un solo convenio.",
+                       [("Solo cuenta dentro de los años de vigencia del convenio (inicio y fin incluidos)", "sw"),
+                        ("Movilidad prefiere el convenio", "sel", "Específico"),
+                        ("Internacionalización en casa prefiere el convenio", "sel", "Marco"),
+                        ("Si sigue habiendo empate, gana", "sel", "El de inicio más reciente")],
+                       nota="Si la institución no tiene ningún convenio que cubra el año del registro, se omite y se lista en Ver revisión. "
+                            "Esta parte no se puede cambiar.") + 14
+    y += tarjeta_regla(L, x0, x1, y, 3, "Qué se cuenta",
+                       "Cuántas unidades suma cada fuente al resultado de un convenio.",
+                       [("Movilidad cuenta", "sel", "Movilidades (una por fila)"),
+                        ("Internacionalización en casa cuenta", "sel", "Actividades (una por fila)"),
+                        ("Una fila con varios programas cuenta para cada uno de ellos", "sw")]) + 14
+    y += tarjeta_regla(L, x0, x1, y, 4, "Vigencia y fecha de fin",
+                       "De dónde sale la vigencia cuando la fecha de fin no es una fecha usable.",
+                       [("Si la fecha de fin es texto (INDEFINIDO), está vacía o es solo un año", "sel", "Año de inicio + vigencia en años"),
+                        ("Si no hay una fecha de inicio válida", "fijo", "Enviar a Ver revisión")]) + 14
+    y += tarjeta_regla(L, x0, x1, y, 5, "Activo o No activo",
+                       "Cómo se decide la columna Activo del cuadro.",
+                       [("Se decide según", "sel", "El estado de la matriz el día de generar")]) + 16
+    L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
+    y += 14
+    boton_secundario(L, pad, y, pad + 250, y + 42, "Restablecer todas a lo confirmado", "normal", 12.5)
+    boton_secundario(L, pad + 262, y, pad + 262 + 200, y + 42, "Ver cómo se aplican", "normal", 12.5)
+    boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
+    y += 42 + 10
+    L.txt(pad, y + 8, "Los cambios se guardan al instante. Mira cómo se aplican antes de generar.", fuente("Light", 11.5), GRIS, "lm")
+    H = int(y + 18 + 24)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+# =====================================================================
+#  v0.10 — Probar con mis archivos, Exportar/Importar y Copias/almacenamiento
+# =====================================================================
+VERSION = "Boceto v0.10 · datos ficticios"
+
+
+def radio(L, x, y, on=True, s=18):
+    P = L.P
+    L.d.ellipse([P(x), P(y), P(x + s), P(y + s)], fill=BLANCO, outline=(VERDE_CTA if on else GRIS), width=P(2))
+    if on:
+        L.d.ellipse([P(x + 4.5), P(y + 4.5), P(x + s - 4.5), P(y + s - 4.5)], fill=VERDE_CTA)
+
+
+def icono_info(L, x, y, col=VERDE_CTA):
+    L.d.ellipse([L.P(x), L.P(y), L.P(x + 18), L.P(y + 18)], fill=col)
+    L.txt(x + 9, y + 9.5, "i", fuente("Bold", 11), BLANCO, "mm")
+
+
+def titulo_modal(L, W, pad, texto, chip_txt=None, chip_col=(TINTE_VERDE, VERDE_CTA)):
+    y = 32 + 24
+    L.txt(pad, y + 12, texto, fuente("Bold", 20), GRIS_OSC, "lm")
+    icono_ayuda(L, pad + L.tw(texto, fuente("Bold", 20)) + 10, y + 12)
+    if chip_txt:
+        chip(L, W - pad, y + 1, chip_txt, chip_col[0], chip_col[1], 11, "r", 24)
+    return y + 36
+
+
+def banner_info(L, x0, y, x1, texto, col=TINTE_VERDE, borde=VERDE, icono=VERDE_CTA):
+    f = fuente("Regular", 12)
+    lin = partir(L, [(texto, False)], f, f, x1 - x0 - 56)
+    h = 20 + 17 * len(lin) + 4
+    L.rect(x0, y, x1, y + h, fill=col, line=borde, w=1.2, r=8)
+    icono_info(L, x0 + 14, y + h / 2 - 9, icono)
+    for i, ln in enumerate(lin):
+        L.txt(x0 + 44, y + 12 + i * 17 + 8, " ".join(t[0] for t in ln), f, NEGRO, "lm")
+    return h
+
+
+# ------------------------------------------------------------------
+#  Probar con mis archivos
+# ------------------------------------------------------------------
+def estado_celda(L, x, cy, tipo, texto):
+    if tipo == "ok":
+        L.check(x + 6, cy, VERDE_CTA, 5)
+        L.txt(x + 20, cy, texto, fuente("Bold", 11.5), OK_TXT, "lm")
+    elif tipo == "aviso":
+        L.d.ellipse([L.P(x), L.P(cy - 7), L.P(x + 14), L.P(cy + 7)], fill=NARANJA)
+        L.txt(x + 7, cy + 0.5, "!", fuente("Bold", 10), NEGRO, "mm")
+        L.txt(x + 20, cy, texto, fuente("Bold", 11.5), AVISO_TXT, "lm")
+    else:
+        L.cross(x + 6, cy, MAGENTA, 4.5, 2)
+        L.txt(x + 20, cy, texto, fuente("Bold", 11.5), MAGENTA, "lm")
+
+
+# ------------------------------------------------------------------
+#  Exportar e importar configuración
+# ------------------------------------------------------------------
+def modal_exportar_importar(W=980):
+    L = modal_base(W, 1200, "Exportar e importar configuración")
+    pad = 28
+    y = titulo_modal(L, W, pad, "Exportar e importar configuración")
+    y = parrafo(L, pad, y, "Lleva tu configuración a otro equipo o guarda una copia aparte. El archivo no contiene datos de personas ni tus Excel.",
+                W - 2 * pad, "Light", 12.5) + 10
+    gap = 20
+    cw = (W - 2 * pad - gap) / 2
+    ya = y
+    # --- panel exportar
+    ex0, ex1 = pad, pad + cw
+    # --- panel importar
+    ix0, ix1 = pad + cw + gap, W - pad
+    hpan = 636
+    for (a, b) in ((ex0, ex1), (ix0, ix1)):
+        L.rect(a, ya, b, ya + hpan, fill=BLANCO, line=LINEA, w=1.2, r=14)
+    # exportar
+    yy = ya + 22
+    L.txt(ex0 + 22, yy + 10, "Exportar", fuente("Bold", 16), GRIS_OSC, "lm")
+    chip(L, ex1 - 22, yy - 1, "Esta configuración", TINTE_VERDE, OK_TXT, 10.5, "r", 22)
+    yy += 34
+    L.txt(ex0 + 22, yy + 8, "Se guarda en un solo archivo:", fuente("Regular", 12), GRIS_OSC, "lm")
+    yy += 28
+    items = [("Programas", "25"), ("Campos del cuadro", "8"), ("Fuentes de datos", "3"),
+             ("Equivalencias", "21"), ("Tipos de persona", "8"), ("Reglas de cruce", "5")]
+    for i, (n, c) in enumerate(items):
+        L.check(ex0 + 34, yy + 14 + i * 34, VERDE_CTA, 5)
+        L.txt(ex0 + 56, yy + 14 + i * 34, n, fuente("Regular", 12.5), NEGRO, "lm")
+        L.txt(ex1 - 22, yy + 14 + i * 34, c, fuente("Bold", 12.5), GRIS_OSC, "rm")
+        if i < len(items) - 1:
+            L.d.line([L.P(ex0 + 22), L.P(yy + 31 + i * 34), L.P(ex1 - 22), L.P(yy + 31 + i * 34)], fill="#EDEDED", width=L.P(1))
+    yy += len(items) * 34 + 14
+    L.txt(ex0 + 22, yy + 8, "Nombre del archivo", fuente("Bold", 12), GRIS_OSC, "lm")
+    campo(L, ex0 + 22, yy + 20, ex1 - 22, yy + 52, recortar_texto(L, "Configuracion_CuadroMaestro_2026-11-23.json", fuente("Regular", 12), cw - 70))
+    yy += 70
+    # lo que NO incluye (rellena el panel izquierdo)
+    yy += 6
+    L.rect(ex0 + 22, yy, ex1 - 22, yy + 78, fill=FONDO, line=LINEA, w=1, r=8)
+    icono_info(L, ex0 + 34, yy + 14, GRIS)
+    L.txt(ex0 + 62, yy + 23, "No incluye", fuente("Bold", 12), GRIS_OSC, "lm")
+    L.txt(ex0 + 62, yy + 44, "Tus archivos Excel, los datos de personas ni", fuente("Regular", 11.5), NEGRO, "lm")
+    L.txt(ex0 + 62, yy + 62, "los cuadros ya generados.", fuente("Regular", 11.5), NEGRO, "lm")
+    # importar
+    yy = ya + 22
+    L.txt(ix0 + 22, yy + 10, "Importar", fuente("Bold", 16), GRIS_OSC, "lm")
+    yy += 34
+    boton_secundario(L, ix0 + 22, yy, ix0 + 22 + 150, yy + 38, "Elegir archivo…", "normal", 12)
+    L.txt(ix0 + 22 + 164, yy + 12, "Archivo elegido", fuente("Light", 10.5), GRIS, "lm")
+    L.txt(ix0 + 22 + 164, yy + 28, "Creado el 12-nov-2026 · versión 1.0", fuente("Regular", 11), GRIS_OSC, "lm")
+    yy += 46
+    L.txt(ix0 + 22, yy + 8, "Configuracion_CuadroMaestro_2026-11-12.json", fuente("Bold", 11.5), GRIS_OSC, "lm")
+    yy += 32
+    L.txt(ix0 + 22, yy + 8, "Qué cambiaría", fuente("Bold", 12), GRIS_OSC, "lm")
+    yy += 24
+    tx0, tx1 = ix0 + 22, ix1 - 22
+    L.rect(tx0, yy, tx1, yy + 28, fill=GRIS_OSC, r=7, corners=(True, True, False, False))
+    c1, c2, c3 = tx0 + 12, tx0 + 190, tx0 + 262
+    for xx, t in ((c1, "Elemento"), (c2 + 6, "Hoy"), (c3 + 6, "Archivo")):
+        L.txt(xx, yy + 14, t, fuente("Bold", 11), BLANCO, "lm")
+    L.txt(tx1 - 12, yy + 14, "Cambio", fuente("Bold", 11), BLANCO, "rm")
+    top = yy
+    yy += 28
+    comp = [("Programas", "25", "25", ("igual", "Igual")), ("Campos del cuadro", "8", "9", ("mas", "+1")),
+            ("Equivalencias", "21", "34", ("mas", "+13")), ("Tipos de persona", "8", "8", ("igual", "Igual")),
+            ("Reglas de cruce", "5", "5", ("dif", "1 distinta"))]
+    for i, (n, hoy, arch, (k, t)) in enumerate(comp):
+        rh = 36
+        L.rect(tx0, yy, tx1, yy + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(c1, yy + rh / 2, n, fuente("Regular", 11.5), NEGRO, "lm")
+        L.txt(c2 + 6, yy + rh / 2, hoy, fuente("Regular", 11.5), NEGRO, "lm")
+        L.txt(c3 + 6, yy + rh / 2, arch, fuente("Regular", 11.5), NEGRO, "lm")
+        bg, fg = {"igual": ("#EDEDED", GRIS_OSC), "mas": (TINTE_VERDE, OK_TXT), "dif": (AVISO_BG, AVISO_TXT)}[k]
+        chip(L, tx1 - 10, yy + 7, t, bg, fg, 10, "r", 22)
+        yy += rh
+    L.rect(tx0, top, tx1, yy, line=LINEA, w=1.2, r=7)
+    yy += 16
+    L.txt(ix0 + 22, yy + 8, "Cómo importarla", fuente("Bold", 12), GRIS_OSC, "lm")
+    yy += 26
+    radio(L, ix0 + 22, yy + 2, False)
+    L.txt(ix0 + 50, yy + 11, "Reemplazar todo", fuente("Bold", 12), NEGRO, "lm")
+    L.txt(ix0 + 50, yy + 29, "Tu configuración queda igual a la del archivo.", fuente("Light", 11), GRIS, "lm")
+    yy += 48
+    radio(L, ix0 + 22, yy + 2, True)
+    L.txt(ix0 + 50, yy + 11, "Combinar (recomendado)", fuente("Bold", 12), NEGRO, "lm")
+    L.txt(ix0 + 50, yy + 29, "Conserva lo tuyo y agrega lo que falte.", fuente("Light", 11), GRIS, "lm")
+    yy += 50
+    L.rect(ix0 + 22, yy, ix1 - 22, yy + 40, fill=AVISO_BG, line=NARANJA, w=1, r=8)
+    L.d.ellipse([L.P(ix0 + 34), L.P(yy + 12), L.P(ix0 + 50), L.P(yy + 28)], fill=NARANJA)
+    L.txt(ix0 + 42, yy + 20.5, "!", fuente("Bold", 10.5), NEGRO, "mm")
+    L.txt(ix0 + 60, yy + 20, "Antes de importar se guarda una copia de la actual.", fuente("Regular", 11.5), NEGRO, "lm")
+    # fila común de botones (misma altura en los dos paneles)
+    yb = ya + hpan - 22 - 38
+    for (a_, b_) in ((ex0, ex1), (ix0, ix1)):
+        L.d.line([L.P(a_ + 22), L.P(yb - 16), L.P(b_ - 22), L.P(yb - 16)], fill=LINEA, width=L.P(1))
+    boton_secundario(L, ex0 + 22, yb, ex0 + 22 + 150, yb + 38, "Elegir carpeta…", "normal", 12)
+    boton_primario(L, ex1 - 22 - 150, yb, ex1 - 22, yb + 38, "Exportar")
+    boton_secundario(L, ix1 - 22 - 150 - 10 - 110, yb, ix1 - 22 - 150 - 10, yb + 38, "Cancelar", "normal", 12)
+    boton_primario(L, ix1 - 22 - 150, yb, ix1 - 22, yb + 38, "Importar")
+    y = ya + hpan + 18
+    boton_primario(L, W - pad - 130, y, W - pad, y + 42, "Listo")
+    L.txt(pad, y + 21, "Los cambios importados se aplican al instante.", fuente("Light", 11.5), GRIS, "lm")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ------------------------------------------------------------------
+#  Copias y almacenamiento
+# ------------------------------------------------------------------
+def modal_almacenamiento(W=900):
+    L = modal_base(W, 1400, "Copias y almacenamiento")
+    pad = 28
+    y = titulo_modal(L, W, pad, "Copias y almacenamiento", "Todo al día", (TINTE_VERDE, OK_TXT))
+    x0, x1 = pad, W - pad
+    y = parrafo(L, pad, y, "Tu configuración se guarda en dos lugares a la vez. Si uno se pierde, el programa la recupera del otro.",
+                W - 2 * pad, "Light", 12.5) + 8
+    L.txt(x0, y + 10, "Dónde se guarda", fuente("Bold", 14), GRIS_OSC, "lm")
+    y += 30
+    lugares = [("Carpeta del usuario", "C:\\Users\\Oficina\\AppData\\Roaming\\CuadroMaestro\\configuracion.json", "En uso"),
+               ("Junto al programa", "D:\\Portable\\CuadroMaestro\\configuracion.json", "Al día")]
+    for nom, ruta, est in lugares:
+        L.rect(x0, y, x1, y + 78, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.txt(x0 + 20, y + 22, nom, fuente("Bold", 13), GRIS_OSC, "lm")
+        L.txt(x0 + 20, y + 44, recortar_texto(L, ruta, fuente("Regular", 11.5), 520), fuente("Regular", 11.5), GRIS, "lm")
+        L.txt(x0 + 20, y + 62, "Guardada hoy 13:52", fuente("Light", 11), GRIS, "lm")
+        bg, fg = (TINTE_VERDE, OK_TXT) if est == "En uso" else ("#EDEDED", GRIS_OSC)
+        chip(L, x0 + 20 + L.tw(nom, fuente("Bold", 13)) + 12, y + 11, est, bg, fg, 10.5, "l", 22)
+        boton_secundario(L, x1 - 20 - 130, y + 20, x1 - 20, y + 54, "Abrir carpeta", "normal", 12)
+        y += 78 + 10
+    y += banner_info(L, x0, y, x1, "Al abrir el programa se usa la copia más reciente. Si falta una o está dañada, se restaura desde la otra y se te avisa.") + 20
+    # copias de seguridad
+    L.txt(x0, y + 10, "Copias de seguridad", fuente("Bold", 14), GRIS_OSC, "lm")
+    chip(L, x0 + L.tw("Copias de seguridad", fuente("Bold", 14)) + 12, y - 1, "10 guardadas", "#EDEDED", GRIS_OSC, 10.5, "l", 22)
+    boton_secundario(L, x1 - 150, y - 6, x1, y + 28, "Crear copia ahora", "normal", 11.5)
+    y += 38
+    top = y
+    L.rect(x0, y, x1, y + 32, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    L.txt(x0 + 16, y + 16, "Fecha", fuente("Bold", 11.5), BLANCO, "lm")
+    L.txt(x0 + 190, y + 16, "Motivo", fuente("Bold", 11.5), BLANCO, "lm")
+    y += 32
+    copias = [("Hoy 13:52", "Automática · al cambiar reglas de cruce", "normal"),
+              ("Hoy 11:04", "Antes de importar una configuración", "restaurar"),
+              ("22-nov 16:20", "Automática · al editar equivalencias", "normal"),
+              ("21-nov 09:41", "Creada por ti", "normal"),
+              ("19-nov 15:12", "Automática · al editar campos", "normal")]
+    for i, (f_, mot, est) in enumerate(copias):
+        if est == "restaurar":
+            rh = 74
+            L.rect(x0, y, x1, y + rh, fill=AVISO_BG, line=NARANJA, w=1.2)
+            L.txt(x0 + 16, y + 22, f_, fuente("Bold", 12), GRIS_OSC, "lm")
+            L.txt(x0 + 190, y + 22, mot, fuente("Regular", 12), NEGRO, "lm")
+            L.txt(x0 + 16, y + 48, "¿Restaurar esta copia? Tu configuración actual se guarda antes como una copia nueva.", fuente("Regular", 11.5), GRIS_OSC, "lm")
+            L.rect(x1 - 116, y + 32, x1 - 14, y + 64, fill=VERDE_CTA, r=8)
+            L.txt(x1 - 65, y + 48, "Restaurar", fuente("Bold", 11.5), BLANCO, "mm")
+            boton_secundario(L, x1 - 116 - 8 - 90, y + 32, x1 - 116 - 8, y + 64, "Cancelar", "normal", 11.5)
+        else:
+            rh = 44
+            L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+            L.txt(x0 + 16, y + rh / 2, f_, fuente("Bold", 12), GRIS_OSC, "lm")
+            L.txt(x0 + 190, y + rh / 2, mot, fuente("Regular", 12), NEGRO, "lm")
+            boton_secundario(L, x1 - 14 - 96, y + 7, x1 - 14, y + rh - 7, "Restaurar", "normal", 11.5)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y += 14
+    L.txt(x0, y + 8, "Se conservan las últimas 10 copias; las más antiguas se reemplazan solas.", fuente("Light", 11.5), GRIS, "lm")
+    boton_primario(L, x1 - 130, y - 6, x1, y + 34, "Listo")
+    H = int(y + 34 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+# =====================================================================
+#  v0.11 — la vista previa del cuadro vive en la ventana principal;
+#  Reglas de cruce y Fuentes de datos tienen sus propias pruebas.
+# =====================================================================
+VERSION = "Boceto v0.12 · datos ficticios"
+
+
+def num_circulo(L, cx, cy, n, r=14):
+    L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=VERDE_CTA)
+    L.txt(cx, cy + 0.5, str(n), fuente("Bold", 13), BLANCO, "mm")
+
+
+def punto(L, x, cy, col, r=5):
+    L.d.ellipse([L.P(x - r), L.P(cy - r), L.P(x + r), L.P(cy + r)], fill=col)
+
+
+def chips_contexto(L, x0, y, textos):
+    cx = x0
+    for t in textos:
+        _, w_ = chip(L, cx, y, t, FONDO, GRIS_OSC, 11.5, "l", 26)
+        L.rect(cx, y, cx + w_, y + 26, line=LINEA, w=1.2, r=13)
+        cx += w_ + 8
+    return y + 40
+
+
+def tabla_cabecera(L, x0, x1, y, cols, titulos, alto=32):
+    L.rect(x0, y, x1, y + alto, fill=GRIS_OSC, r=8, corners=(True, True, False, False))
+    for xx, t in zip(cols, titulos):
+        L.txt(xx, y + alto / 2, t, fuente("Bold", 11.5), BLANCO, "lm")
+    return y + alto
+
+
+def pie_modal(L, W, pad, y):
+    L.d.line([L.P(pad), L.P(y), L.P(W - pad), L.P(y)], fill=LINEA, width=L.P(1))
+    return y + 14
+
+
+# ------------------------------------------------------------------
+#  Ventana principal › Previsualizar cuadro
+# ------------------------------------------------------------------
+def modal_previsualizar(W=980):
+    L = modal_base(W, 1700, "Previsualizar cuadro")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Previsualizar cuadro", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Programa: Fisioterapia", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Es solo una prueba: lee tus archivos y muestra cómo quedaría el cuadro. "
+                     "No crea ningún archivo ni cambia tu configuración.") + 16
+    gap = 12
+    cw = (x1 - x0 - 3 * gap) / 4
+    stats = [("14 de 15", "archivos por año leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
+             ("412", "movilidades contadas", VERDE_CTA, None), ("8", "avisos para revisar", MAGENTA, "Ver abajo")]
+    for i, (num, lbl, col, extra) in enumerate(stats):
+        sx = x0 + i * (cw + gap)
+        L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.rect(sx, y + 14, sx + 4, y + 78, fill=col)
+        L.txt(sx + 20, y + 34, num, fuente("Bold", 26), GRIS_OSC, "lm")
+        L.txt(sx + 20, y + 62, lbl, fuente("Light", 12), GRIS, "lm")
+        if extra:
+            L.txt(sx + cw - 16, y + 20, extra, fuente("Bold", 11), (AVISO_TXT if col == NARANJA else MAGENTA), "rm")
+    y += 92 + 16
+    # lectura de archivos: una sola línea
+    L.rect(x0, y, x1, y + 46, fill=FONDO, line=LINEA, w=1.2, r=10)
+    ft = fuente("Bold", 12.5)
+    L.txt(x0 + 16, y + 23, "Lectura de archivos", ft, GRIS_OSC, "lm")
+    xs = x0 + 16 + L.tw("Lectura de archivos", ft) + 16
+    for txt, bg, fg in (("13 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+                        ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, xs, y + 12, txt, bg, fg, 10.5, "l", 22)
+        xs += w_ + 8
+    L.txt(x1 - 16, y + 23, "Ver cómo se leyó cada archivo ›", fuente("Bold", 12), VERDE_CTA, "rm")
+    y += 46 + 24
+    # avisos
+    L.txt(x0, y + 10, "Avisos de la vista previa", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 3 de 8", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    avisos = [(MAGENTA, "Convenio sin fecha de inicio válida: Universidad de Guadalajara (Convenios.xlsx, fila 112).", "Abrir Convenios.xlsx"),
+              (MAGENTA, "Falta el archivo de Movilidad 2021: ese año quedará incompleto en el conteo.", "Abrir carpeta"),
+              (NARANJA, "Institución sin coincidencia: «Universidad Autónoma deSinaloa» (Movilidad_2022.xlsx, 3 movilidades).", "Elegir institución…")]
+    top = y
+    for i, (col, t, acc) in enumerate(avisos):
+        rh = 46
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        punto(L, x0 + 22, y + rh / 2, col)
+        L.txt(x0 + 42, y + rh / 2, recortar_texto(L, t, fuente("Regular", 12), x1 - x0 - 70 - 190), fuente("Regular", 12), NEGRO, "lm")
+        boton_secundario(L, x1 - 14 - 176, y + 8, x1 - 14, y + rh - 8, acc, "normal", 11.5)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    L.txt(x0, y + 16, "y 5 avisos más. Resuelve estos aquí o ve todos en Ver revisión, después de generar.", fuente("Light", 11.5), GRIS, "lm")
+    y += 38
+    # cuadro
+    L.txt(x0, y + 10, "Así quedaría el cuadro", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 4 de 101", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    cols = [x0 + 16, x0 + 62, x0 + 392, x0 + 690, x0 + 806]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("No.", "Institución", "Resultados concretos", "Vigencia", "Activo"))
+    datos = [("1", "UNIVERSIDAD AUTÓNOMA DE SINALOA (UAS)", ["2022", "- Estudiante saliente: 3"], "5", "Activo"),
+             ("2", "BENEMÉRITA UNIVERSIDAD AUTÓNOMA DE PUEBLA - BUAP", ["2022", "- Estudiante saliente: 2", "- Internacionalización en casa: 10"], "5", "No activo"),
+             ("3", "UNIVERSIDAD DEL ISTMO", ["Sin evidencia"], "10", "Activo"),
+             ("4", "UNIVERSIDAD DE CARABOBO", ["2022", "- Experto internacional: 1"], "5", "Activo")]
+    for i, (n, inst, res, vig, act) in enumerate(datos):
+        rh = max(44, len(res) * 17 + 18)
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, n, fuente("Regular", 12), GRIS, "lm")
+        fi = fuente("Bold", 11.5)
+        li = partir(L, [(inst, False)], fi, fi, cols[2] - cols[1] - 20)
+        for j, ln_ in enumerate(li[:2]):
+            L.txt(cols[1], y + rh / 2 + (j - (len(li[:2]) - 1) / 2) * 15, " ".join(t[0] for t in ln_), fi, GRIS_OSC, "lm")
+        for j, t in enumerate(res):
+            L.txt(cols[2], y + rh / 2 + (j - (len(res) - 1) / 2) * 17, t,
+                  fuente("Bold" if j == 0 and t != "Sin evidencia" else "Regular", 11.5), (GRIS if t == "Sin evidencia" else NEGRO), "lm")
+        L.txt(cols[3], y + rh / 2, vig, fuente("Regular", 12), NEGRO, "lm")
+        chip(L, x1 - 16, y + rh / 2 - 11, act, (TINTE_VERDE if act == "Activo" else "#EDEDED"),
+             (OK_TXT if act == "Activo" else GRIS_OSC), 10.5, "r", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y = pie_modal(L, W, pad, y + 18)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    boton_secundario(L, pad + 132, y, pad + 132 + 230, y + 42, "Volver a leer los archivos", "normal", 13)
+    L.txt(pad + 378, y + 21, "Después de corregir algo, vuelve a leer.", fuente("Light", 11.5), GRIS, "lm")
+    boton_primario(L, W - pad - 270, y, W - pad, y + 42, "Generar cuadro maestro")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ------------------------------------------------------------------
+#  Reglas de cruce › Ver cómo se aplican
+# ------------------------------------------------------------------
+def modal_aplican(W=980):
+    L = modal_base(W, 2000, "Ver cómo se aplican las reglas")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Ver cómo se aplican las reglas", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Programa: Fisioterapia", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Usa tus archivos reales y solo los lee: muestra qué decidió cada regla y qué efecto "
+                     "tienen tus cambios. No crea archivos ni guarda nada.") + 20
+    # efecto de los cambios
+    L.txt(x0, y + 10, "Efecto de tus cambios", fuente("Bold", 14), GRIS_OSC, "lm")
+    chip(L, x0 + L.tw("Efecto de tus cambios", fuente("Bold", 14)) + 12, y - 1, "1 regla cambiada", AVISO_BG, AVISO_TXT, 10.5, "l", 22)
+    y += 30
+    cols = [x0 + 16, x0 + 400, x0 + 560, x0 + 760]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Qué se compara", "Lo confirmado", "Con tus cambios", "Diferencia"))
+    comp = [("Convenios en el cuadro", "93", "101", ("+8", "aviso")), ("Convenios sin resultados (Sin evidencia)", "41", "49", ("+8", "aviso")),
+            ("Movilidades contadas", "412", "412", ("Igual", "igual")), ("Actividades de internacionalización en casa", "598", "598", ("Igual", "igual"))]
+    for i, (n, a, b, (t, k)) in enumerate(comp):
+        rh = 38
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, n, fuente("Regular", 12), NEGRO, "lm")
+        L.txt(cols[1] + 6, y + rh / 2, a, fuente("Regular", 12), NEGRO, "lm")
+        L.txt(cols[2] + 6, y + rh / 2, b, fuente("Bold" if k == "aviso" else "Regular", 12), NEGRO, "lm")
+        bg, fg = {"igual": ("#EDEDED", GRIS_OSC), "aviso": (AVISO_BG, AVISO_TXT)}[k]
+        chip(L, cols[3], y + 8, t, bg, fg, 10.5, "l", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y += 12
+    y += banner_info(L, x0, y, x1, "Tu cambio en la regla 1 («Convenios vencidos: entran todos») agrega 8 convenios al cuadro, "
+                     "todos sin resultados.", AVISO_BG, NARANJA, NARANJA) + 22
+    # qué decidió cada regla
+    L.txt(x0, y + 10, "Qué decidió cada regla", fuente("Bold", 14), GRIS_OSC, "lm")
+    y += 30
+    reglas = [("Qué convenios entran al cuadro", "101 entran · 14 quedan fuera porque no aplican al programa", True),
+              ("A qué convenio va cada registro", "1.010 registros asignados · 9 sin convenio que cubra el año (van a Ver revisión)", False),
+              ("Qué se cuenta", "412 movilidades · 598 actividades de internacionalización en casa", False),
+              ("Vigencia y fecha de fin", "27 vigencias calculadas con año de inicio + vigencia · 2 sin fecha de inicio válida (van a Ver revisión)", False),
+              ("Activo o No activo", "74 activos · 27 no activos, según la matriz de hoy", False)]
+    top = y
+    for i, (tit, res, cambiada) in enumerate(reglas):
+        rh = 58
+        L.rect(x0, y, x1, y + rh, fill=(AVISO_BG if cambiada else (BLANCO if i % 2 == 0 else FONDO)))
+        num_circulo(L, x0 + 34, y + rh / 2, i + 1)
+        L.txt(x0 + 62, y + 20, tit, fuente("Bold", 12.5), GRIS_OSC, "lm")
+        L.txt(x0 + 62, y + 40, recortar_texto(L, res, fuente("Regular", 12), 640), fuente("Regular", 12), NEGRO, "lm")
+        if cambiada:
+            xc_, wc_ = chip(L, x1 - 16, y + rh / 2 - 11, "Cambiada", AVISO_BG, AVISO_TXT, 10.5, "r", 22)
+            L.rect(xc_, y + rh / 2 - 11, xc_ + wc_, y + rh / 2 + 11, line=NARANJA, w=1, r=11)
+        else:
+            chip(L, x1 - 16, y + rh / 2 - 11, "Confirmada", TINTE_VERDE, OK_TXT, 10.5, "r", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y += 24
+    # ejemplos
+    L.txt(x0, y + 10, "Ejemplos reales, paso a paso", fuente("Bold", 14), GRIS_OSC, "lm")
+    L.txt(x1, y + 10, "Mostrando 4 de 1.019", fuente("Light", 11.5), GRIS, "rm")
+    y += 30
+    cols = [x0 + 16, x0 + 340, x0 + 770]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Registro", "Qué decidió", "Regla"))
+    ej = [("Movilidad 2022 · Estudiante saliente · BUAP", "Convenio específico 2019-014: su vigencia 2019–2024 cubre 2022 y es el preferido.", ("Regla 2", "ok")),
+          ("Int. en casa 2022-1 · Taller · U. de Carabobo", "Convenio marco 2018-007: para internacionalización en casa se prefiere el Marco.", ("Regla 2", "ok")),
+          ("Movilidad 2022 · Estudiante entrante · U. de los Andes (VE)", "Ningún convenio cubre 2022: no se cuenta y va a Ver revisión.", ("Regla 2", "mal")),
+          ("Convenio · U. del Istmo (vencido, sin resultados)", "Entra al cuadro porque «Convenios vencidos» está en «Entran todos».", ("Regla 1 · Cambiada", "aviso"))]
+    f_e = fuente("Regular", 11.5)
+    for i, (a, b, (t, k)) in enumerate(ej):
+        rh = 54
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        for xx, txt, ancho, fam in ((cols[0], a, cols[1] - cols[0] - 16, "Bold"), (cols[1], b, cols[2] - cols[1] - 16, "Regular")):
+            ff = fuente(fam, 11.5)
+            lin = partir(L, [(txt, False)], ff, ff, ancho)[:2]
+            for j, ln_ in enumerate(lin):
+                L.txt(xx, y + rh / 2 + (j - (len(lin) - 1) / 2) * 16, " ".join(tt[0] for tt in ln_), ff, GRIS_OSC if fam == "Bold" else NEGRO, "lm")
+        bg, fg = {"ok": (TINTE_VERDE, OK_TXT), "mal": (ROSA_SUAVE, MAGENTA), "aviso": (AVISO_BG, AVISO_TXT)}[k]
+        chip(L, cols[2], y + rh / 2 - 11, t, bg, fg, 10.5, "l", 22)
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    y = pie_modal(L, W, pad, y + 18)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    L.txt(W - pad, y + 21, "Para volver a lo confirmado usa «Restablecer» en Reglas de cruce.", fuente("Light", 11.5), GRIS, "rm")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+# ------------------------------------------------------------------
+#  Fuentes de datos › Probar lectura de la carpeta
+# ------------------------------------------------------------------
+def modal_lectura(W=980, desde=None):
+    L = modal_base(W, 1500, "Probar lectura de la carpeta")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Probar lectura de la carpeta", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Prueba cómo lee el programa cada archivo con lo que hay en Fuentes de datos. "
+                     "No crea archivos ni cambia tu configuración.") + 18
+    # resumen y filtro
+    cx = x0
+    for txt, bg, fg in (("13 listos", TINTE_VERDE, OK_TXT), ("1 por confirmar", AVISO_BG, AVISO_TXT),
+                        ("1 sin identificar", ROSA_SUAVE, MAGENTA), ("1 no se encontró", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 26)
+        cx += w_ + 8
+    # filtro Todos / Con problemas
+    fx = x1 - 300
+    L.rect(fx, y, x1, y + 28, fill=FONDO, line=LINEA, w=1.2, r=14)
+    L.rect(fx + 3, y + 3, fx + 138, y + 25, fill=VERDE_CTA, r=11)
+    L.txt(fx + 70, y + 14, "Todos (16)", fuente("Bold", 11), BLANCO, "mm")
+    L.txt(fx + 220, y + 14, "Con problemas (3)", fuente("Bold", 11), GRIS_OSC, "mm")
+    y += 44
+    cols = [x0 + 16, x0 + 270, x0 + 480, x0 + 600, x0 + 710]
+    top = y
+    y = tabla_cabecera(L, x0, x1, y, cols, ("Archivo", "Se leyó como", "Encabezados", "Columnas", "Estado"))
+    filas = [("Convenios.xlsx", "Matriz de convenios", "fila 3", "8 de 8", ("ok", "Listo")),
+             ("Movilidad_2019.xlsx", "Movilidad anual", "fila 1", "7 de 7", ("ok", "Listo")),
+             ("Movilidad_2021.xlsx", "—", "—", "—", ("mal", "No se encontró")),
+             ("Movilidad_2022.xlsx", "Movilidad anual", "fila 1", "6 de 7", ("aviso", "1 por confirmar")),
+             ("IntCasa_2022-1.xlsx", "Int. en casa", "fila 1", "6 de 7", ("mal", "1 sin identificar")),
+             ("IntCasa_2022-2.xlsx", "Int. en casa", "fila 2", "7 de 7", ("ok", "Listo")),
+             ("IntCasa_2023-1.xlsx", "Int. en casa", "fila 2", "7 de 7", ("ok", "Listo"))]
+    for i, (a, b, c, d_, e) in enumerate(filas):
+        rh = 40
+        L.rect(x0, y, x1, y + rh, fill=(BLANCO if i % 2 == 0 else FONDO))
+        L.txt(cols[0], y + rh / 2, a, fuente("Bold", 12), GRIS_OSC, "lm")
+        for xx, t in zip(cols[1:4], (b, c, d_)):
+            L.txt(xx, y + rh / 2, t, fuente("Regular", 12), NEGRO, "lm")
+        estado_celda(L, cols[4], y + rh / 2, e[0], e[1])
+        if e[0] != "ok" and e[1] != "No se encontró":
+            L.txt(x1 - 16, y + rh / 2, "Arreglar ›", fuente("Bold", 11.5), VERDE_CTA, "rm")
+        y += rh
+    L.rect(x0, top, x1, y, line=LINEA, w=1.2, r=8)
+    L.txt(x0, y + 16, "Mostrando 7 de 16 · «Arreglar» abre la fuente para confirmar o elegir la columna. Lo que falta se agrega a la carpeta.", fuente("Light", 11.5), GRIS, "lm")
+    y = pie_modal(L, W, pad, y + 36)
+    if desde == "vista_previa":
+        boton_primario(L, W - pad - 260, y, W - pad, y + 42, "Volver a la vista previa")
+        L.txt(pad, y + 21, "Estás viendo el detalle de la vista previa. Al volver, pulsa «Volver a leer los archivos» si arreglaste algo.", fuente("Light", 11.5), GRIS, "lm")
+    else:
+        boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+        L.txt(W - pad, y + 21, "Para ver cómo queda el cuadro, usa Previsualizar cuadro en la ventana principal.", fuente("Light", 11.5), GRIS, "rm")
+    H = int(y + 42 + 26)
+    recortar(L, H)
+    cerrar_modal(L)
+    return L
+
+
+
+# ---------- ventana de revisión (solo como fondo de los modales) ----------
+def recargar_icono(L, cx, cy, color=BLANCO, r=7):
+    """Flecha circular (recargar)."""
+    P = L.P
+    L.d.arc([P(cx - r), P(cy - r), P(cx + r), P(cy + r)], start=40, end=330, fill=color, width=P(2.2))
+    import math
+    a = math.radians(330)
+    px, py = cx + r * math.cos(a), cy + r * math.sin(a)
+    dx, dy = -math.sin(a), math.cos(a)
+    nx, ny = -dy, dx
+    L.d.polygon([(P(px + dx * 5.5), P(py + dy * 5.5)),
+                 (P(px + nx * 4.2 - dx * 1.5), P(py + ny * 4.2 - dy * 1.5)),
+                 (P(px - nx * 4.2 - dx * 1.5), P(py - ny * 4.2 - dy * 1.5))], fill=color)
+
+
+def btn_sec(L, x, y, texto, h=32, size=12, estado="normal"):
+    w = L.tw(texto, fuente("Bold", size)) + 32
+    boton_secundario(L, x, y, x + w, y + h, texto, estado, size)
+    return x + w
+
+
+def btn_prim_icono(L, x0, y0, x1, y1, texto, icono=True):
+    L.rect(x0, y0, x1, y1, fill=VERDE_CTA, r=8)
+    f = fuente("Bold", 14)
+    w = L.tw(texto, f)
+    total = w + (28 if icono else 0)
+    sx = (x0 + x1) / 2 - total / 2
+    if icono:
+        recargar_icono(L, sx + 8, (y0 + y1) / 2, BLANCO, 7.5)
+        sx += 28
+    L.txt(sx, (y0 + y1) / 2, texto, f, BLANCO, "lm")
+
+
+def tarjeta_aviso(L, x0, y, x1, color, titulo, donde, paso, hacer, botones=(), estado=None):
+    """Tarjeta de un aviso: título, dónde está, qué pasó, qué hacer y botones. Devuelve su alto."""
+    f_t, f_r, f_b, f_l = fuente("Bold", 13.5), fuente("Regular", 11.5), fuente("Bold", 11.5), fuente("Light", 11)
+    col_lbl, col_txt = x0 + 22, x0 + 22 + 74
+    ancho_t = x1 - col_txt - 22
+    lp = partir(L, [(paso, False)], f_r, f_r, ancho_t)
+    lh = partir(L, [(hacer, False)], f_r, f_r, ancho_t)
+    h = 16 + 22 + 20 + 10 + len(lp) * 17 + 8 + len(lh) * 17 + (14 + 32 if botones else 0) + 16
+    L.rect(x0, y, x1, y + h, fill=BLANCO, line=LINEA, w=1.2, r=12)
+    bx0, by0, bx1, by1 = L.P(x0), L.P(y), L.P(x1), L.P(y + h)
+    mk = Image.new("L", (bx1 - bx0, by1 - by0), 0)
+    ImageDraw.Draw(mk).rounded_rectangle([0, 0, mk.width - 1, mk.height - 1], radius=L.P(12), fill=255)
+    ImageDraw.Draw(mk).rectangle([L.P(6), 0, mk.width, mk.height], fill=0)
+    L.img.paste(Image.new("RGB", mk.size, color), (bx0, by0), mk)
+    ty = y + 16
+    L.txt(col_lbl, ty + 11, titulo, f_t, GRIS_OSC, "lm")
+    if estado:
+        txt, bg, fg = estado
+        chip(L, x1 - 18, ty + 1, txt, bg, fg, 10.5, "r", 22)
+    ty += 22
+    L.txt(col_lbl, ty + 10, "Dónde", fuente("Bold", 11), GRIS, "lm")
+    L.txt(col_txt, ty + 10, donde, f_l, GRIS, "lm")
+    ty += 20 + 10
+    L.txt(col_lbl, ty + 7, "Qué pasó", f_b, GRIS_OSC, "lm")
+    for ln in lp:
+        L.txt(col_txt, ty, " ".join(t[0] for t in ln), f_r, NEGRO, "la")
+        ty += 17
+    ty += 8
+    L.txt(col_lbl, ty + 7, "Qué hacer", f_b, VERDE_CTA, "lm")
+    for ln in lh:
+        L.txt(col_txt, ty, " ".join(t[0] for t in ln), f_r, NEGRO, "la")
+        ty += 17
+    if botones:
+        bx = col_txt
+        by = ty + 14
+        for b in botones:
+            bx = btn_sec(L, bx, by, b) + 10
+    return h
+
+
+def encabezado_grupo(L, x0, y, x1, color, num_txt, n, titulo, sub, texto_num=BLANCO, boton=None):
+    if boton:
+        bw_ = L.tw(boton, fuente("Bold", 12)) + 36
+        boton_secundario(L, x1 - bw_, y - 2, x1, y + 32, boton, "normal", 12)
+    L.d.ellipse([L.P(x0), L.P(y), L.P(x0 + 28), L.P(y + 28)], fill=color)
+    L.txt(x0 + 14, y + 14.5, str(n), fuente("Bold", 14), texto_num, "mm")
+    L.txt(x0 + 40, y + 14, titulo, fuente("Bold", 15), GRIS_OSC, "lm")
+    yy = parrafo(L, x0 + 40, y + 31, sub, x1 - x0 - 40, "Light", 12, GRIS, 17)
+    return yy + 8 - y
+
+
+def fila_resuelto(L, x0, y, x1, titulo, detalle):
+    L.d.ellipse([L.P(x0 + 18), L.P(y + 4), L.P(x0 + 36), L.P(y + 22)], fill=VERDE_CTA)
+    L.check(x0 + 27, y + 13.5, BLANCO, 3.6)
+    L.txt(x0 + 48, y + 13, titulo, fuente("Bold", 12), GRIS_OSC, "lm")
+    L.txt(x0 + 48 + L.tw(titulo, fuente("Bold", 12)) + 10, y + 13, "—  " + detalle, fuente("Regular", 11.5), OK_TXT, "lm")
+    return 26
+
+
+REV_A = {
+    "titulo": "Convenio sin fecha de inicio válida",
+    "donde": "Convenios.xlsx  ·  hoja CONV_INTERNACIONALES  ·  fila 112  ·  Universidad de Guadalajara",
+    "paso": "La celda «Fecha de inicio» está vacía o no es una fecha. Sin ella no se sabe en qué años cuenta el convenio, "
+            "así que quedó fuera del cuadro.",
+    "hacer": "Abre el archivo y escribe la fecha en esa celda (por ejemplo 15/03/2021). Guarda y cierra el Excel; "
+             "luego pulsa Recargar archivos.",
+    "botones": ("Abrir Convenios.xlsx",),
+}
+REV_B = {
+    "titulo": "Falta el archivo de Movilidad 2021",
+    "donde": "Carpeta C:\\Fuentes\\Movilidad_IeC",
+    "paso": "No hay un archivo de movilidad de 2021 en la carpeta, así que ese año quedó sin movilidades.",
+    "hacer": "Copia el archivo a la carpeta con un nombre que lleve el año (Movilidad_2021.xlsx). "
+             "Cierra el Excel y pulsa Recargar archivos.",
+    "botones": ("Abrir carpeta",),
+}
+REV_C = {
+    "titulo": "Institución sin coincidencia: «Universidad Autónoma deSinaloa»",
+    "donde": "Movilidad_2022.xlsx  ·  fila 48  ·  3 movilidades sin contar",
+    "paso": "Ese nombre no coincide con ninguna institución de la matriz de convenios (parece un error de escritura), "
+            "por eso no se contaron esas 3 movilidades.",
+    "hacer": "Elige a qué institución corresponde. El programa lo recuerda y no vuelve a preguntar. "
+             "No tienes que editar el Excel.",
+    "botones": ("Elegir institución…", "Preguntar a Gemini"),
+}
+REV_D = {
+    "titulo": "Columna sin identificar: «Vínculo»",
+    "donde": "IntCasa_2022-1.xlsx  ·  hoja Hoja1",
+    "paso": "El programa no pudo saber qué dato contiene esta columna. Sin ella no distingue el tipo de persona.",
+    "hacer": "Indica qué es en Fuentes de datos. Se guarda y sirve también para los próximos archivos.",
+    "botones": ("Abrir Fuentes de datos",),
+}
+REV_G = {
+    "titulo": "Programa nuevo en la matriz: «Fisioterapia Distancia»",
+    "donde": "Convenios.xlsx  ·  hoja CONV_INTERNACIONALES  ·  3 convenios",
+    "paso": "Ese programa aparece en la matriz, pero no está en la lista de Configuración. Por eso no se puede elegir al generar "
+            "y esos 3 convenios no entran a ningún cuadro.",
+    "hacer": "Agrégalo en Programas. Si es otro nombre de un programa que ya existe, créale una equivalencia en Equivalencias de programas.",
+    "botones": ("Abrir Programas",),
+}
+REV_H = {
+    "titulo": "Columna por confirmar: «PROGRAMA ACADÉMICO»",
+    "donde": "Movilidad_2022.xlsx  ·  hoja Hoja1",
+    "paso": "El programa cree que esta columna trae el programa de cada persona, pero el nombre no es idéntico. "
+            "Mientras no lo confirmes no la usa y esas filas no se asignan a ningún programa.",
+    "hacer": "Confirma que es la columna correcta o elige otra en Fuentes de datos. Se guarda para los próximos archivos.",
+    "botones": ("Confirmar sugerencia", "Abrir Fuentes de datos"),
+}
+REV_E = {
+    "titulo": "Movilidades sin convenio vigente en su año",
+    "donde": "Movilidad_2022.xlsx  ·  Universidad de Montreal  ·  4 movilidades",
+    "paso": "La institución existe en la matriz, pero ningún convenio cubre el año de esas movilidades. Por eso no entran al cuadro.",
+    "hacer": "Nada obligatorio. Si el convenio sí existía, corrige sus fechas en el Excel de convenios y recarga.",
+    "botones": (),
+}
+REV_F = {
+    "titulo": "Actividades sin institución omitidas",
+    "donde": "IntCasa_2022-2.xlsx  ·  3 actividades",
+    "paso": "Hay actividades de internacionalización en casa sin institución; no se pueden asignar a un convenio.",
+    "hacer": "Nada. Solo se informa la cantidad.",
+    "botones": (),
+}
+REV_NUEVO = {
+    "titulo": "Fecha de fin anterior a la de inicio",
+    "donde": "Convenios.xlsx  ·  hoja CONV_INTERNACIONALES  ·  fila 112  ·  Universidad de Guadalajara",
+    "paso": "Después de tu corrección, el convenio tiene fecha de inicio 15/03/2021 pero termina el 15/03/2019. "
+            "Una vigencia no puede terminar antes de empezar.",
+    "hacer": "Revisa las dos fechas de esa fila, corrígelas, guarda y cierra el Excel, y pulsa Recargar archivos.",
+    "botones": ("Abrir Convenios.xlsx",),
+}
+
+NUEVO_E = ("Nuevo", ROSA_SUAVE, MAGENTA)
+PEND_E = ("Sigue pendiente", AVISO_BG, AVISO_TXT)
+INFO_E = ("Sin cambios", "#EDEDED", GRIS)
+
+
+def contenido_revision(W, estado):
+    """Lista de avisos (zona con desplazamiento). Devuelve (Lienzo, alto real)."""
+    M = 28
+    L = Lienzo(W, 1800, fondo=FONDO)
+    x0, x1 = M, W - M - 16            # 16 px libres para la barra de desplazamiento
+    y = 14
+    despues = estado == "despues"
+
+    # resueltos (solo después de recargar): arriba, para que se vea qué se logró
+    if despues:
+        hh = 18 + 24 + 8 + 2 * 26 + 10
+        L.rect(x0, y, x1, y + hh, fill=OK_BG, line=VERDE, w=1.2, r=12)
+        L.txt(x0 + 20, y + 24, "Resueltos desde la última lectura (2)", fuente("Bold", 13.5), OK_TXT, "lm")
+        yy = y + 44
+        yy += fila_resuelto(L, x0, yy, x1, "Convenio sin fecha de inicio válida", "ya tiene fecha, vuelve a contar en el cuadro")
+        yy += fila_resuelto(L, x0, yy, x1, "Falta el archivo de Movilidad 2021", "archivo encontrado (15 de 15)")
+        y += hh + 18
+
+    # A. se corrigen en el Excel
+    nA = 1 if despues else 2
+    y += encabezado_grupo(L, x0, y, x1, MAGENTA, "", nA, "Corrige el Excel y recarga",
+                          "Estos avisos se arreglan fuera del programa: edita el archivo, guárdalo, ciérralo y pulsa "
+                          "Recargar archivos.")
+    if despues:
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, estado=NUEVO_E, **{k: v for k, v in REV_NUEVO.items()}) + 14
+    else:
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, **REV_A) + 14
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, **REV_B) + 14
+    y += 10
+
+    # B. se resuelven en el programa
+    y += encabezado_grupo(L, x0, y, x1, NARANJA, "", 4, "Resuélvelo aquí en el programa",
+                          "No tienes que tocar el Excel. Elige o indica la opción correcta y el programa la recuerda.",
+                          NEGRO, boton="Confirmar sugerencias (3)")
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_C) + 14
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_D) + 14
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_G) + 14
+    y += tarjeta_aviso(L, x0, y, x1, NARANJA, estado=(PEND_E if despues else None), **REV_H) + 14
+    y += 10
+
+    # C. informativo
+    y += encabezado_grupo(L, x0, y, x1, GRIS, "", 2, "Solo informativo",
+                          "No necesitan acción. Se muestran para que sepas qué quedó fuera del cuadro.")
+    y += tarjeta_aviso(L, x0, y, x1, "#B8B8B8", estado=(INFO_E if despues else None), **REV_E) + 14
+    y += tarjeta_aviso(L, x0, y, x1, "#B8B8B8", estado=(INFO_E if despues else None), **REV_F) + 14
+
+    # el grupo A de "antes" tiene 2 avisos, el de "después" 1 nuevo: los números de grupo son tipos, no conteos
+    return L, y + 4
+
+
+def ventana_revision(W=860, H=900, estado="antes", scroll=0):
+    despues = estado == "despues"
+    L = Lienzo(W, H)
+    M = 28
+    barra_ventana(L, W, "Cuadro maestro internacional · Revisión")
+    L.pegar(logo("_LOGOS-05.png", 34), M, 32 + 18)
+    L.txt(W - M, 32 + 22, "Revisión", fuente("Bold", 20), GRIS_OSC, "ra")
+    L.txt(W - M, 32 + 48, OFICINA, fuente("Light", 12), GRIS, "ra")
+    L.rect(0, 32 + 78, W, 32 + 81, fill=VERDE)
+    y = 32 + 81 + 14
+
+    # volver + contexto
+    L.txt(M, y + 10, "‹  Volver al cuadro maestro", fuente("Bold", 12.5), VERDE_CTA, "lm")
+    L.txt(W - M, y + 10, "Fisioterapia  ·  vigencia 2019–2023  ·  generado hoy 14:32", fuente("Light", 11.5), GRIS, "rm")
+    y += 32
+
+    # pasos
+    gap = 30
+    bw = (W - 2 * M - 2 * gap) / 3
+    pasos = [
+        ("Lee el aviso", "Cada tarjeta dice qué pasó y qué hacer."),
+        ("Corrígelo", "En tu Excel o aquí en el programa; la tarjeta te lo indica."),
+        ("Recarga", "Guarda y cierra el Excel, pulsa Recargar archivos y mira qué cambió."),
+    ]
+    bh = 62
+    for i, (t, d) in enumerate(pasos):
+        bx = M + i * (bw + gap)
+        resalta = i == 2
+        L.rect(bx, y, bx + bw, y + bh, fill=(TINTE_VERDE if resalta else BLANCO),
+               line=(VERDE_CTA if resalta else LINEA), w=(1.6 if resalta else 1.2), r=10)
+        L.d.ellipse([L.P(bx + 12), L.P(y + 12), L.P(bx + 36), L.P(y + 36)], fill=VERDE_CTA)
+        L.txt(bx + 24, y + 24.5, str(i + 1), fuente("Bold", 13), BLANCO, "mm")
+        L.txt(bx + 46, y + 24, t, fuente("Bold", 13), GRIS_OSC, "lm")
+        fd = fuente("Light", 11)
+        ty = y + 40
+        for ln in partir(L, [(d, False)], fd, fd, bw - 58 + 12)[:2]:
+            L.txt(bx + 12 if False else bx + 46, ty - 2 if False else ty - 2, " ".join(t_[0] for t_ in ln), fd, GRIS_OSC, "lm")
+            ty += 14
+        if i < 2:
+            flecha_der(L, bx + bw + 8, y + bh / 2, bx + bw + gap - 14, GRIS, 1.8)
+    y += bh + 12
+
+    # resumen / resultado de la recarga
+    if not despues:
+        L.txt(M, y + 12, "8 avisos", fuente("Bold", 14), GRIS_OSC, "lm")
+        cx = M + L.tw("8 avisos", fuente("Bold", 14)) + 16
+        for txt, bg, fg in (("2 se corrigen en el Excel", ROSA_SUAVE, MAGENTA),
+                            ("4 se resuelven aquí", AVISO_BG, AVISO_TXT),
+                            ("2 solo informativos", "#EDEDED", GRIS_OSC)):
+            x_, w_ = chip(L, cx, y, txt, bg, fg, 11, "l", 24)
+            cx += w_ + 8
+        y += 36
+    else:
+        L.rect(M, y, W - M, y + 38, fill=OK_BG, line=VERDE, w=1.2, r=10)
+        L.d.ellipse([L.P(M + 12), L.P(y + 9), L.P(M + 32), L.P(y + 29)], fill=VERDE_CTA)
+        L.check(M + 22, y + 19.5, BLANCO, 4.2)
+        L.txt(M + 44, y + 19, "Archivos recargados hoy 14:41.  Antes 8 avisos, ahora 7.", fuente("Bold", 12), OK_TXT, "lm")
+        cx = W - M - 12
+        for txt, bg, fg in (("1 nuevo", ROSA_SUAVE, MAGENTA), ("6 siguen", AVISO_BG, AVISO_TXT), ("2 resueltos", TINTE_VERDE, OK_TXT)):
+            x_, w_ = chip(L, cx, y + 8, txt, bg, fg, 11, "r", 22)
+            cx = x_ - 8
+        y += 38 + 10
+    vy0 = y
+    # ---- barra inferior fija ----
+    bar_h = 128
+    foot = 34
+    vy1 = H - foot - bar_h
+    # zona con desplazamiento
+    cont, hc = contenido_revision(W, estado)
+    vh = vy1 - vy0
+    scroll = max(0, min(scroll if scroll != "fin" else hc - vh, max(0, hc - vh)))
+    crop = cont.img.crop((0, L.P(scroll), L.P(W), L.P(scroll + vh)))
+    L.img.paste(crop, (0, L.P(vy0)))
+    L.d.line([0, L.P(vy0), L.P(W), L.P(vy0)], fill=LINEA, width=L.P(1))
+    # barra de desplazamiento
+    tx0, tx1 = W - 24, W - 14
+    L.rect(tx0, vy0 + 8, tx1, vy1 - 8, fill="#ECECEC", r=5)
+    pista = (vy1 - 8) - (vy0 + 8)
+    thumb = max(40, pista * vh / hc)
+    top = vy0 + 8 + (pista - thumb) * (scroll / max(1, hc - vh))
+    L.rect(tx0, top, tx1, top + thumb, fill="#A8A8A8", r=5)
+
+    # barra de acciones
+    by = vy1
+    L.rect(0, by, W, by + bar_h, fill=BLANCO)
+    L.d.line([0, L.P(by), L.P(W), L.P(by)], fill=LINEA, width=L.P(1))
+    aviso = ("Los cambios ya se ven aquí, pero el cuadro anterior no cambió. Genera de nuevo para incluirlos."
+             if despues else "Antes de recargar: guarda y cierra los Excel que hayas editado. Si siguen abiertos, el programa no ve tus cambios.")
+    f_av = fuente("Regular", 11.5)
+    L.rect(M, by + 12, W - M, by + 12 + 32, fill=(OK_BG if despues else AVISO_BG), line=(VERDE if despues else NARANJA), w=1, r=8)
+    col = VERDE_CTA if despues else NARANJA
+    L.d.ellipse([L.P(M + 12), L.P(by + 12 + 8), L.P(M + 28), L.P(by + 12 + 24)], fill=col)
+    L.txt(M + 20, by + 12 + 16.5, "i" if despues else "!", fuente("Bold", 11), (BLANCO if despues else NEGRO), "mm")
+    L.txt(M + 38, by + 12 + 16, aviso, f_av, NEGRO, "lm")
+    ry = by + 12 + 32 + 12
+    # texto izquierda
+    L.txt(M, ry + 8, ("Última lectura: hoy 14:41  ·  15 de 15 archivos" if despues else
+                      "Última lectura: hoy 14:32  ·  14 de 15 archivos"), fuente("Bold", 11.5), GRIS_OSC, "lm")
+    parrafo(L, M, ry + 20, "Recargar vuelve a leer tus archivos y actualiza esta lista. No cambia tus Excel.",
+            W - 2 * M - 470, "Light", 11, GRIS, 14)
+    # botones
+    if despues:
+        btn_sec_x = W - M - 230 - 12 - 200
+        boton_secundario(L, btn_sec_x, ry, btn_sec_x + 200, ry + 46, "Recargar archivos", "normal", 13)
+        recargar_icono(L, btn_sec_x + 28, ry + 23, VERDE_CTA, 7)
+        boton_primario(L, W - M - 230, ry, W - M, ry + 46, "Generar cuadro de nuevo")
+    else:
+        sx1 = W - M - 220 - 12 - 236
+        boton_secundario(L, sx1, ry, sx1 + 220, ry + 46, "Generar cuadro de nuevo", "normal", 13)
+        btn_prim_icono(L, W - M - 236, ry, W - M, ry + 46, "Recargar archivos")
+
+    # pie
+    L.rect(0, H - foot, W, H, fill=FONDO)
+    L.d.line([0, L.P(H - foot), L.P(W), L.P(H - foot)], fill=LINEA, width=L.P(1))
+    L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
+    L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    return L
+
+
+
+
+
+
+# =====================================================================
+#  v0.13 — Progreso de generación y Cuadro generado
+# =====================================================================
+VERSION = "Boceto v0.13 · datos ficticios"
+NOMBRE_1 = "Cuadro maestro - Fisioterapia - 2019-2023 - 2026-11-23 1432.xlsx"
+NOMBRE_2 = "Cuadro maestro - Fisioterapia - 2019-2023 - 2026-11-23 1446.xlsx"
+CARPETA_SALIDA = "C:\\Fuentes\\Movilidad_IeC\\Cuadros generados"
+
+
+def anillo(L, cx, cy, r, frac, col=VERDE_CTA, w=3.2):
+    """Anillo de progreso: pista gris y arco verde (frac de 0 a 1), empieza arriba."""
+    P = L.P
+    box = [P(cx - r), P(cy - r), P(cx + r), P(cy + r)]
+    L.d.ellipse(box, outline=LINEA, width=P(w))
+    L.d.arc(box, start=-90, end=-90 + 360 * frac, fill=col, width=P(w))
+
+
+def icono_hoja(L, x, y, s=44):
+    """Icono genérico de hoja de cálculo (no es el logo de ningún programa)."""
+    L.rect(x, y, x + s * 0.8, y + s, fill=TINTE_VERDE, line=VERDE_CTA, w=1.6, r=6)
+    gx0, gx1 = x + s * 0.14, x + s * 0.66
+    for k in range(4):
+        yy = y + s * 0.24 + k * s * 0.17
+        L.d.line([L.P(gx0), L.P(yy), L.P(gx1), L.P(yy)], fill=VERDE_CTA, width=L.P(1.4))
+    L.d.line([L.P(x + s * 0.40), L.P(y + s * 0.24), L.P(x + s * 0.40), L.P(y + s * 0.24 + 3 * s * 0.17)],
+             fill=VERDE_CTA, width=L.P(1.4))
+
+
+def cabecera_estado(L, pad, y, tipo, titulo, sub=None):
+    """Círculo grande + título, como en la alerta de confirmación."""
+    r = 27
+    cx, cy = pad + r, y + r
+    if tipo == "ok":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=VERDE_CTA)
+        L.check(cx, cy, BLANCO, 12)
+    else:
+        anillo(L, cx, cy, r - 2, 0.6, w=5)
+    L.txt(pad + 2 * r + 18, cy - (10 if sub else 0), titulo, fuente("Bold", 22), GRIS_OSC, "lm")
+    if sub:
+        L.txt(pad + 2 * r + 18, cy + 15, sub, fuente("Light", 12.5), GRIS, "lm")
+    return y + 2 * r + 20
+
+
+def estado_paso(L, cx, cy, estado):
+    r = 12
+    if estado == "hecho":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=VERDE_CTA)
+        L.check(cx, cy + 0.5, BLANCO, 5)
+    elif estado == "hecho_aviso":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=NARANJA)
+        L.txt(cx, cy + 0.5, "!", fuente("Bold", 13), NEGRO, "mm")
+    elif estado == "activo":
+        anillo(L, cx, cy, r - 1.5, 0.7, w=3)
+    else:
+        L.d.ellipse([L.P(cx - r + 1.5), L.P(cy - r + 1.5), L.P(cx + r - 1.5), L.P(cy + r - 1.5)],
+                    outline=LINEA, width=L.P(2))
+
+
+def modal_progreso(W=720):
+    L = modal_base(W, 1000, "Generando cuadro maestro")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = cabecera_estado(L, pad, 32 + 26, "progreso", "Generando el cuadro maestro…", "Esto puede tardar un momento")
+    y += 4
+    y = chips_contexto(L, x0, y, ("Programa: Fisioterapia", "Vigencia: 2019–2023", "15 archivos"))
+    # barra de progreso
+    L.txt(x0, y + 8, "Paso 3 de 5  ·  Leyendo Internacionalización en casa", fuente("Bold", 13), GRIS_OSC, "lm")
+    L.txt(x1, y + 8, "Tiempo: 0:14", fuente("Light", 12), GRIS, "rm")
+    y += 26
+    L.rect(x0, y, x1, y + 14, fill="#E6E6E6", r=7)
+    L.rect(x0, y, x0 + (x1 - x0) * 0.56, y + 14, fill=VERDE_CTA, r=7)
+    y += 14 + 18
+    # pasos
+    pasos = [
+        ("hecho", "Leer la Matriz de convenios", "Convenios.xlsx  ·  312 filas", GRIS),
+        ("hecho_aviso", "Leer la Movilidad anual", "4 de 5 años  ·  falta 2021", AVISO_TXT),
+        ("activo", "Leer Internacionalización en casa", "7 de 10 archivos  ·  ahora: 2022, 1.º semestre", GRIS_OSC),
+        ("pendiente", "Cruzar convenios con movilidades", "Pendiente", "#9A9A9A"),
+        ("pendiente", "Escribir el cuadro maestro", "Pendiente", "#9A9A9A"),
+    ]
+    rh = 50
+    top = y
+    L.rect(x0, y, x1, y + rh * len(pasos), fill=BLANCO, line=LINEA, w=1.2, r=12)
+    for i, (est, titulo, det, col_det) in enumerate(pasos):
+        ry = y + i * rh
+        if est == "activo":
+            L.rect(x0 + 1, ry + 1, x1 - 1, ry + rh - 1, fill=TINTE_VERDE)
+        if i:
+            L.d.line([L.P(x0 + 16), L.P(ry), L.P(x1 - 16), L.P(ry)], fill=LINEA, width=L.P(1))
+        estado_paso(L, x0 + 30, ry + rh / 2, est)
+        pend = est == "pendiente"
+        L.txt(x0 + 58, ry + rh / 2, titulo, fuente("Bold" if not pend else "Regular", 13), "#9A9A9A" if pend else GRIS_OSC, "lm")
+        L.txt(x1 - 18, ry + rh / 2, det, fuente("Light", 12), col_det, "rm")
+    L.rect(x0, top, x1, top + rh * len(pasos), line=LINEA, w=1.2, r=12)
+    y += rh * len(pasos) + 18
+    y += banner_info(L, x0, y, x1, "No abras ni edites los Excel de esta carpeta hasta que termine. "
+                     "Tus Excel originales no se modifican: el cuadro se crea como un archivo nuevo.") + 20
+    y = pie_modal(L, W, pad, y)
+    L.txt(x0, y + 21, "Si cancelas, no se crea ningún archivo.", fuente("Light", 11.5), GRIS, "lm")
+    boton_secundario(L, x1 - 200, y, x1, y + 42, "Cancelar generación", "normal", 13)
+    recortar(L, int(y + 42 + 26))
+    cerrar_modal(L)
+    return L
+
+
+def modal_generado(W=780, variante="primera"):
+    primera = variante in ("primera", "sin_avisos")
+    sin = variante == "sin_avisos"
+    L = modal_base(W, 1200, "Cuadro maestro generado")
+    pad = 32
+    x0, x1 = pad, W - pad
+    sub = ("Fisioterapia  ·  vigencia 2019–2023  ·  hoy 14:32" if primera
+           else "Generado de nuevo  ·  Fisioterapia  ·  hoy 14:46")
+    y = cabecera_estado(L, pad, 32 + 26, "ok", "Cuadro maestro generado" if primera else "Cuadro maestro generado de nuevo", sub)
+    y += 4
+    # archivo
+    nombre = NOMBRE_1 if primera else NOMBRE_2
+    L.rect(x0, y, x1, y + 84, fill=BLANCO, line=LINEA, w=1.2, r=12)
+    icono_hoja(L, x0 + 18, y + 20, 44)
+    f_n = fuente("Bold", 13)
+    L.txt(x0 + 82, y + 30, recortar_texto(L, nombre, f_n, x1 - x0 - 82 - 150), f_n, GRIS_OSC, "lm")
+    L.txt(x0 + 82, y + 56, "Guardado en  " + CARPETA_SALIDA, fuente("Light", 11.5), GRIS, "lm")
+    boton_secundario(L, x1 - 128, y + 22, x1 - 16, y + 62, "Abrir carpeta", "normal", 12)
+    y += 84 + 14
+    if not primera:
+        y += banner_info(L, x0, y, x1, "Se creó un archivo nuevo. El cuadro anterior (…2026-11-23 1432.xlsx) "
+                         "no se modificó ni se borró: sigue en la misma carpeta.") + 14
+    # tarjetas
+    gap = 12
+    cw = (x1 - x0 - 3 * gap) / 4
+    if primera and not sin:
+        stats = [("14 de 15", "archivos por año leídos", NARANJA, "Falta 1"), ("101", "convenios en el cuadro", VERDE_CTA, None),
+                 ("412", "movilidades contadas", VERDE_CTA, None), ("8", "avisos para revisar", MAGENTA, "Hay que revisar")]
+    elif sin:
+        stats = [("15 de 15", "archivos por año leídos", VERDE_CTA, None), ("103", "convenios en el cuadro", VERDE_CTA, None),
+                 ("455", "movilidades contadas", VERDE_CTA, None), ("0", "avisos para revisar", VERDE_CTA, "Todo cruzó")]
+    else:
+        stats = [("15 de 15", "archivos por año leídos", VERDE_CTA, None), ("102", "convenios en el cuadro", VERDE_CTA, "+1"),
+                 ("455", "movilidades contadas", VERDE_CTA, "+43"), ("7", "avisos para revisar", MAGENTA, "1 menos")]
+    for i, (num, lbl, col, extra) in enumerate(stats):
+        sx = x0 + i * (cw + gap)
+        L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.rect(sx, y + 14, sx + 4, y + 78, fill=col)
+        L.txt(sx + 20, y + 34, num, fuente("Bold", 26), GRIS_OSC, "lm")
+        L.txt(sx + 20, y + 62, lbl, fuente("Light", 11.5), GRIS, "lm")
+        if extra:
+            L.txt(sx + cw - 14, y + 20, extra, fuente("Bold", 11), (AVISO_TXT if col == NARANJA else (MAGENTA if col == MAGENTA else OK_TXT)), "rm")
+    y += 92 + 16
+    # avisos por grupo
+    n1, n2, n3 = (2, 4, 2) if primera else (1, 4, 2)
+    if sin:
+        y += banner_info(L, x0, y, x1, "Todo se pudo cruzar: no hay avisos. Puedes abrir el cuadro y revisarlo antes de entregarlo.",
+                         OK_BG, VERDE, VERDE_CTA) + 14
+    else:
+        L.rect(x0, y, x1, y + 78, fill=FONDO, line=LINEA, w=1.2, r=10)
+        L.txt(x0 + 16, y + 22, f"{n1 + n2 + n3} avisos para revisar antes de entregar el cuadro", fuente("Bold", 12.5), GRIS_OSC, "lm")
+        cx = x0 + 16
+        for txt, bg, fg in ((f"{n1} corrige el Excel", ROSA_SUAVE, MAGENTA), (f"{n2} resuélvelo aquí", AVISO_BG, AVISO_TXT),
+                            (f"{n3} informativos", "#EDEDED", GRIS_OSC)):
+            _, w_ = chip(L, cx, y + 38, txt, bg, fg, 11, "l", 26)
+            cx += w_ + 8
+        y += 78 + 14
+        parrafo(L, x0, y, "Lo que no se pudo cruzar queda fuera del cuadro o como dudoso. Ábrelo en Ver revisión, "
+                "corrígelo y genera de nuevo si hace falta." if primera else
+                "Sigue en la revisión: corrige lo que falte y genera de nuevo si hace falta.", x1 - x0, "Light", 12, GRIS, 18)
+        y += 44
+    y = pie_modal(L, W, pad, y)
+    if sin:
+        boton_primario(L, x1 - 170, y, x1, y + 44, "Abrir cuadro")
+        boton_secundario(L, x1 - 170 - 12 - 130, y, x1 - 170 - 12, y + 44, "Cerrar", "normal", 13)
+    elif primera:
+        L.txt(x0, y + 21, "Cerrar", fuente("Bold", 13), VERDE_CTA, "lm")
+        L.d.line([L.P(x0), L.P(y + 31), L.P(x0 + L.tw("Cerrar", fuente("Bold", 13))), L.P(y + 31)], fill=VERDE_CTA, width=L.P(1))
+        boton_primario(L, x1 - 190, y, x1, y + 44, "Ver revisión (8)")
+        boton_secundario(L, x1 - 190 - 12 - 160, y, x1 - 190 - 12, y + 44, "Abrir cuadro", "normal", 13)
+    else:
+        boton_primario(L, x1 - 170, y, x1, y + 44, "Abrir cuadro")
+        boton_secundario(L, x1 - 170 - 12 - 230, y, x1 - 170 - 12, y + 44, "Volver a la revisión", "normal", 13)
+    recortar(L, int(y + 44 + 26))
+    cerrar_modal(L)
+    return L
+
+
+
+
+# =====================================================================
+#  v0.14 — Primera apertura y reapertura
+# =====================================================================
+def modal_reapertura(W=780):
+    L = modal_base(W, 1000, "Cambios sin incluir en el cuadro")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = 32 + 26
+    r = 27
+    L.d.ellipse([L.P(pad), L.P(y), L.P(pad + 2 * r), L.P(y + 2 * r)], fill=NARANJA)
+    L.txt(pad + r, y + r + 1, "!", fuente("Bold", 30), NEGRO, "mm")
+    L.txt(pad + 2 * r + 18, y + r - 10, "Quedaron cambios sin incluir", fuente("Bold", 22), GRIS_OSC, "lm")
+    L.txt(pad + 2 * r + 18, y + r + 15, "Fisioterapia  ·  vigencia 2019–2023  ·  cuadro generado ayer 14:32", fuente("Light", 12.5), GRIS, "lm")
+    y += 2 * r + 22
+    y = parrafo(L, x0, y, "La última vez el programa se cerró antes de que el cuadro nuevo quedara generado (por un cierre inesperado "
+                "o porque la generación falló). El cuadro que tienes está desactualizado: no incluye lo que corregiste después.", x1 - x0, "Regular", 13.5, GRIS_OSC, 22) + 14
+    # resumen (igual que en el aviso de salida)
+    L.rect(x0, y, x1, y + 146, fill=FONDO, line=LINEA, w=1.2, r=12)
+    cx = x0 + 18
+    for txt, bg, fg in (("2 avisos resueltos", TINTE_VERDE, OK_TXT), ("1 aviso nuevo", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, cx, y + 18, txt, bg, fg, 12, "l", 30)
+        cx += w_ + 10
+    L.txt(x0 + 18, y + 80, "Configuración cambiada desde que generaste:", fuente("Regular", 13), GRIS_OSC, "lm")
+    chip(L, x0 + 18 + L.tw("Configuración cambiada desde que generaste:", fuente("Regular", 13)) + 12, y + 66, "Reglas de cruce (1)", AVISO_BG, AVISO_TXT, 12, "l", 28)
+    L.txt(x0 + 18, y + 118, "El cuadro nuevo cambia en 3 filas.", fuente("Bold", 13.5), GRIS_OSC, "lm")
+    y += 146 + 14
+    L.txt(x0, y + 8, "Se crea un archivo nuevo. El anterior no se borra ni se modifica.", fuente("Light", 12), GRIS, "lm")
+    y += 34
+    boton_primario(L, x1 - 260, y, x1, y + 48, "Generar cuadro de nuevo")
+    boton_secundario(L, x1 - 260 - 12 - 170, y, x1 - 272, y + 48, "Ver revisión", "normal", 13)
+    y += 48 + 14
+    parrafo(L, x0, y, "Si cierras este aviso puedes seguir aquí, pero para cambiar de programa o salir tendrás que generar de nuevo.",
+            x1 - x0, "Light", 11.5, GRIS, 17)
+    recortar(L, int(y + 40 + 14))
+    cerrar_modal(L)
+    return L
+
+
+
+
+# =====================================================================
+#  v0.15 — Cambiar carpeta, programa o vigencia con cambios sin incluir
+# =====================================================================
+def modal_cambio_con_pendientes(W=780):
+    L = modal_base(W, 1000, "Cambios sin incluir en el cuadro")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = 32 + 26
+    r = 27
+    L.d.ellipse([L.P(pad), L.P(y), L.P(pad + 2 * r), L.P(y + 2 * r)], fill=NARANJA)
+    L.txt(pad + r, y + r + 1, "!", fuente("Bold", 30), NEGRO, "mm")
+    L.txt(pad + 2 * r + 18, y + r - 10, "Antes de cambiar de programa", fuente("Bold", 22), GRIS_OSC, "lm")
+    L.txt(pad + 2 * r + 18, y + r + 15, "De Fisioterapia a Enfermería", fuente("Light", 12.5), GRIS, "lm")
+    y += 2 * r + 22
+    y = parrafo(L, x0, y, "El cuadro de Fisioterapia (generado ayer 14:32) tiene cambios que aún no están en el archivo. "
+                "Genera el cuadro de nuevo para incluirlos y después se hará el cambio.", x1 - x0, "Regular", 13.5, GRIS_OSC, 22) + 14
+    L.rect(x0, y, x1, y + 146, fill=FONDO, line=LINEA, w=1.2, r=12)
+    cx = x0 + 18
+    for txt, bg, fg in (("2 avisos resueltos", TINTE_VERDE, OK_TXT), ("1 aviso nuevo", ROSA_SUAVE, MAGENTA)):
+        _, w_ = chip(L, cx, y + 18, txt, bg, fg, 12, "l", 30)
+        cx += w_ + 10
+    L.txt(x0 + 18, y + 80, "Configuración cambiada desde que generaste:", fuente("Regular", 13), GRIS_OSC, "lm")
+    chip(L, x0 + 18 + L.tw("Configuración cambiada desde que generaste:", fuente("Regular", 13)) + 12, y + 66, "Reglas de cruce (1)", AVISO_BG, AVISO_TXT, 12, "l", 28)
+    L.txt(x0 + 18, y + 118, "El cuadro nuevo cambia en 3 filas.", fuente("Bold", 13.5), GRIS_OSC, "lm")
+    y += 146 + 14
+    L.txt(x0, y + 8, "Se crea un archivo nuevo. El anterior no se borra ni se modifica.", fuente("Light", 12), GRIS, "lm")
+    y += 34
+    boton_primario(L, x1 - 260, y, x1, y + 48, "Generar cuadro de nuevo")
+    boton_secundario(L, x1 - 260 - 12 - 200, y, x1 - 272, y + 48, "Cancelar el cambio", "normal", 13)
+    y += 48 + 14
+    parrafo(L, x0, y, "Al cancelar, Programa sigue en Fisioterapia. Lo mismo ocurre al cambiar la carpeta o la vigencia.",
+            x1 - x0, "Light", 11.5, GRIS, 17)
+    recortar(L, int(y + 24 + 14))
+    cerrar_modal(L)
+    return L
+
+
+
+
+# =====================================================================
+#  v0.16 — Estados vacíos: carpeta sin archivos, revisión sin avisos, vista previa sin convenios
+# =====================================================================
+def ventana_revision_vacia(W=1060, H=760):
+    L = Lienzo(W, H)
+    M = 28
+    barra_ventana(L, W, "Cuadro maestro internacional · Revisión")
+    L.pegar(logo("_LOGOS-05.png", 34), M, 32 + 18)
+    L.txt(W - M, 32 + 22, "Revisión", fuente("Bold", 20), GRIS_OSC, "ra")
+    L.txt(W - M, 32 + 48, OFICINA, fuente("Light", 12), GRIS, "ra")
+    L.rect(0, 32 + 78, W, 32 + 81, fill=VERDE)
+    y = 32 + 81 + 14
+    L.txt(M, y + 10, "‹  Volver al cuadro maestro", fuente("Bold", 12.5), VERDE_CTA, "lm")
+    L.txt(W - M, y + 10, "Fisioterapia  ·  vigencia 2019–2023  ·  generado hoy 14:32", fuente("Light", 11.5), GRIS, "rm")
+    y += 32
+    foot = 34
+    # zona central
+    top = y + 24
+    L.rect(M, top, W - M, top + 330, fill=BLANCO, line=LINEA, w=1.2, r=14)
+    cx = W / 2
+    r = 36
+    L.d.ellipse([L.P(cx - r), L.P(top + 36 - 0), L.P(cx + r), L.P(top + 36 + 2 * r)], fill=VERDE_CTA)
+    L.check(cx, top + 36 + r, BLANCO, 15)
+    L.txt(cx, top + 130, "No hay avisos que revisar", fuente("Bold", 22), GRIS_OSC, "mm")
+    L.txt(cx, top + 164, "Todo se pudo cruzar en esta generación: no hay nada que corregir ni que confirmar.", fuente("Regular", 13.5), GRIS_OSC, "mm")
+    ax = cx - 250
+    for txt, bg, fg in (("0 corrige el Excel", TINTE_VERDE, OK_TXT), ("0 resuélvelo aquí", TINTE_VERDE, OK_TXT), ("0 informativos", TINTE_VERDE, OK_TXT)):
+        f_ = fuente("Bold", 11.5)
+        w_ = L.tw(txt, f_) + 24
+        L.rect(ax, top + 192, ax + w_, top + 192 + 28, fill=bg, r=14)
+        L.txt(ax + w_ / 2, top + 206, txt, f_, fg, "mm")
+        ax += w_ + 10
+    L.txt(cx, top + 252, "Si cambias algo en tus Excel o en la configuración, pulsa Recargar archivos para comprobarlo.", fuente("Light", 12.5), GRIS, "mm")
+    L.txt(cx, top + 282, "El cuadro generado no cambia hasta que generes de nuevo.", fuente("Light", 12.5), GRIS, "mm")
+    # barra inferior
+    by = H - foot - 98
+    L.d.line([0, L.P(by - 8), L.P(W), L.P(by - 8)], fill=LINEA, width=L.P(1))
+    L.txt(M, by + 12, "Última lectura: hoy 14:32  ·  15 de 15 archivos", fuente("Bold", 11.5), GRIS_OSC, "lm")
+    parrafo(L, M, by + 28, "Recargar vuelve a leer tus archivos y actualiza esta lista. No cambia tus Excel.", W - 2 * M - 470, "Light", 11, GRIS, 14)
+    sx1 = W - M - 200 - 12 - 200
+    boton_secundario(L, sx1, by, sx1 + 200, by + 46, "Recargar archivos", "normal", 13)
+    recargar_icono(L, sx1 + 28, by + 23, VERDE_CTA, 7)
+    boton_primario(L, W - M - 200, by, W - M, by + 46, "Abrir cuadro")
+    L.rect(0, H - foot, W, H, fill=FONDO)
+    L.d.line([0, L.P(H - foot), L.P(W), L.P(H - foot)], fill=LINEA, width=L.P(1))
+    L.txt(M, H - 17, "Fundación Universitaria del Área Andina", fuente("Light", 10), GRIS, "lm")
+    L.txt(W - M, H - 17, VERSION, fuente("Light", 10), GRIS, "rm")
+    L.rect(0, 0, W - 1, H - 1, line="#9A9A9A", w=1)
+    return L
+
+
+def modal_previsualizar_sin_convenios(W=980):
+    L = modal_base(W, 1200, "Previsualizar cuadro")
+    pad = 28
+    x0, x1 = pad, W - pad
+    y = titulo_modal(L, W, pad, "Previsualizar cuadro", "Solo vista previa", ("#EDEDED", GRIS_OSC))
+    y = chips_contexto(L, x0, y, ("Programa: Enfermería", "Vigencia: 2019–2023", "Carpeta: C:\\Fuentes\\Movilidad_IeC"))
+    y += banner_info(L, x0, y, x1, "Es solo una prueba: lee tus archivos y muestra cómo quedaría el cuadro. "
+                     "No crea ningún archivo ni cambia tu configuración.") + 16
+    gap = 12
+    cw = (x1 - x0 - 3 * gap) / 4
+    stats = [("15 de 15", "archivos por año leídos", VERDE_CTA, None), ("0", "convenios en el cuadro", MAGENTA, "Revisa abajo"),
+             ("0", "movilidades contadas", "#B5B5B5", None), ("1", "aviso para revisar", MAGENTA, "Ver abajo")]
+    for i, (num, lbl, col, extra) in enumerate(stats):
+        sx = x0 + i * (cw + gap)
+        L.rect(sx, y, sx + cw, y + 92, fill=BLANCO, line=LINEA, w=1.2, r=12)
+        L.rect(sx, y + 14, sx + 4, y + 78, fill=col)
+        L.txt(sx + 20, y + 34, num, fuente("Bold", 26), GRIS_OSC, "lm")
+        L.txt(sx + 20, y + 62, lbl, fuente("Light", 12), GRIS, "lm")
+        if extra:
+            L.txt(sx + cw - 16, y + 20, extra, fuente("Bold", 11), MAGENTA, "rm")
+    y += 92 + 20
+    # estado vacío
+    L.rect(x0, y, x1, y + 236, fill=FONDO, line=LINEA, w=1.2, r=12)
+    L.txt(x0 + 24, y + 30, "Ningún convenio de la matriz aplica a Enfermería", fuente("Bold", 16), GRIS_OSC, "lm")
+    L.txt(x0 + 24, y + 58, "Sin convenios no hay cuadro que armar. Revisa estas dos cosas:", fuente("Regular", 12.5), GRIS_OSC, "lm")
+    for k, (t, d, btn) in enumerate((
+            ("1", "En Convenios.xlsx, la columna «Programa - Pereira» no dice APLICA para este programa.", "Abrir Convenios.xlsx"),
+            ("2", "El nombre del programa en la matriz es distinto al de tu lista de Programas.", "Abrir Equivalencias de programas"))):
+        ry = y + 84 + k * 70
+        L.rect(x0 + 20, ry, x1 - 20, ry + 58, fill=BLANCO, line=LINEA, w=1.2, r=10)
+        num_circulo(L, x0 + 46, ry + 29, t, 13)
+        L.txt(x0 + 72, ry + 29, recortar_texto(L, d, fuente("Regular", 12), x1 - x0 - 72 - 40 - 250), fuente("Regular", 12), NEGRO, "lm")
+        boton_secundario(L, x1 - 20 - 236, ry + 11, x1 - 34, ry + 47, btn, "normal", 11.5)
+    y += 236 + 20
+    L.txt(x0, y + 8, "Después de corregir, pulsa Volver a leer los archivos.", fuente("Light", 11.5), GRIS, "lm")
+    y += 30
+    y = pie_modal(L, W, pad, y)
+    boton_secundario(L, pad, y, pad + 120, y + 42, "Cerrar", "normal", 13)
+    boton_secundario(L, pad + 132, y, pad + 132 + 230, y + 42, "Volver a leer los archivos", "normal", 13)
+    L.rect(W - pad - 270, y, W - pad, y + 42, fill="#E0E0E0", r=8)
+    L.txt(W - pad - 135, y + 21, "Generar cuadro maestro", fuente("Bold", 14), "#9A9A9A", "mm")
+    L.txt(W - pad - 280, y + 21, "Sin convenios no hay cuadro que generar.", fuente("Light", 11.5), GRIS, "rm")
+    recortar(L, int(y + 42 + 26))
+    cerrar_modal(L)
+    return L
+
+
+
+
+# =====================================================================
+#  v0.17 — Hoja de errores y avisos de arranque
+# =====================================================================
+def paso_estado(L, cx, cy, estado):
+    """Como estado_paso, con 'error' (magenta, cruz) y 'omitido' (gris, guion)."""
+    r = 12
+    if estado == "error":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=MAGENTA)
+        L.cross(cx, cy, BLANCO, 4.6, 2.2)
+    elif estado == "omitido":
+        L.d.ellipse([L.P(cx - r + 1.5), L.P(cy - r + 1.5), L.P(cx + r - 1.5), L.P(cy + r - 1.5)], outline=LINEA, width=L.P(2))
+        L.d.line([L.P(cx - 4.5), L.P(cy), L.P(cx + 4.5), L.P(cy)], fill="#B5B5B5", width=L.P(2))
+    else:
+        estado_paso(L, cx, cy, estado)
+
+
+def cabecera_icono(L, pad, y, tipo, titulo, sub=None):
+    r = 27
+    cx, cy = pad + r, y + r
+    if tipo == "error":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=MAGENTA)
+        L.cross(cx, cy, BLANCO, 11, 3.4)
+    elif tipo == "aviso":
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=NARANJA)
+        L.txt(cx, cy + 1, "!", fuente("Bold", 30), NEGRO, "mm")
+    else:
+        L.d.ellipse([L.P(cx - r), L.P(cy - r), L.P(cx + r), L.P(cy + r)], fill=VERDE_CTA)
+        L.txt(cx, cy + 1, "i", fuente("Bold", 30), BLANCO, "mm")
+    L.txt(pad + 2 * r + 18, cy - (10 if sub else 0), titulo, fuente("Bold", 22), GRIS_OSC, "lm")
+    if sub:
+        L.txt(pad + 2 * r + 18, cy + 15, sub, fuente("Light", 12.5), GRIS, "lm")
+    return y + 2 * r + 22
+
+
+def lista_pasos(L, x0, x1, y, pasos, rh=38):
+    """Pasos de la generación, compactos. pasos = [(estado, titulo, detalle, color_detalle)]."""
+    L.rect(x0, y, x1, y + rh * len(pasos), fill=BLANCO, line=LINEA, w=1.2, r=12)
+    for i, (est, titulo, det, col_det) in enumerate(pasos):
+        ry = y + i * rh
+        if est == "error":
+            L.rect(x0 + 1, ry + 1, x1 - 1, ry + rh - 1, fill=ROSA_SUAVE)
+        if i:
+            L.d.line([L.P(x0 + 16), L.P(ry), L.P(x1 - 16), L.P(ry)], fill=LINEA, width=L.P(1))
+        paso_estado(L, x0 + 28, ry + rh / 2, est)
+        om = est == "omitido"
+        L.txt(x0 + 54, ry + rh / 2, titulo, fuente("Bold" if not om else "Regular", 12.5), "#9A9A9A" if om else GRIS_OSC, "lm")
+        L.txt(x1 - 18, ry + rh / 2, det, fuente("Light", 11.5), col_det, "rm")
+    L.rect(x0, y, x1, y + rh * len(pasos), line=LINEA, w=1.2, r=12)
+    return y + rh * len(pasos)
+
+
+def cab_hoja(L, x0, x1, y, n, texto="Hoja de errores"):
+    L.txt(x0, y + 11, texto, fuente("Bold", 15), GRIS_OSC, "lm")
+    chip(L, x0 + L.tw(texto, fuente("Bold", 15)) + 12, y, str(n), ROSA_SUAVE, MAGENTA, 11.5, "l", 22)
+    L.txt(x1, y + 11, "Todo lo que impide generar, en una sola lista", fuente("Light", 11.5), GRIS, "rm")
+    return y + 30
+
+
+def pie_error(L, W, pad, y, principal, secundario=None, ancho_p=170, ancho_s=130, copiar=True):
+    x0, x1 = pad, W - pad
+    y = pie_modal(L, W, pad, y)
+    if copiar:
+        f = fuente("Bold", 12.5)
+        L.txt(x0, y + 22, "Copiar detalle del error", f, VERDE_CTA, "lm")
+        L.d.line([L.P(x0), L.P(y + 32), L.P(x0 + L.tw("Copiar detalle del error", f)), L.P(y + 32)], fill=VERDE_CTA, width=L.P(1))
+    boton_primario(L, x1 - ancho_p, y, x1, y + 44, principal)
+    if secundario:
+        boton_secundario(L, x1 - ancho_p - 12 - ancho_s, y, x1 - ancho_p - 12, y + 44, secundario, "normal", 13)
+    return y + 44
+
+
+def modal_generacion_detenida(W=800, variante="lectura"):
+    L = modal_base(W, 1600, "Generando cuadro maestro")
+    pad = 32
+    x0, x1 = pad, W - pad
+    prog = "Enfermería" if variante == "sin_convenios" else "Fisioterapia"
+    y = cabecera_icono(L, pad, 32 + 26, "error", "La generación se detuvo",
+                       f"{prog}  ·  vigencia 2019–2023  ·  hoy 14:32")
+    y += banner_info(L, x0, y, x1, "No se creó ningún archivo y tus cambios pendientes siguen pendientes. "
+                     "Tus Excel originales no se modificaron.", AVISO_BG, NARANJA, AVISO_TXT) + 16
+    if variante == "lectura":
+        pasos = [("hecho", "Leer la Matriz de convenios", "Convenios.xlsx  ·  312 filas", GRIS),
+                 ("error", "Leer la Movilidad anual", "1 archivo con problemas", MAGENTA),
+                 ("error", "Leer Internacionalización en casa", "2 archivos con problemas", MAGENTA),
+                 ("omitido", "Cruzar convenios con movilidades", "No se llegó", "#9A9A9A"),
+                 ("omitido", "Escribir el cuadro maestro", "No se llegó", "#9A9A9A")]
+    elif variante == "escritura":
+        pasos = [("hecho", "Leer la Matriz de convenios", "Convenios.xlsx  ·  312 filas", GRIS),
+                 ("hecho_aviso", "Leer la Movilidad anual", "4 de 5 años  ·  falta 2021", AVISO_TXT),
+                 ("hecho", "Leer Internacionalización en casa", "10 de 10 archivos", GRIS),
+                 ("hecho", "Cruzar convenios con movilidades", "101 convenios  ·  412 movilidades", GRIS),
+                 ("error", "Escribir el cuadro maestro", "No se pudo guardar", MAGENTA)]
+    else:
+        pasos = [("error", "Leer la Matriz de convenios", "0 convenios para Enfermería", MAGENTA),
+                 ("omitido", "Leer la Movilidad anual", "No se llegó", "#9A9A9A"),
+                 ("omitido", "Leer Internacionalización en casa", "No se llegó", "#9A9A9A"),
+                 ("omitido", "Cruzar convenios con movilidades", "No se llegó", "#9A9A9A"),
+                 ("omitido", "Escribir el cuadro maestro", "No se llegó", "#9A9A9A")]
+    y = lista_pasos(L, x0, x1, y, pasos) + 20
+    if variante == "lectura":
+        y = cab_hoja(L, x0, x1, y, 3)
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, "Consolidado de movilidad 2021.xlsx",
+                           "Movilidad anual  ·  2021",
+                           "Otro programa tiene el archivo en uso (casi seguro está abierto en Excel) y no se pudo leer.",
+                           "Ciérralo en Excel, guarda si hace falta y pulsa Reintentar.",
+                           ("Abrir carpeta",), ("Archivo en uso", ROSA_SUAVE, MAGENTA)) + 12
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, "Internacionalización en casa 2022 - 1.er semestre.xlsx",
+                           "Internacionalización en casa  ·  2022",
+                           "El archivo tiene contraseña. El programa no puede abrir archivos protegidos.",
+                           "En Excel: Archivo › Información › Proteger libro › Cifrar con contraseña, borra la contraseña y guarda. Luego pulsa Reintentar.",
+                           ("Abrir carpeta",), ("Con contraseña", ROSA_SUAVE, MAGENTA)) + 12
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, "Internacionalización en casa 2023 - 2.º semestre.xlsx",
+                           "Internacionalización en casa  ·  2023",
+                           "El archivo está dañado o no es un .xlsx de verdad (por ejemplo, un .xls o un .csv con el nombre cambiado).",
+                           "Ábrelo en Excel y guárdalo como Libro de Excel (.xlsx). Si no abre, pide otra copia a quien lo envió.",
+                           ("Abrir carpeta",), ("Dañado", ROSA_SUAVE, MAGENTA)) + 14
+        L.txt(x0, y + 8, "Un archivo que existe pero no se puede leer detiene la generación: no se omite en silencio.", fuente("Light", 11.5), GRIS, "lm")
+        y += 30
+    elif variante == "escritura":
+        y = cab_hoja(L, x0, x1, y, 1)
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, "No se pudo guardar el cuadro",
+                           "C:\\Fuentes\\Movilidad_IeC\\Cuadros generados",
+                           "Windows no permitió crear el archivo en esa carpeta: no hay permiso de escritura o el disco está lleno.",
+                           "Libera espacio o pide permiso sobre la carpeta de los Excel y pulsa Reintentar. "
+                           "También puedes elegir otra carpeta en el paso 1.",
+                           ("Abrir carpeta",), ("No se pudo escribir", ROSA_SUAVE, MAGENTA)) + 14
+        L.txt(x0, y + 8, "El archivo temporal se borra solo: no queda nada a medias.", fuente("Light", 11.5), GRIS, "lm")
+        y += 30
+    else:
+        y = cab_hoja(L, x0, x1, y, 1)
+        y += tarjeta_aviso(L, x0, y, x1, MAGENTA, "Ningún convenio aplica a Enfermería",
+                           "Convenios.xlsx  ·  columna «Programa - Pereira»",
+                           "La matriz se leyó bien (312 filas), pero ninguna dice APLICA para este programa.",
+                           "Revisa que la columna diga APLICA para este programa, o que su nombre en la matriz esté en Equivalencias de programas.",
+                           ("Abrir Convenios.xlsx", "Abrir Equivalencias de programas"), ("Sin convenios", ROSA_SUAVE, MAGENTA)) + 14
+        L.txt(x0, y + 8, "Es el mismo aviso de la vista previa; aparece aquí cuando se genera sin pasar por ella.", fuente("Light", 11.5), GRIS, "lm")
+        y += 30
+    y = pie_error(L, W, pad, y, "Reintentar", "Cerrar", 150, 120)
+    recortar(L, int(y + 26))
+    cerrar_modal(L)
+    return L
+
+
+def modal_config_restaurada(W=720):
+    L = modal_base(W, 1000, "Configuración")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = cabecera_icono(L, pad, 32 + 26, "info", "Se restauró tu configuración", "Al abrir el programa  ·  hoy 08:12")
+    y = parrafo(L, x0, y, "La copia de la configuración guardada en este equipo estaba dañada. Se restauró desde la otra copia, "
+                "la que va junto al programa. Puede que falten los ajustes hechos después de esa fecha.", x1 - x0, "Regular", 13.5, GRIS_OSC, 22) + 12
+    filas = [("En este equipo (AppData)", "Dañada", "Se reemplazó", "#FDE6F2", MAGENTA),
+             ("Junto al programa", "Correcta  ·  20-nov-2026 16:05", "Se usó esta", TINTE_VERDE, OK_TXT)]
+    L.rect(x0, y, x1, y + 2 * 54, fill=BLANCO, line=LINEA, w=1.2, r=12)
+    for i, (donde, estado, accion, bg, fg) in enumerate(filas):
+        ry = y + i * 54
+        if i:
+            L.d.line([L.P(x0 + 16), L.P(ry), L.P(x1 - 16), L.P(ry)], fill=LINEA, width=L.P(1))
+        L.txt(x0 + 20, ry + 19, donde, fuente("Bold", 13), GRIS_OSC, "lm")
+        L.txt(x0 + 20, ry + 39, estado, fuente("Light", 12), GRIS, "lm")
+        chip(L, x1 - 18, ry + 15, accion, bg, fg, 11.5, "r", 26)
+    y += 2 * 54 + 16
+    L.txt(x0, y + 8, "La copia dañada se guardó aparte por si hace falta (se cuenta entre las 10 copias).", fuente("Light", 11.5), GRIS, "lm")
+    y += 34
+    y = pie_modal(L, W, pad, y)
+    boton_primario(L, x1 - 150, y, x1, y + 44, "Entendido")
+    boton_secundario(L, x1 - 150 - 12 - 240, y, x1 - 162, y + 44, "Ver copias de seguridad", "normal", 13)
+    recortar(L, int(y + 44 + 26))
+    cerrar_modal(L)
+    return L
+
+
+def modal_config_perdida(W=760):
+    L = modal_base(W, 1200, "Configuración")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = cabecera_icono(L, pad, 32 + 26, "aviso", "No se encontró tu configuración", "Al abrir el programa  ·  hoy 08:12")
+    y = parrafo(L, x0, y, "Ninguna de las dos copias se pudo leer. Mientras decides, el programa usa la configuración inicial "
+                "(25 programas de Pereira y las reglas de cruce por defecto). Hay copias de seguridad en este equipo.", x1 - x0, "Regular", 13.5, GRIS_OSC, 22) + 12
+    cols = (x0, x0 + 230, x1)
+    L.txt(x0 + 4, y + 10, "Copias de seguridad encontradas (3)", fuente("Bold", 13), GRIS_OSC, "lm")
+    y += 28
+    datos = [("22-nov-2026 18:40", "Automática", True), ("20-nov-2026 16:05", "Antes de importar", False), ("18-nov-2026 09:12", "Creada por ti", False)]
+    L.rect(x0, y, x1, y + 3 * 48, fill=BLANCO, line=LINEA, w=1.2, r=12)
+    for i, (fecha, motivo, rec) in enumerate(datos):
+        ry = y + i * 48
+        if rec:
+            L.rect(x0 + 1, ry + 1, x1 - 1, ry + 47, fill=TINTE_VERDE)
+        if i:
+            L.d.line([L.P(x0 + 16), L.P(ry), L.P(x1 - 16), L.P(ry)], fill=LINEA, width=L.P(1))
+        L.txt(x0 + 20, ry + 24, fecha, fuente("Bold", 12.5), GRIS_OSC, "lm")
+        L.txt(x0 + 250, ry + 24, motivo, fuente("Light", 12), GRIS, "lm")
+        if rec:
+            chip(L, x1 - 18, ry + 11, "La más reciente", OK_BG, OK_TXT, 11, "r", 26)
+    y += 3 * 48 + 16
+    L.txt(x0, y + 8, "Restaurar no borra las demás copias. Siempre puedes cambiar de copia después, en Configuración.", fuente("Light", 11.5), GRIS, "lm")
+    y += 34
+    y = pie_modal(L, W, pad, y)
+    f = fuente("Bold", 12.5)
+    L.txt(x0, y + 22, "Seguir con la inicial", f, VERDE_CTA, "lm")
+    L.d.line([L.P(x0), L.P(y + 32), L.P(x0 + L.tw("Seguir con la inicial", f)), L.P(y + 32)], fill=VERDE_CTA, width=L.P(1))
+    boton_primario(L, x1 - 270, y, x1, y + 44, "Restaurar la más reciente")
+    boton_secundario(L, x1 - 270 - 12 - 170, y, x1 - 282, y + 44, "Elegir otra copia…", "normal", 13)
+    recortar(L, int(y + 44 + 26))
+    cerrar_modal(L)
+    return L
+
+
+def modal_carpeta_no_encontrada(W=720):
+    L = modal_base(W, 1000, "Carpeta de los Excel")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = cabecera_icono(L, pad, 32 + 26, "aviso", "No se encontró la carpeta de la vez pasada", "Al abrir el programa  ·  hoy 08:12")
+    L.rect(x0, y, x1, y + 52, fill=FONDO, line=LINEA, w=1.2, r=10)
+    L.txt(x0 + 18, y + 26, "E:\\Movilidad_IeC", fuente("Bold", 13.5), GRIS_OSC, "lm")
+    chip(L, x1 - 14, y + 13, "No disponible", ROSA_SUAVE, MAGENTA, 11, "r", 26)
+    y += 52 + 14
+    y = parrafo(L, x0, y, "Puede ser un disco, una memoria USB o una carpeta de red desconectada, o que la carpeta haya cambiado de nombre. "
+                "Si la vuelves a conectar, pulsa Reintentar.", x1 - x0, "Regular", 13, GRIS_OSC, 21) + 10
+    y += banner_info(L, x0, y, x1, "Tu programa y tu vigencia se conservan. El último cuadro generado también estaba en esa carpeta: "
+                     "no se podrá abrir hasta que vuelva.") + 18
+    y = pie_modal(L, W, pad, y)
+    L.txt(x0, y + 22, "Cerrar", fuente("Bold", 13), VERDE_CTA, "lm")
+    L.d.line([L.P(x0), L.P(y + 32), L.P(x0 + L.tw("Cerrar", fuente("Bold", 13))), L.P(y + 32)], fill=VERDE_CTA, width=L.P(1))
+    boton_primario(L, x1 - 210, y, x1, y + 44, "Elegir otra carpeta…")
+    boton_secundario(L, x1 - 210 - 12 - 130, y, x1 - 222, y + 44, "Reintentar", "normal", 13)
+    recortar(L, int(y + 44 + 26))
+    cerrar_modal(L)
+    return L
+
+
+def modal_cuadro_no_encontrado(W=700):
+    L = modal_base(W, 900, "Último cuadro")
+    pad = 32
+    x0, x1 = pad, W - pad
+    y = cabecera_icono(L, pad, 32 + 26, "aviso", "No se encontró el cuadro", "Fisioterapia  ·  vigencia 2019–2023  ·  generado ayer 14:32")
+    L.rect(x0, y, x1, y + 70, fill=FONDO, line=LINEA, w=1.2, r=10)
+    icono_hoja(L, x0 + 16, y + 13, 44)
+    f_n = fuente("Bold", 12.5)
+    L.txt(x0 + 78, y + 24, recortar_texto(L, NOMBRE_1, f_n, x1 - x0 - 96), f_n, GRIS_OSC, "lm")
+    L.txt(x0 + 78, y + 48, CARPETA_SALIDA, fuente("Light", 11.5), GRIS, "lm")
+    y += 70 + 14
+    y = parrafo(L, x0, y, "Lo más probable es que se haya movido, renombrado o borrado. La Revisión y tu configuración no cambian: "
+                "puedes generar el cuadro de nuevo y se crea un archivo nuevo.", x1 - x0, "Regular", 13, GRIS_OSC, 21) + 16
+    y = pie_modal(L, W, pad, y)
+    boton_primario(L, x1 - 250, y, x1, y + 44, "Generar cuadro de nuevo")
+    boton_secundario(L, x1 - 250 - 12 - 150, y, x1 - 262, y + 44, "Abrir carpeta", "normal", 13)
+    L.txt(x0, y + 22, "Cerrar", fuente("Bold", 13), VERDE_CTA, "lm")
+    L.d.line([L.P(x0), L.P(y + 32), L.P(x0 + L.tw("Cerrar", fuente("Bold", 13))), L.P(y + 32)], fill=VERDE_CTA, width=L.P(1))
+    recortar(L, int(y + 44 + 26))
+    cerrar_modal(L)
+    return L
+
+
+# ---------- imágenes ----------
+reducir(sobre(ventana(1060, ultimo="al_dia", revision_activa=True).img, modal_generacion_detenida(800, "lectura").img)).save(f"{OUT}/generacion_detenida_lectura.png")
+reducir(sobre(ventana(1060, ultimo="al_dia", revision_activa=True).img, modal_generacion_detenida(800, "escritura").img)).save(f"{OUT}/generacion_detenida_escritura.png")
+reducir(sobre(ventana(1060, programa="Enfermería").img, modal_generacion_detenida(800, "sin_convenios").img)).save(f"{OUT}/generacion_detenida_sin_convenios.png")
+reducir(sobre(ventana(1060, ultimo="al_dia", revision_activa=True).img, modal_config_restaurada(720).img)).save(f"{OUT}/configuracion_restaurada.png")
+reducir(sobre(ventana(1060, vacio=True, bienvenida=True).img, modal_config_perdida(760).img)).save(f"{OUT}/configuracion_perdida.png")
+reducir(sobre(ventana(1060, ultimo="al_dia", revision_activa=True).img, modal_carpeta_no_encontrada(720).img)).save(f"{OUT}/carpeta_no_encontrada.png")
+reducir(sobre(ventana(1060, ultimo="al_dia", revision_activa=True).img, modal_cuadro_no_encontrado(700).img)).save(f"{OUT}/cuadro_no_encontrado.png")
+print("ok")

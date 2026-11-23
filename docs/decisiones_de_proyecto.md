@@ -96,3 +96,12 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - **Revisión sin avisos:** pantalla propia, con Recargar archivos y Abrir cuadro.
 - **Programa sin convenios:** la vista previa lo explica y bloquea Generar; la generación directa se detiene con el mismo mensaje.
 - **Pendiente al cerrar la fase de mockups:** regenerar con una sola versión todos los mockups de la ventana principal (y los que la tienen de fondo) para incluir la fila de la Matriz. Detalle en [diseno_estados_vacios.md](diseno_estados_vacios.md).
+
+## Hoja de errores y avisos de arranque (23-nov-2026, tarde)
+
+- **Hoja de errores:** una ventana única "La generación se detuvo" con pasos, lista de errores (Dónde / Qué pasó / Qué hacer), **Reintentar**, **Cerrar** y **Copiar detalle del error**. Sin archivo creado y con los cambios pendientes intactos.
+- **Archivo existente pero ilegible** (en uso, con contraseña, dañado): detiene la generación, se recogen todos los de la lectura y se muestran juntos. Un archivo ausente sigue siendo solo aviso.
+- **Nombre repetido en el mismo minuto:** el segundo lleva ` (2)`; nunca se sobrescribe.
+- **Excel abierto (`~$nombre.xlsx` presente):** aviso informativo gris en la revisión, sin detener la generación.
+- **Al abrir:** avisos de configuración restaurada (46), configuración no encontrada con restauración de copias (47) y carpeta no encontrada (48). **Abrir cuadro** sin archivo muestra el aviso 49.
+- Mockups 43 a 49 subidos a Drive. Detalle en [diseno_errores.md](diseno_errores.md).

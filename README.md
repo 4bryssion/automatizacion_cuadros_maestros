@@ -84,6 +84,7 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | `tools/boceto_previsualizar_y_pruebas.py` | Genera las imágenes de Previsualizar cuadro, Ver cómo se aplican, Probar lectura, Exportar/Importar y Copias |
 | `tools/boceto_revision.py` | Genera las imágenes de Ver revisión, antes y después de recargar |
 | `tools/boceto_estados_vacios.py` | Genera las imágenes de los estados vacíos (carpeta sin archivos, falta la Matriz, revisión sin avisos, vista previa sin convenios) |
+| `tools/boceto_errores.py` | Genera las imágenes de la Hoja de errores y de los avisos de arranque (generación detenida, configuración restaurada o perdida, carpeta o cuadro no encontrados) |
 | `tools/boceto_cambio_con_pendientes.py` | Genera la imagen del aviso al cambiar carpeta, programa o vigencia con cambios sin incluir |
 | `tools/boceto_apertura.py` | Genera las imágenes de Primera apertura y Reapertura (última generación, cambios sin incluir) |
 | `tools/boceto_generacion.py` | Genera las imágenes de Progreso de generación y Cuadro generado (3 casos) |
