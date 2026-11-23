@@ -60,7 +60,7 @@ Si al recargar **hubo cambios** y la persona intenta salir sin generar el cuadro
 - **Qué cuenta como "hubo cambios":** que el cuadro que saldría ahora sea distinto del último generado. Se compara el
   resultado, no los archivos: guardar un Excel sin cambiar nada no obliga a nada. **También cuentan los cambios de configuración
   hechos después de generar** (por ejemplo, una regla de cruce): el modal los lista ("Configuración cambiada desde que generaste: Reglas de cruce (1)").
-- **Cuándo se activa:** al cerrar la ventana, al pulsar "Volver al cuadro maestro" o al cambiar de programa mientras hay cambios sin incluir.
+- **Cuándo se activa:** al cerrar la ventana, al pulsar "Volver al cuadro maestro" o al cambiar la carpeta, el programa o la vigencia mientras hay cambios sin incluir (en ese caso el aviso ofrece **Generar cuadro de nuevo** y **Cancelar el cambio**; ver [diseno_apertura.md](diseno_apertura.md)).
 - **Qué aparece:** un modal con el resumen (avisos resueltos, avisos nuevos, configuración cambiada, filas del cuadro que cambian) y dos opciones:
   **Generar cuadro de nuevo** (principal) y **Volver a la revisión**. No hay "Salir sin generar". La X del modal equivale a *Volver*.
 - **Si el programa se cierra de otra forma** (corte de luz, administrador de tareas): el estado "cambios sin incluir" queda guardado

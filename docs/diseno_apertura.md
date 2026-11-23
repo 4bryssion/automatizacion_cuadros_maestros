@@ -31,7 +31,13 @@ Al abrir de nuevo, el programa recuerda carpeta, programa y vigencia, y muestra 
 - La tabla **Archivos que se usarán** (y su marca "N de M encontrados" y el aviso naranja) depende de la **carpeta** y de la **vigencia** (y de lo definido en Configuración › Fuentes de datos), no del programa: los Excel traen todos los programas y el programa elegido solo filtra filas dentro de ellos.
 - Se vuelve a leer al cambiar la carpeta o la vigencia, al pulsar **Actualizar** y al volver a la ventana.
 - La última generación (franja y Ver revisión) **no cambia** hasta que se genere de nuevo.
-- Por confirmar: qué pasa al cambiar carpeta o vigencia con cambios sin incluir (ver [decisiones_de_proyecto.md](decisiones_de_proyecto.md)).
+
+## Cambiar carpeta, programa o vigencia con cambios sin incluir (38)
+
+- Con cambios sin incluir, cambiar cualquiera de los tres campos abre un aviso: "Antes de cambiar de programa" (o "…de carpeta", "…de vigencia"), con el resumen de lo que falta incluir.
+- **Generar cuadro de nuevo** (principal): genera y, al terminar, aplica el cambio pedido y vuelve a leer la tabla de archivos.
+- **Cancelar el cambio** (y la X): el campo queda como estaba.
+- Sin cambios sin incluir, los tres campos se cambian libremente.
 
 ## Imágenes
 
@@ -41,3 +47,4 @@ Al abrir de nuevo, el programa recuerda carpeta, programa y vigencia, y muestra 
 | `35_reapertura_al_dia.png` | Reapertura con la franja "Último cuadro" |
 | `36_reapertura_aviso_cambios_sin_incluir.png` | Aviso al abrir con cambios sin incluir |
 | `37_reapertura_cambios_sin_incluir_tras_cerrar_aviso.png` | Ventana principal con la franja naranja |
+| `38_cambiar_programa_con_cambios_sin_incluir.png` | Aviso al cambiar programa, carpeta o vigencia con cambios sin incluir |

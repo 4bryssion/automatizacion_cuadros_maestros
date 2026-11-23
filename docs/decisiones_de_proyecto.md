@@ -87,4 +87,4 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - Al reabrir con cambios sin incluir (cierre inesperado o generación fallida) aparece un aviso con **Generar cuadro de nuevo** y **Ver revisión**; se puede cerrar y seguir en la ventana principal, con la franja naranja.
 - Los cambios hechos con el programa cerrado (Excel editados) no se detectan; Previsualizar o Recargar los revelan.
 - La tabla de archivos depende de carpeta y vigencia, no del programa. Detalle en [diseno_apertura.md](diseno_apertura.md).
-- **Por confirmar:** al cambiar la **carpeta** o la **vigencia** con cambios sin incluir, aplicar la misma regla que al cambiar de programa (aviso para generar de nuevo antes de cambiar). Hoy la regla solo nombra el programa.
+- **Decidido:** al cambiar la **carpeta**, el **programa** o la **vigencia** con cambios sin incluir se muestra un aviso (mockup 38) con **Generar cuadro de nuevo** y **Cancelar el cambio**. Tras generar se aplica el cambio y se vuelve a leer la tabla de archivos. Sin cambios sin incluir, los tres campos se cambian libremente.
