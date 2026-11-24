@@ -145,3 +145,22 @@ como informativo (gris) en todas las pantallas; versión del boceto v0.12.
 - **Un .xls antiguo** cuenta como «dañado o no es un .xlsx de verdad», con el mismo texto del mockup 43.
 - La lectura no depende del programa: cambiar de programa no obliga a volver a leer los archivos.
 - Solo se lee la carpeta elegida, sin subcarpetas. Detalle técnico en [lectura_tecnica.md](lectura_tecnica.md).
+
+## Motor de cruce (24-nov-2026)
+
+Decisiones tomadas al implementar las reglas (detalle en [cruce_tecnico.md](cruce_tecnico.md)):
+
+- **Tres casos distintos cuando una institución no tiene convenio del programa:** si no está en la matriz y la fila no
+  dice «sin convenio» → «Institución sin coincidencia» (naranja, con sugerencias: probablemente es un error de
+  escritura); si la fila dice «sin convenio» → informativo; si está en la matriz pero sus convenios no aplican al
+  programa → informativo.
+- **Columna por confirmar:** no se usa hasta que alguien la confirme (como dice el aviso del mockup); el archivo no
+  aporta filas mientras tanto.
+- **Convenio anulado:** cuenta como vencido para la regla 1 (entra solo si tuvo resultados).
+- **Estado no reconocido** (ni VIGENTE, ni VENCIDO, ni ANULADO): se marca «No Activo» y se avisa para corregir el Excel.
+- **Fecha de fin anterior a la de inicio**, o **sin fecha de fin ni vigencia en años**: el convenio queda fuera, con aviso.
+- **Programa parecido:** si un nombre de programa se parece en un 90 % o más al elegido y no es otro programa de la
+  lista, se avisa para confirmarlo como equivalencia de programas.
+- **Movilidad sin institución:** aviso informativo (las actividades sin institución solo se cuentan, P11).
+- **Formato:** «Activo» / «No Activo» y «Sin evidencia», como en el cuadro hecho a mano; dos convenios de la misma
+  institución se ordenan por fecha de inicio.

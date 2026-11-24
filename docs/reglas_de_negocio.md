@@ -51,6 +51,10 @@ ni conexión desde el programa. Las sugerencias nunca se aplican sin confirmaci�
 - Los convenios sin fecha de inicio válida van al informe de revisión.
 
 ## Verificación
+
+El motor de cruce (`src/cuadro_maestro/cruce/`, detalle en [cruce_tecnico.md](cruce_tecnico.md)) aplica estas reglas y
+reproduce el mismo resultado de 2022 con los archivos reales. Antes se había comprobado con el prototipo:
+
 `tools/prototipo_cruce.py` aplica estas reglas a los archivos de 2022 y reproduce exactamente lo que dice el
 cuadro de ejemplo para ese año (Universidad Continental: Experto internacional 1 en el convenio específico
 e Internacionalización en casa 10 en el marco). La Universidad Siglo 21 y la Academia de Defensa Militar

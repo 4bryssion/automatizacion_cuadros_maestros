@@ -145,7 +145,8 @@ REGLAS_CONFIRMADAS = {
     "r3_conteo": {"movilidad": "una_por_fila", "internacionalizacion": "una_por_fila",
                   "varios_programas_cuentan_para_cada_uno": True},
     "r4_fecha_fin": {"si_no_es_fecha": "inicio_mas_vigencia"},
-    "r5_activo": {"valores_activo": ["vigente"], "valores_no_activo": ["vencido", "anulado"]},
+    "r5_activo": {"valores_activo": ["vigente"], "valores_no_activo": ["vencido", "anulado"],
+                  "etiqueta_activo": "Activo", "etiqueta_no_activo": "No Activo"},
 }
 
 
