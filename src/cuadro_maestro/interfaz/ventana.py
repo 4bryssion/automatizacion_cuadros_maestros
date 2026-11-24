@@ -155,8 +155,7 @@ class VentanaPrincipal(tk.Frame):
         T.Ayuda(abajo, "revision").pack(side="right")
         self.l_revision = T.Enlace(abajo, "Ver revisión", self.abrir_revision)
         self.l_revision.pack(side="right", padx=(0, 8))
-        tk.Label(c, text="Previsualizar y Configuración llegan en la próxima versión.",
-                 font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
+
 
     def _logo(self, padre):
         ruta = carpeta_recursos() / "marca" / "logotipo_verde.png"
@@ -255,6 +254,7 @@ class VentanaPrincipal(tk.Frame):
         self._pintar_ultimo()
         motivo = motivo_para_no_generar(carpeta, self.programa_id(), desde, hasta, self.resumen)
         self.b_generar.activar(motivo is None)
+        self.b_previa.activar(motivo is None and self.b_previa.comando is not None)
         self.l_revision.activar(self.estado.ultima is not None)
         self.lbl_motivo.configure(text=motivo or "")
         self._guardar_estado()

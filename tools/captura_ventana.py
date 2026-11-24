@@ -8,6 +8,7 @@ No toca la configuración real: usa una carpeta de usuario temporal.
 import os
 import sys
 import tempfile
+import threading
 import tkinter as tk
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from cuadro_maestro.interfaz.app import Aplicacion  # noqa: E402
 from muestra_sintetica import NOMBRES, crear_muestra  # noqa: E402
 
 datos = TEMP / "Excel"
+threading.Timer(240, lambda: (print("Tiempo agotado: alguna ventana quedó esperando"), os._exit(1))).start()
 crear_muestra(datos)
 raiz = tk.Tk()
 raiz.title("Cuadro maestro internacional")
@@ -55,7 +57,13 @@ def foto(nombre, ventana_tk=None):
 
 
 def modal_abierto():
-    return next((w for w in raiz.winfo_children() if isinstance(w, tk.Toplevel) and w.winfo_viewable()), None)
+    """La ventana emergente visible más reciente (puede haber una sobre otra)."""
+    def todas(w):
+        for h in w.winfo_children():
+            if isinstance(h, tk.Toplevel):
+                yield h
+                yield from todas(h)
+    return next((w for w in reversed(list(todas(raiz))) if w.winfo_viewable()), None)
 
 
 def capturar_y_cerrar(nombre, ms=900):
@@ -110,5 +118,41 @@ try:
 except GeneracionDetenida as e:
     capturar_y_cerrar("43_generacion_detenida")
     D.generacion_detenida(raiz, e, {"Programa": "Administración de Empresas"})
+# Vista previa, Configuración y sus modales
+from cuadro_maestro.interfaz import configuracion as C  # noqa: E402
+from cuadro_maestro.interfaz.vista_previa import VistaPrevia  # noqa: E402
+
+crear_muestra(datos)                                     # la muestra intacta otra vez
+estado.ultima.cambios_sin_incluir = False                # si no, cambiar la vigencia pediría generar (aviso 38)
+ventana.v_carpeta.set(str(datos))
+ventana.v_desde.set("2022")
+ventana.actualizar()
+capturar_y_cerrar("20_previsualizar", 1200)
+VistaPrevia(app, str(datos), "administracion-de-empresas", 2022, 2022).mostrar()
+capturar_y_cerrar("42_previsualizar_sin_convenios", 1200)
+VistaPrevia(app, str(datos), "derecho", 2022, 2022).mostrar()
+app.abrir_configuracion()
+foto("06_configuracion")
+
+
+def abrir_editando(clase, nombre, *args, accion=lambda m: m.editar(0)):
+    def f():
+        m = modal_abierto()
+        if m:
+            accion(m)
+            raiz.after(500, lambda: (foto(nombre, m), m.destroy()))
+    raiz.after(600, f)
+    clase(app, raiz, *args).mostrar()
+
+
+abrir_editando(C.ModalProgramas, "07_programas")
+config["equivalencias_instituciones"].append({"como_aparece": "Univ. Ficticia del Nrte",
+                                              "es": "UNIVERSIDAD FICTICIA DEL NORTE", "origen": "revision"})
+abrir_editando(C.ModalEqInstituciones, "16_equivalencias_instituciones",
+               ["INSTITUTO DE PRUEBA DEL SUR", "UNIVERSIDAD FICTICIA DEL NORTE"], accion=lambda m: m.crear())
+abrir_editando(C.ModalTipos, "18_tipos_de_persona", ["Pasante internacional"])
+abrir_editando(C.ModalCopias, "24_copias", accion=lambda m: None)
+app.volver_de_configuracion()
 raiz.destroy()
 print("Capturas en", SALIDA, sorted(p.name for p in SALIDA.glob("*.png")))
+os._exit(0)

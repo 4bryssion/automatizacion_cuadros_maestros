@@ -24,9 +24,9 @@ GRUPOS = {
 }
 MARCAS = {"nuevo": ("Nuevo", T.ROSA_SUAVE, T.MAGENTA), "sigue": ("Sigue pendiente", T.AVISO_BG, T.AVISO_TXT),
           "igual": ("Sin cambios", "#EDEDED", T.GRIS)}
-ACCIONES_SIN_PANTALLA = {"abrir_fuentes": "Abrir Fuentes de datos", "abrir_programas": "Abrir Programas",
-                         "abrir_tipos": "Abrir Tipos de persona", "preguntar_a_gemini": "Preguntar a Gemini",
-                         "abrir_equivalencias_programas": "Abrir Equivalencias de programas"}
+ACCIONES_SIN_PANTALLA = {"abrir_fuentes": "Abrir Fuentes de datos", "preguntar_a_gemini": "Preguntar a Gemini"}
+ACCIONES_MODAL = {"abrir_programas": ("Abrir Programas", "programas"), "abrir_tipos": ("Abrir Tipos de persona", "tipos"),
+                  "abrir_equivalencias_programas": ("Abrir Equivalencias de programas", "eq_prog")}
 
 
 class PantallaRevision(tk.Frame):
@@ -117,7 +117,7 @@ class PantallaRevision(tk.Frame):
             tk.Label(tx, text=texto, font=T.F["pequena"], bg=fondo, anchor="w", justify="left",
                      wraplength=230).pack(fill="x")
             if not ultimo:
-                tk.Label(pasos, text="→", font=T.F["seccion"], bg=T.BLANCO, fg=T.GRIS).grid(row=0, column=i * 2 + 1, padx=6)
+                T.flecha(pasos, T.BLANCO).grid(row=0, column=i * 2 + 1, padx=6)
         resumen = tk.Frame(a, bg=T.BLANCO)
         resumen.pack(fill="x")
         avisos = self.avisos()
@@ -236,13 +236,16 @@ class PantallaRevision(tk.Frame):
         crear = lambda texto, fn, ancho=None: T.Boton(padre, texto, fn, tipo="secundario", fuente="boton_peq",  # noqa: E731
                                                       ancho=ancho or (T.F["boton_peq"].measure(texto) + 44), alto=36)
         if accion == "abrir_archivo" and a.ruta:
-            return crear(f"Abrir {a.ruta.name}", lambda: self._abrir(a.ruta))
+            return crear(T.texto_abrir(a.ruta), lambda: self._abrir(a.ruta))
         if accion == "abrir_carpeta":
             return crear("Abrir carpeta", lambda: self._abrir(a.ruta.parent if a.ruta else Path(self.u.carpeta)))
         if accion == "elegir_institucion":
             return crear("Elegir institución…", lambda: self.elegir_institucion(a))
         if accion == "confirmar_sugerencia":
             return crear("Confirmar sugerencia", lambda: self.confirmar(a))
+        if accion in ACCIONES_MODAL:
+            texto, clave = ACCIONES_MODAL[accion]
+            return crear(texto, lambda: self.app.abrir_modal(clave, self.app.raiz))
         if accion in ACCIONES_SIN_PANTALLA:
             b = crear(ACCIONES_SIN_PANTALLA[accion], None)
             b.activar(False)            # Configuración llega en la próxima versión
@@ -321,11 +324,7 @@ class PantallaRevision(tk.Frame):
         self._pintar()
 
     def _config_cambiada(self, que):
-        self.app.config = self.app.almacen.guardar(self.app.config)
-        self.app.ventana.config = self.app.config
-        cambiada = RV.elementos_cambiados(self.u.config_firmas, self.app.config)
-        self.u.cambios_sin_incluir = bool(cambiada or self.u.filas_cambian)
-        self.app.guardar_estado()
+        self.app.guardar_config()
         self._pintar_pie()
         D.aviso(self.app.raiz, "Guardado", "ok", f"Se guardó: {que}. Pulsa Recargar archivos para ver el efecto.",
                 [("Entendido", "ok", "primario")])
@@ -438,9 +437,9 @@ class ElegirInstitucion(D.Modal):
         tk.Label(caja, text="Así aparece en el Excel", font=T.F["pequena"], bg=T.FONDO, fg=T.GRIS, anchor="w").pack(fill="x")
         tk.Label(caja, text=f"«{aviso.detalle['como_aparece']}»", font=T.F["seccion"], bg=T.FONDO, anchor="w").pack(fill="x")
         self.buscar = tk.StringVar()
-        campo = T.Campo(self.cuerpo, self.buscar)
+        campo = T.Campo(self.cuerpo, self.buscar,
+                        guia=f"Buscar entre las {len(instituciones)} instituciones de la matriz de convenios…")
         campo.pack(fill="x", pady=(14, 10))
-        self.placeholder(campo.entrada, f"Buscar entre las {len(instituciones)} instituciones de la matriz de convenios…")
         self.buscar.trace_add("write", lambda *a: self._listar())
         cab = tk.Frame(self.cuerpo, bg=T.BLANCO)
         cab.pack(fill="x")
@@ -465,27 +464,10 @@ class ElegirInstitucion(D.Modal):
         self.b_guardar.activar(False)
         self._listar()
 
-    def placeholder(self, entrada, texto):
-        def poner(_=None):
-            if not self.buscar.get():
-                entrada.insert(0, texto)
-                entrada.configure(fg=T.DESACT_TXT)
-                self._con_texto_guia = True
-
-        def quitar(_=None):
-            if getattr(self, "_con_texto_guia", False):
-                self._con_texto_guia = False
-                entrada.delete(0, "end")
-                entrada.configure(fg=T.NEGRO)
-        self._con_texto_guia = False
-        entrada.bind("<FocusIn>", quitar, add="+")
-        entrada.bind("<FocusOut>", poner, add="+")
-        poner()
-
     def _listar(self):
         for w in self.opciones.winfo_children():
             w.destroy()
-        texto = "" if getattr(self, "_con_texto_guia", False) else normalizar(self.buscar.get())
+        texto = normalizar(self.buscar.get())
         if texto:
             self.lbl_lista.configure(text="Resultados de la búsqueda")
             filas = [(n, None, False) for n, _ in self.instituciones if texto in normalizar(n)][:6]

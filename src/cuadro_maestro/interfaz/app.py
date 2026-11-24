@@ -66,11 +66,86 @@ class Aplicacion:
         self.ventana.al_abrir_revision = self.abrir_revision
         self.ventana.app = self
         self.revision = None
+        self.pantalla_config = None
+        self.ventana.b_config.comando = self.abrir_configuracion
+        self.ventana.b_config.activar(True)
+        self.ventana.b_previa.comando = self.abrir_vista_previa
+        self.ventana.actualizar()
         raiz.protocol("WM_DELETE_WINDOW", self.cerrar)
 
     def guardar_estado(self):
         self.estados.guardar(self.estado)
         self.ventana._pintar_ultimo()
+
+    def guardar_config(self, config=None, ya_guardada=False):
+        """Guarda la configuración al instante (en los dos lugares). Si ya hay un cuadro generado y la configuración
+        cambió desde entonces, el cuadro queda con cambios sin incluir (decisión 5 de flujo)."""
+        from ..revision import elementos_cambiados
+        self.config = self.almacen.actual if ya_guardada else self.almacen.guardar(config or self.config)
+        self.ventana.config = self.config
+        self.ventana.programas = {p["nombre"]: p["id"] for p in self.config["programas"]}
+        self.ventana.cb_programa.configure(values=list(self.ventana.programas))
+        u = self.estado.ultima
+        if u:
+            u.cambios_sin_incluir = bool(elementos_cambiados(u.config_firmas, self.config) or u.filas_cambian)
+            self.guardar_estado()
+        return self.config
+
+    def carpeta_actual(self):
+        """La carpeta de la ventana principal o, si no hay, la del último cuadro (para listar instituciones)."""
+        from pathlib import Path
+        for c in (self.ventana.v_carpeta.get(), self.estado.ultima.carpeta if self.estado.ultima else None):
+            if c and Path(c).is_dir():
+                return c
+        return None
+
+    def abrir_modal(self, clave, duena=None, al_cerrar=None):
+        """Abre un modal de Configuración encima de la pantalla actual (decisión 3 de flujo)."""
+        from ..revision import instituciones_de_la_matriz
+        from . import configuracion as C
+        duena = duena or self.raiz
+        if clave == "programas":
+            C.ModalProgramas(self, duena).mostrar()
+        elif clave == "eq_inst":
+            carpeta = self.carpeta_actual()
+            opciones = [n for n, _ in instituciones_de_la_matriz(carpeta, self.config)] if carpeta else []
+            C.ModalEqInstituciones(self, duena, opciones).mostrar()
+        elif clave == "eq_prog":
+            C.ModalEqProgramas(self, duena, [p["nombre"] for p in self.config["programas"]]).mostrar()
+        elif clave == "tipos":
+            u = self.estado.ultima
+            vistos = []
+            for d in (u.avisos_actuales if u and u.avisos_actuales is not None else (u.avisos_lista if u else [])):
+                if d["tipo"] == "tipo_persona_no_reconocido" and d["detalle"].get("valor") not in vistos:
+                    vistos.append(d["detalle"]["valor"])
+            C.ModalTipos(self, duena, vistos).mostrar()
+        elif clave == "copias":
+            C.ModalCopias(self, duena).mostrar()
+        if al_cerrar:
+            al_cerrar()
+        if self.revision:
+            self.revision._pintar_pie()
+
+    def abrir_vista_previa(self):
+        from .vista_previa import VistaPrevia
+        v = self.ventana
+        desde, hasta = v.anios_elegidos()
+        vp = VistaPrevia(self, v.v_carpeta.get(), v.programa_id(), desde, hasta)
+        v.uso_vista_previa = True
+        if vp.mostrar() == "generar":
+            v.generar()
+
+    def abrir_configuracion(self):
+        from .configuracion import PantallaConfiguracion
+        self.ventana.pack_forget()
+        self.raiz.title("Cuadro maestro internacional · Configuración")
+        self.pantalla_config = PantallaConfiguracion(self, self.volver_de_configuracion)
+        self.pantalla_config.pack(fill="both", expand=True)
+
+    def volver_de_configuracion(self):
+        self.pantalla_config.destroy()
+        self.pantalla_config = None
+        self.volver_a_principal()
 
     def abrir_revision(self):
         from .revision import PantallaRevision

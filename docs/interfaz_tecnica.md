@@ -9,6 +9,8 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 | `ventana.py` | Ventana principal (mockups 01, 02, 34, 35, 39, 40), con la fecha de modificación de la matriz |
 | `dialogos.py` | Confirmar (03), progreso con cancelar (30), cuadro generado (31, 33), generación detenida (43-45), avisos (46-49) |
 | `revision.py` | Ver revisión (10-12, 41), Elegir institución (28), salir con cambios sin incluir (13) |
+| `vista_previa.py` | Previsualizar cuadro (20, 42): lee y cruza sin crear nada; avisos con su botón; primeras filas |
+| `configuracion.py` | Configuración (06) y sus modales: Programas (07), Equivalencias (16, 17), Tipos (18), Copias (24) |
 | `flujo.py` | Generar desde cualquier pantalla (confirmar, progreso, errores) y guardar la última generación |
 | `modelo.py` | Lógica de la ventana sin Tkinter: tabla de archivos, «x de y encontrados», mensajes, cuándo se puede generar |
 | `tema.py` | Colores y estados del manual, Brown Std, botones, enlaces, «?» con su ayuda, símbolos dibujados |
@@ -51,6 +53,17 @@ La lógica está en `src/cuadro_maestro/revision.py` (se prueba sin ventanas en 
   abren Configuración (Fuentes, Programas, Tipos, Gemini) quedan desactivados hasta que exista esa pantalla.
 - Generar de nuevo usa el programa, la vigencia y la carpeta del último cuadro, pasa por la alerta y muestra el mockup 32.
 
+## Configuración
+
+- Cada cambio se guarda al instante en los dos lugares (`Aplicacion.guardar_config`). Si ya hay un cuadro generado, se
+  marca con cambios sin incluir cuando la configuración ya no es la misma con la que se generó.
+- Los modales de listas comparten la base `ModalLista`: buscador con texto guía, Crear, una fila por elemento con lápiz
+  y papelera, editor dentro de la lista (Enter guarda, Esc cancela) y confirmación de eliminación en la misma fila.
+- Renombrar un programa conserva su identificador (la última generación y el estado lo siguen encontrando). Un programa
+  nuevo propone la columna «<nombre> - Pereira». Los tipos base y los campos base muestran candado en vez de papelera.
+- Los modales se abren encima de la pantalla desde la que se piden (Configuración, Ver revisión o la vista previa).
+
 ## Pendiente
 
-Previsualizar cuadro, Configuración (con sus modales), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.
+Campos del cuadro (14), Fuentes de datos (15) y Probar lectura (22), Reglas de cruce (19) y Ver cómo se aplican (21),
+Exportar/importar (23), Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.

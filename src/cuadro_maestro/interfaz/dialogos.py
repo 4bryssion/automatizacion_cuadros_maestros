@@ -57,7 +57,12 @@ class Modal(tk.Toplevel):
     def cerrar(self, valor):
         self.resultado = valor
         self.grab_release()
+        duena = self.master
         self.destroy()
+        # Si esta ventana se abrió encima de otra ventana modal, esa recupera el control.
+        if isinstance(duena, Modal) and duena.winfo_exists() and duena.winfo_viewable():
+            duena.grab_set()
+            duena.focus_set()
 
     # piezas comunes
     def encabezado(self, tipo, titulo, subtitulo=None):
@@ -457,8 +462,9 @@ def _tarjeta_error(padre, e: GE.ErrorGeneracion, abrir_programas, ancho=820):
             T.Boton(acciones, "Abrir carpeta", lambda d=destino: abrir(d), tipo="secundario", fuente="boton_peq",
                     ancho=150, alto=34).pack(side="left", padx=(0, 8))
         elif a == "abrir_archivo" and e.ruta:
-            T.Boton(acciones, f"Abrir {e.ruta.name}"[:40], lambda r=e.ruta: abrir(r), tipo="secundario",
-                    fuente="boton_peq", ancho=260, alto=34).pack(side="left", padx=(0, 8))
+            T.Boton(acciones, T.texto_abrir(e.ruta), lambda r=e.ruta: abrir(r), tipo="secundario",
+                    fuente="boton_peq", ancho=T.F["boton_peq"].measure(T.texto_abrir(e.ruta)) + 44,
+                    alto=34).pack(side="left", padx=(0, 8))
         elif a == "abrir_programas" and abrir_programas:
             T.Boton(acciones, "Abrir Programas", abrir_programas, tipo="secundario", fuente="boton_peq",
                     ancho=170, alto=34).pack(side="left", padx=(0, 8))

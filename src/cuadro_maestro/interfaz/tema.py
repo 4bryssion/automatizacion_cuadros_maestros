@@ -226,17 +226,31 @@ class PanelAyuda(tk.Toplevel):
 class Campo(tk.Frame):
     """Entrada de texto con borde gris (verde al tener el foco, magenta con error)."""
 
-    def __init__(self, padre, variable, solo_lectura=False):
+    def __init__(self, padre, variable, solo_lectura=False, guia=None):
         super().__init__(padre, bg=GRIS, padx=1, pady=1)
         interior = tk.Frame(self, bg=BLANCO)
         interior.pack(fill="both", expand=True)
+        self.variable = variable
         self.entrada = tk.Entry(interior, textvariable=variable, font=F["cuerpo"], bd=0, bg=BLANCO, fg=NEGRO,
                                 readonlybackground=BLANCO, highlightthickness=0, relief="flat")
         self.entrada.pack(fill="both", expand=True, ipady=9, padx=(12, 8))
         if solo_lectura:
             self.entrada.configure(state="readonly")
-        self.entrada.bind("<FocusIn>", lambda e: self.configure(bg=VERDE_CTA, padx=2, pady=2))
-        self.entrada.bind("<FocusOut>", lambda e: self.configure(bg=GRIS, padx=1, pady=1))
+        self.entrada.bind("<FocusIn>", lambda e: self.configure(bg=VERDE_CTA, padx=2, pady=2), add="+")
+        self.entrada.bind("<FocusOut>", lambda e: self.configure(bg=GRIS, padx=1, pady=1), add="+")
+        if guia:                     # texto guía en gris mientras el campo está vacío (no se guarda en la variable)
+            self.guia = tk.Label(interior, text=guia, font=F["cuerpo"], bg=BLANCO, fg=DESACT_TXT, cursor="xterm")
+            self.guia.bind("<Button-1>", lambda e: self.entrada.focus_set())
+            variable.trace_add("write", lambda *a: self._guia())
+            self.entrada.bind("<FocusIn>", lambda e: self.guia.place_forget(), add="+")
+            self.entrada.bind("<FocusOut>", lambda e: self._guia(), add="+")
+            self._guia()
+
+    def _guia(self):
+        if self.variable.get() or self.focus_get() is self.entrada:
+            self.guia.place_forget()
+        else:
+            self.guia.place(x=13, rely=0.5, anchor="w")
 
     def error(self, si=True):
         self.configure(bg=MAGENTA if si else GRIS, padx=2 if si else 1, pady=2 if si else 1)
@@ -294,6 +308,17 @@ def marca(padre, tipo, bg=None, d=20):
     c = tk.Canvas(padre, width=d, height=d, bg=bg or padre["bg"], highlightthickness=0)
     dibujar_simbolo(c, "ok" if tipo == "ok" else "mal", d, relleno=False)
     return c
+
+
+def flecha(padre, bg=None, w=28, h=16):
+    c = tk.Canvas(padre, width=w, height=h, bg=bg or padre["bg"], highlightthickness=0)
+    c.create_line(2, h / 2, w - 3, h / 2, fill=GRIS, width=2, arrow="last", arrowshape=(8, 9, 4))
+    return c
+
+
+def texto_abrir(ruta) -> str:
+    """«Abrir Convenios.xlsx» si el nombre es corto; si no, «Abrir el archivo» (el nombre ya está en «Dónde»)."""
+    return f"Abrir {ruta.name}" if len(ruta.name) <= 24 else "Abrir el archivo"
 
 
 def punto(padre, color, d=10):

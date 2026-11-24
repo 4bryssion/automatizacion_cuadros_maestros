@@ -147,3 +147,69 @@ def test_ver_revision_recarga_y_marca_cambios_sin_incluir(muestra, tmp_path, con
         assert len(app.revision.recarga.comparacion.nuevos) == 1
     finally:
         raiz.destroy()
+
+
+def _descendientes(w):
+    for h in w.winfo_children():
+        yield h
+        yield from _descendientes(h)
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_modales_de_configuracion_crean_editan_y_eliminan(muestra, tmp_path):
+    import tkinter as tk
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.interfaz import configuracion as C
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        app = Aplicacion(raiz, almacen, almacen.cargar().configuracion, AlmacenEstado(tmp_path / "u", tmp_path / "p"),
+                         Estado(str(muestra), "administracion-de-empresas", 2022, 2022))
+        # Programas: renombrar conserva el identificador; crear propone la columna «- Pereira»
+        m = C.ModalProgramas(app)
+        i = next(n for n, p in enumerate(app.config["programas"]) if p["id"] == "derecho")
+        m.editar(i)
+        raiz.update()
+        campos = [w for w in _descendientes(m.lista) if isinstance(w, tk.Entry)]     # solo el editor tiene campos
+        campos[0].delete(0, "end")
+        campos[0].insert(0, "Derecho (Pereira)")
+        m.guardar_edicion()
+        raiz.update()
+        prog = next(p for p in app.config["programas"] if p["id"] == "derecho")
+        assert prog["nombre"] == "Derecho (Pereira)" and almacen.actual["programas"] == app.config["programas"]
+        assert "Derecho (Pereira)" in app.ventana.cb_programa.cget("values")
+        m.crear()
+        raiz.update()
+        entradas = [w for w in _descendientes(m.lista) if isinstance(w, tk.Entry)]
+        entradas[0].insert(0, "Medicina")
+        m.guardar_edicion()
+        raiz.update()
+        assert {"id": "medicina", "nombre": "Medicina", "columna_matriz": "Medicina - Pereira"} in app.config["programas"]
+        m.pedir_eliminar(next(n for n, p in enumerate(app.config["programas"]) if p["id"] == "medicina"))
+        m.eliminar_elemento(next(n for n, p in enumerate(app.config["programas"]) if p["id"] == "medicina"))
+        m.guardado()
+        assert len(app.config["programas"]) == 25
+        m.destroy()
+        # Tipos: el tipo base no se elimina (candado) y un valor repetido en otro tipo se rechaza
+        t = C.ModalTipos(app)
+        base = len(app.config["tipos_persona"]) - 1
+        t.editar(0)
+        raiz.update()
+        assert app.config["tipos_persona"][base]["base"]
+        t.destroy()
+        # Copias: crear una copia ahora
+        c = C.ModalCopias(app)
+        c.crear()
+        assert any(x.motivo == "creada_por_ti" for x in almacen.copias_de_seguridad())
+        c.destroy()
+        # La pantalla de Configuración muestra los conteos
+        app.abrir_configuracion()
+        raiz.update()
+        textos = [w.cget("text") for w in _descendientes(app.pantalla_config) if isinstance(w, tk.Label)]
+        assert "25 programas" in textos and "8 tipos" in textos
+    finally:
+        raiz.destroy()

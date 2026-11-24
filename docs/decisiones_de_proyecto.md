@@ -201,3 +201,11 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   ventana principal.
 - Los nombres de ejemplo de «Falta el archivo…» siguen los de la ayuda (`Movilidad_2021.xlsx`, `IntCasa_2021-1.xlsx`).
 - Mientras no exista la pantalla de Configuración, los botones que llevan a ella se ven desactivados.
+
+## Previsualizar y Configuración, primera parte (24-nov-2026)
+
+- **Programas:** además del nombre se edita la columna de la matriz (sin ella el programa no encuentra sus convenios).
+  Un programa nuevo propone «<nombre> - Pereira». Renombrar no cambia su identificador interno.
+- **Cambiar la configuración** cuando ya hay un cuadro generado lo deja con cambios sin incluir (como ya estaba decidido).
+- En los botones de los avisos, si el nombre del archivo es largo se dice «Abrir el archivo»; el nombre ya está en «Dónde».
+- Tipos de persona: un mismo valor no puede estar en dos tipos (el programa no sabría a cuál contarlo).
