@@ -112,16 +112,18 @@ _FUENTES = [
     },
 ]
 
-# Campo del cuadro: de dónde sale ("matriz", "reportes", "calculado", "vacio") y, si es de la matriz, qué dato.
+# Campo del cuadro: identificador fijo, encabezado (tal como en el cuadro del CNA), de dónde sale ("matriz",
+# "reportes", "calculado", "vacio"), qué dato, tipo, si es base (no se elimina) y ancho de columna en Excel.
 _CAMPOS = [
-    ("No.", "calculado", "numeracion", "numero", False),
-    ("Institución", "matriz", "institucion", "texto", True),
-    ("Breve objeto", "matriz", "objeto", "texto", False),
-    ("Resultados concretos", "calculado", "resultados", "texto_calculado", True),
-    ("Vigencia (años)", "matriz", "vigencia_anios", "numero", True),
-    ("Activo", "calculado", "activo", "opciones", True),
-    ("Nº de usuarios", "vacio", None, "numero", False),
-    ("No aplica", "vacio", None, "texto", False),
+    ("numero", "No.", "calculado", "numeracion", "numero", False, 6.5),
+    ("institucion", "INSTITUCIÓN CON LAS QUE SE CELEBRÓ EL CONVENIO", "matriz", "institucion", "texto", True, 39),
+    ("objeto", "Breve Objeto", "matriz", "objeto", "texto", False, 64.5),
+    ("resultados", "Resultados concretos: movilidad, financiación de proyectos, publicaciones, etc.", "calculado",
+     "resultados", "texto_calculado", True, 47),
+    ("vigencia", "Vigencia (años)", "matriz", "vigencia_anios", "numero", True, 15.5),
+    ("activo", "Activo", "calculado", "activo", "opciones", True, 21.5),
+    ("usuarios", "Nº de usuarios", "vacio", None, "numero", False, 12.2),
+    ("no_aplica", "No Aplica", "vacio", None, "texto", False, 12.2),
 ]
 
 # Tipo de persona -> valores de la columna de vínculo que lo identifican (normalizados).
@@ -155,8 +157,8 @@ def configuracion_inicial() -> dict:
     return {
         "programas": [{"id": identificador(n), "nombre": n, "columna_matriz": c} for n, c in _PROGRAMAS],
         "campos": [
-            {"id": identificador(n), "nombre": n, "fuente": f, "dato": d, "tipo": t, "base": b}
-            for n, f, d, t, b in _CAMPOS
+            {"id": i, "nombre": n, "fuente": f, "dato": d, "tipo": t, "base": b, "ancho": w}
+            for i, n, f, d, t, b, w in _CAMPOS
         ],
         "fuentes": copy.deepcopy(_FUENTES),
         "equivalencias_instituciones": [],

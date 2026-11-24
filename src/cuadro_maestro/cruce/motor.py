@@ -189,7 +189,8 @@ def _convenios(lectura, programa, reglas, eq_inst, avisos):
         tipo = "marco" if tipo_texto.startswith("marco") else "especifico" if tipo_texto.startswith("especific") else "otro"
         convenios.append(Convenio(r.fila, inst, indice.clave(inst), tipo, str(v.get("tipo_convenio") or "").strip(),
                                   _texto(v.get("codigo")), _texto(v.get("objeto")), inicio, inicio.year, anio_fin,
-                                  vigencia, str(v.get("estado") or "").strip(), activo))
+                                  vigencia, str(v.get("estado") or "").strip(), activo,
+                                  {k: x for k, x in v.items() if k != "programas"}))
     return convenios, del_programa, indice
 
 

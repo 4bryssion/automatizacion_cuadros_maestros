@@ -50,8 +50,7 @@ def test_configuracion_inicial_es_valida_y_trae_los_25_programas(carpetas, reloj
     r = nuevo(carpetas, reloj).cargar()
     assert esquema.validar(r.configuracion) == []
     assert len(r.configuracion["programas"]) == 25
-    assert {c["nombre"] for c in r.configuracion["campos"] if c["base"]} == {
-        "Institución", "Resultados concretos", "Vigencia (años)", "Activo"}
+    assert {c["id"] for c in r.configuracion["campos"] if c["base"]} == {"institucion", "resultados", "vigencia", "activo"}
     assert [t["nombre"] for t in r.configuracion["tipos_persona"] if t["base"]] == ["Internacionalización en casa"]
     assert r.configuracion["reglas"]["r1_convenios_que_entran"]["vencidos"] == "solo_con_resultados"
 

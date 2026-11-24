@@ -4,8 +4,8 @@ Programa portable que genera el **cuadro maestro internacional** de un programa 
 Excel de la Oficina de Relaciones Internacionales (Areandina, sede Pereira), sin instalación y sin enviar datos a internet.
 
 > **Estado: en construcción.** El diseño de la interfaz (49 mockups) y las reglas de negocio están cerrados.
-> Ya existen la configuración (guardado doble y copias), la lectura de los Excel y el cruce con los avisos de la revisión;
-> siguen la escritura del cuadro y la interfaz.
+> El motor está completo: configuración (guardado doble y copias), lectura de los Excel, cruce con los avisos de la
+> revisión y generación del cuadro con el formato del CNA. Siguen la interfaz y el ejecutable.
 > Todavía no existe un ejecutable.
 
 ## Qué resuelve
@@ -74,7 +74,8 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/configuracion_tecnica.md](docs/configuracion_tecnica.md) | Archivo de configuración, guardado doble y copias de seguridad (para mantenimiento) |
 | [docs/lectura_tecnica.md](docs/lectura_tecnica.md) | Cómo se buscan, abren y leen los Excel (para mantenimiento) |
 | [docs/cruce_tecnico.md](docs/cruce_tecnico.md) | Cómo se aplican las reglas y se arman los avisos de la revisión (para mantenimiento) |
-| `src/cuadro_maestro/` | Código del programa: `configuracion/`, `lectura/` y `cruce/` |
+| [docs/generacion_tecnica.md](docs/generacion_tecnica.md) | Pasos de la generación, Hoja de errores y formato del Excel (para mantenimiento) |
+| `src/cuadro_maestro/` | Código del programa: `configuracion/`, `lectura/`, `cruce/` y `generacion/` |
 | `tests/` | Pruebas automáticas (`python -m pytest`); corren en Windows y Linux en cada push |
 | `tests/muestra_sintetica.py` | Muestra inventada de los cuatro Excel de entrada, con las rarezas de los reales |
 | `tools/anonimizar_reales.py` | Crea, solo en el equipo local, copias anonimizadas de los Excel reales para las pruebas ([detalle](tests/datos/reales_anonimizados/LEEME.md)) |
@@ -115,7 +116,7 @@ Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en 
 - [x] Configuración editable con guardado doble, validación y copias de seguridad
 - [x] Motor de lectura y mapeo de columnas
 - [x] Motor de cruce y conteo, con los avisos de la revisión
-- [ ] Generación del Excel del cuadro maestro
+- [x] Generación del Excel del cuadro maestro, con la Hoja de errores
 - [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
 - [x] Datos de prueba: muestra inventada (en el repositorio) y copias anonimizadas de los reales (solo locales)

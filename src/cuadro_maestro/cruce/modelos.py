@@ -36,6 +36,7 @@ class Convenio:
     vigencia_anios: int | None
     estado: str
     activo: bool
+    datos: dict = field(default_factory=dict)   # todos los datos de su fila en la matriz (para campos creados)
 
 
 @dataclass

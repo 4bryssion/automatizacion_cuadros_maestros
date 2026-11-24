@@ -164,3 +164,19 @@ Decisiones tomadas al implementar las reglas (detalle en [cruce_tecnico.md](cruc
 - **Movilidad sin institución:** aviso informativo (las actividades sin institución solo se cuentan, P11).
 - **Formato:** «Activo» / «No Activo» y «Sin evidencia», como en el cuadro hecho a mano; dos convenios de la misma
   institución se ordenan por fecha de inicio.
+
+## Generación del cuadro (24-nov-2026)
+
+Detalle en [generacion_tecnica.md](generacion_tecnica.md).
+
+- **Formato:** se replica el cuadro hecho a mano (CNA, cuadro No. 10): títulos, sección nacional vacía con sus filas de
+  ejemplo, Century Gothic 10, marco grueso. Los encabezados iniciales de Campos del cuadro son los del cuadro real
+  («INSTITUCIÓN CON LAS QUE SE CELEBRÓ EL CONVENIO», «Resultados concretos: movilidad, financiación de proyectos,
+  publicaciones, etc.»…); siguen siendo editables. Cada campo tiene un identificador fijo y su ancho de columna.
+- **Orden:** alfabético por institución (P13), aunque el cuadro hecho a mano no lo cumple del todo.
+- **Programa y vigencia** no se agregan a los títulos del CNA (para no alterar el formato oficial): van en el nombre del
+  archivo y en una segunda hoja, «Acerca de este cuadro», con las cifras del resumen.
+- **Logo:** el del cuadro original es el del CNA. Se guarda en `assets/logo_cna.png`, que no se sube al repositorio
+  público (como el resto del material de marca); si está, va en B1, un poco más pequeño para que no tape la fila 5. Por
+  decidir: cómo incluirlo en el .exe que arma GitHub Actions (repositorio privado o subirlo como secreto).
+- **Impresión:** A4 vertical ajustado al ancho de la página (el original no tenía ajuste).
