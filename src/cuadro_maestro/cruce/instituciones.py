@@ -6,7 +6,7 @@ import difflib
 from ..texto import normalizar
 
 UMBRAL_SUGERENCIA = 0.6
-MUY_PARECIDA = 0.9
+MUY_PARECIDA = 0.95          # como dicen la ayuda y el mockup 29 (97 % «Muy parecida», 92 % «Revisa»)
 
 
 class Equivalencias:

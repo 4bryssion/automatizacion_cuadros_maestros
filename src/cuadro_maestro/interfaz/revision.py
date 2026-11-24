@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .. import revision as RV
 from ..cruce.modelos import EXCEL, INFORMATIVO, ORDEN_GRUPOS, PROGRAMA
+from ..sugerencias import sugerencias_del_programa
 from ..texto import normalizar
 from . import dialogos as D
 from . import flujo
@@ -24,7 +25,6 @@ GRUPOS = {
 }
 MARCAS = {"nuevo": ("Nuevo", T.ROSA_SUAVE, T.MAGENTA), "sigue": ("Sigue pendiente", T.AVISO_BG, T.AVISO_TXT),
           "igual": ("Sin cambios", "#EDEDED", T.GRIS)}
-ACCIONES_SIN_PANTALLA = {"preguntar_a_gemini": "Preguntar a Gemini"}
 ACCIONES_MODAL = {"abrir_programas": ("Abrir Programas", "programas"), "abrir_tipos": ("Abrir Tipos de persona", "tipos"),
                   "abrir_equivalencias_programas": ("Abrir Equivalencias de programas", "eq_prog")}
 
@@ -186,6 +186,12 @@ class PantallaRevision(tk.Frame):
                      anchor="w").pack(fill="x")
             tk.Label(tx, text=explicacion, font=T.F["pequena"], bg=T.FONDO, fg=T.GRIS, anchor="w", justify="left",
                      wraplength=envoltura + 200).pack(fill="x")
+            if g == PROGRAMA:
+                n = len(sugerencias_del_programa(del_grupo, self.app.config))
+                if n:
+                    texto = f"Confirmar sugerencias ({n})"
+                    T.Boton(cab, texto, self.confirmar_sugerencias, fuente="boton_peq",
+                            ancho=T.F["boton_peq"].measure(texto) + 44, alto=36).pack(side="right", anchor="n")
             for a in del_grupo:
                 self._tarjeta(lista, a, color, marcas.get(a.clave), envoltura)
 
@@ -249,10 +255,8 @@ class PantallaRevision(tk.Frame):
         if accion == "abrir_fuentes":
             return crear("Abrir Fuentes de datos", lambda: self.app.abrir_modal(
                 "fuentes", self.app.raiz, fuente_id=a.detalle.get("fuente"), dato=a.detalle.get("dato")))
-        if accion in ACCIONES_SIN_PANTALLA:
-            b = crear(ACCIONES_SIN_PANTALLA[accion], None)
-            b.activar(False)            # el asistente con Gemini llega en la próxima versión
-            return b
+        if accion == "preguntar_a_gemini":
+            return crear("Preguntar a Gemini", self.preguntar_a_gemini)
         return None
 
     def _vacio(self, padre):
@@ -331,6 +335,20 @@ class PantallaRevision(tk.Frame):
         self._pintar_pie()
         D.aviso(self.app.raiz, "Guardado", "ok", f"Se guardó: {que}. Pulsa Recargar archivos para ver el efecto.",
                 [("Entendido", "ok", "primario")])
+
+    def confirmar_sugerencias(self):
+        from .gemini import ModalSugerencias
+        u = self.u
+        hecho = ModalSugerencias(self.app, self.app.raiz, self.avisos(), u.programa, u.anio_inicio, u.anio_fin,
+                                 u.carpeta).mostrar()
+        if hecho:
+            self._config_cambiada("; ".join(hecho))
+
+    def preguntar_a_gemini(self):
+        from .gemini import ModalGemini, contexto_ultimo
+        hecho = ModalGemini(self.app, self.app.raiz, contexto_ultimo(self.app)).mostrar()
+        if hecho:
+            self._config_cambiada("; ".join(hecho) + " (sugerencias de Gemini)")
 
     def confirmar(self, a):
         que = RV.confirmar_sugerencia(self.app.config, a)

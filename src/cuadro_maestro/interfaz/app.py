@@ -127,6 +127,12 @@ class Aplicacion:
         elif clave == "campos":
             from .campos import ModalCampos
             ModalCampos(self, duena).mostrar()
+        elif clave == "gemini":
+            from .gemini import ModalGemini
+            hecho = ModalGemini(self, duena, **opciones).mostrar()
+            if hecho:
+                D.aviso(duena, "Guardado", "ok", f"Se guardaron {len(hecho)} sugerencias de Gemini: " + "; ".join(hecho)
+                        + ".", [("Entendido", "ok", "primario")])
         elif clave == "exportar":
             from .intercambio import ModalIntercambio
             ModalIntercambio(self, duena).mostrar()

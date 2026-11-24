@@ -237,3 +237,13 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   guardaba; ahora es válido y se escribe como fecha (DD/MM/AAAA). La configuración inicial compartía listas con los
   valores de fábrica, así que agregar un valor a un tipo de persona cambiaba también los valores iniciales mientras el
   programa estaba abierto; ahora es una copia.
+
+## Asistente con Gemini y Confirmar sugerencias (24-nov-2026)
+
+- **Qué se envía a Gemini se puede revisar y recortar** antes de copiar: con los reportes reales la columna de institución
+  trae a veces cargos o descripciones de personas, no nombres de instituciones.
+- **Gemini no puede inventar:** solo se guarda una propuesta que exista en la matriz o en el Excel.
+- **Dónde está Confirmar sugerencias:** el diseño no tenía un botón que lo abriera; queda en el grupo «Se resuelven
+  aquí» de Ver revisión, con la cantidad.
+- **Incongruencia corregida:** «Muy parecida» se marcaba desde 90 %, pero la ayuda y el mockup dicen 95 % (97 % «Muy
+  parecida», 92 % «Revisa»). Ahora es 95 % en todas partes, también en Elegir institución.

@@ -15,6 +15,7 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 | `campos.py` | Campos del cuadro maestro (14): ordenar arrastrando, editor en la fila, campos base con candado |
 | `reglas.py` | Reglas de cruce (19): Confirmada / Cambiada, restablecer una o todas; Ver cómo se aplican (21) |
 | `intercambio.py` | Exportar e importar configuración (23) |
+| `gemini.py` | Asistente con Gemini (08, 09) y Confirmar sugerencias del programa (29) |
 | `flujo.py` | Generar desde cualquier pantalla (confirmar, progreso, errores) y guardar la última generación |
 | `modelo.py` | Lógica de la ventana sin Tkinter: tabla de archivos, «x de y encontrados», mensajes, cuándo se puede generar |
 | `tema.py` | Colores y estados del manual, Brown Std, botones, enlaces, «?» con su ayuda, símbolos dibujados |
@@ -106,6 +107,22 @@ Importar deja antes una copia «Antes de importar». La tabla muestra hoy contra
   tipos y valores de tipo que falten; lo tuyo gana; fuentes y reglas no cambian.
 - **Reemplazar todo**: la configuración queda igual a la del archivo.
 
+## Asistente con Gemini y Confirmar sugerencias
+
+Lógica en `src/cuadro_maestro/sugerencias.py` (pruebas en `tests/test_sugerencias.py`).
+
+- **Gemini (P16):** el programa no se conecta. Lee la carpeta (la del último cuadro desde Ver revisión; la de la ventana
+  principal desde Configuración) y pregunta solo por lo que no reconoció: instituciones sin coincidencia (con la lista
+  de instituciones de la matriz) y columnas sin identificar (con los títulos de columnas libres de ese Excel). Copia el
+  mensaje y abre gemini.google.com. «Revisar qué se envía ›» deja quitar lo que no sea una institución: en los reportes
+  reales la columna de institución a veces trae un cargo («Coordinador de investigación de…») o «Docente Investigadora».
+- La respuesta se lee con un formato flexible («I1 → X», «1. nombre → X», «nombre -> X», con «…» al final). Solo se
+  acepta una propuesta que exista tal cual en las opciones (o casi igual, 98 %); si Gemini inventa un nombre queda
+  «No está en la lista» y no se puede guardar. Las instituciones se guardan con origen Gemini.
+- **Confirmar sugerencias** reúne los avisos con un nombre parecido (instituciones, programas y columnas por
+  confirmar). Ninguna viene marcada; «Marcar las muy parecidas» marca las de 95 % o más. Se abre con el botón
+  «Confirmar sugerencias (n)» del grupo «Se resuelven aquí» en Ver revisión.
+
 ## Pendiente
 
-Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.
+El empaquetado en .exe y el manual.

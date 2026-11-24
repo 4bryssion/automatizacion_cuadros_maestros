@@ -84,7 +84,6 @@ TARJETAS = [
     ("gemini", "Asistente con Gemini", "gemini", "Ayuda a emparejar columnas y nombres. Solo usa títulos de columnas y "
      "nombres de instituciones."),
 ]
-EN_CONSTRUCCION = {"gemini"}
 
 
 class PantallaConfiguracion(tk.Frame):
@@ -130,12 +129,9 @@ class PantallaConfiguracion(tk.Frame):
             abajo.pack(fill="x")
             etiqueta, fondo, fg = self._conteo(clave, cfg)
             tk.Label(abajo, text=etiqueta, font=T.F["pequena_b"], bg=fondo, fg=fg, padx=10, pady=4).pack(side="left")
-            b = T.Boton(abajo, "Abrir asistente" if clave == "gemini" else "Administrar",
-                        lambda k=clave: self.app.abrir_modal(k, self.app.raiz, self.pintar), tipo="secundario",
-                        fuente="boton_peq", ancho=170, alto=38)
-            b.pack(side="right")
-            if clave in EN_CONSTRUCCION:
-                b.activar(False)
+            T.Boton(abajo, "Abrir asistente" if clave == "gemini" else "Administrar",
+                    lambda k=clave: self.app.abrir_modal(k, self.app.raiz, self.pintar), tipo="secundario",
+                    fuente="boton_peq", ancho=170, alto=38).pack(side="right")
         pie = tk.Frame(c, bg=T.BLANCO)
         pie.pack(fill="x", pady=(8, 0))
         izq = tk.Frame(pie, bg=T.BLANCO)
@@ -149,7 +145,7 @@ class PantallaConfiguracion(tk.Frame):
         T.Boton(pie, "Volver al cuadro maestro", self.al_volver, ancho=280).pack(side="right")
         T.Boton(pie, "Exportar / importar", lambda: self.app.abrir_modal("exportar", self.app.raiz, self.pintar),
                 tipo="secundario", ancho=210).pack(side="right", padx=14)
-        tk.Label(c, text="El asistente con Gemini llega en la próxima versión.", font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
+
 
     def _conteo(self, clave, cfg):
         verde = ("#E3EED2", T.OK_TXT)

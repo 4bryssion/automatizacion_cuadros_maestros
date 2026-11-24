@@ -151,9 +151,9 @@ def instituciones_de_la_matriz(carpeta, config: dict) -> list[tuple[str, int]]:
     return sorted(((nombres[k], cuenta[k]) for k in nombres), key=lambda x: normalizar(x[0]))
 
 
-def guardar_equivalencia_institucion(config: dict, como_aparece: str, es: str) -> dict:
+def guardar_equivalencia_institucion(config: dict, como_aparece: str, es: str, origen: str = "revision") -> dict:
     lista = [e for e in config["equivalencias_instituciones"] if e["como_aparece"] != como_aparece]
-    lista.append({"como_aparece": como_aparece, "es": es, "origen": "revision"})
+    lista.append({"como_aparece": como_aparece, "es": es, "origen": origen})
     config["equivalencias_instituciones"] = lista
     return config
 

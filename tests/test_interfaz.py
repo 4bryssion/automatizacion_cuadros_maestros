@@ -294,9 +294,6 @@ def test_fuentes_campos_y_reglas(muestra, tmp_path):
         r.restablecer()
         assert not A.regla_cambiada(app.config, "r1_convenios_que_entran")
         r.destroy()
-        # Configuración: las tres tarjetas ya se pueden abrir
-        from cuadro_maestro.interfaz.configuracion import EN_CONSTRUCCION
-        assert EN_CONSTRUCCION == {"gemini"}
     finally:
         raiz.destroy()
 
@@ -357,5 +354,68 @@ def test_ver_como_se_aplican_y_exportar_importar(muestra, tmp_path):
         m.elegir_archivo(str(tmp_path / "no existe.json"))
         assert "No se pudo abrir" in m.error_archivo
         m.destroy()
+    finally:
+        raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_asistente_gemini_y_confirmar_sugerencias(muestra, tmp_path):
+    import tkinter as tk
+
+    import openpyxl
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.cruce import cruzar
+    from cuadro_maestro.interfaz import dialogos
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    from cuadro_maestro.interfaz.gemini import ModalGemini, ModalSugerencias
+    from cuadro_maestro.lectura import leer_carpeta
+    from cuadro_maestro import sugerencias as S
+    from muestra_sintetica import guardar
+    wb = openpyxl.load_workbook(muestra / NOMBRES["movilidad"])
+    wb["BD GENERAL"]["R2"] = "Univ. Ficticia del Nrte"
+    guardar(wb, muestra / NOMBRES["movilidad"])
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        app = Aplicacion(raiz, almacen, almacen.cargar().configuracion, AlmacenEstado(tmp_path / "u", tmp_path / "p"),
+                         Estado(str(muestra), "administracion-de-empresas", 2022, 2022))
+        raiz.update()
+        contexto = (str(muestra), "administracion-de-empresas", 2022, 2022)
+        original = dialogos.en_espera
+        dialogos.en_espera = lambda duena, trabajo, *a, **k: trabajo()       # sin la ventana de espera
+        try:
+            g = ModalGemini(app, contexto=contexto)
+        finally:
+            dialogos.en_espera = original
+        raiz.update()
+        assert [p.como_aparece for p in g.preguntas] == ["Univ. Ficticia del Nrte"]
+        g.quitadas.add("I1")                     # quitar lo que no sea una institución
+        assert "Univ. Ficticia" not in g.mensaje
+        g.quitadas.clear()
+        g.copiar_y_abrir(abrir_navegador=False)
+        assert raiz.clipboard_get().startswith("Ayúdame a emparejar") and g.paso == "respuesta"
+        g.revisar("I1 → UNIVERSIDAD FICTICIA DEL NORTE")
+        textos = [w.cget("text") for w in _descendientes(g) if isinstance(w, tk.Label)]
+        assert "Por confirmar" in textos and "1 de 1 seleccionadas" in textos
+        g.guardar()
+        assert app.config["equivalencias_instituciones"][0]["origen"] == "gemini"
+        assert almacen.actual["equivalencias_instituciones"] == app.config["equivalencias_instituciones"]
+        # Confirmar sugerencias: con la equivalencia quitada vuelve a aparecer
+        app.config["equivalencias_instituciones"] = []
+        app.guardar_config()
+        lectura = leer_carpeta(muestra, app.config, 2022, 2022)
+        r = cruzar(lectura, app.config, "administracion-de-empresas")
+        m = ModalSugerencias(app, raiz, r.avisos, "Administración de Empresas", 2022, 2022, str(muestra))
+        raiz.update()
+        assert len(m.lista) == 1 and not m.lista[0].marcada
+        m.lista[0].marcada = True
+        m.pintar()
+        m.confirmar()
+        assert app.config["equivalencias_instituciones"][0]["es"] == "UNIVERSIDAD FICTICIA DEL NORTE"
+        assert S.sugerencias_del_programa(cruzar(leer_carpeta(muestra, app.config, 2022, 2022), app.config,
+                                                 "administracion-de-empresas").avisos, app.config) == []
     finally:
         raiz.destroy()

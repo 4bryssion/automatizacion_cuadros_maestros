@@ -108,6 +108,8 @@ if salida and salida[0] == "fin":
     guardar(wb, datos / NOMBRES["movilidad"])
     app.revision.recargar()
     foto("12_revision_despues_de_recargar")
+    capturar_y_cerrar("29_confirmar_sugerencias", 1200)
+    app.revision.confirmar_sugerencias()
     aviso_inst = next(a for a in app.revision.avisos() if a.tipo == "institucion_sin_coincidencia")
     capturar_y_cerrar("28_elegir_institucion", 1500)
     app.revision.elegir_institucion(aviso_inst)
@@ -189,6 +191,11 @@ def _exportar_e_importar(m):
 
 
 abrir_editando(IN.ModalIntercambio, "23_exportar_importar", accion=_exportar_e_importar)
+from cuadro_maestro.interfaz import gemini as GE  # noqa: E402
+
+abrir_editando(GE.ModalGemini, "08_asistente_gemini", accion=lambda m: (setattr(m, "ver_mensaje", True), m.pintar()))
+abrir_editando(GE.ModalGemini, "09_gemini_respuesta",
+               accion=lambda m: (m.copiar_y_abrir(abrir_navegador=False), m.revisar("C1 → TIPO DE PERSONA")))
 app.volver_de_configuracion()
 raiz.destroy()
 print("Capturas en", SALIDA, sorted(p.name for p in SALIDA.glob("*.png")))
