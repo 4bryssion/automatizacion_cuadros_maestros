@@ -5,6 +5,7 @@ import tkinter as tk
 from datetime import datetime
 from pathlib import Path
 
+from .. import __version__
 from ..configuracion import AlmacenConfiguracion
 from ..configuracion import almacen as AC
 from ..configuracion.rutas import carpeta_programa, carpeta_usuario
@@ -194,6 +195,45 @@ class Aplicacion:
         self.raiz.destroy()
 
 
+def _icono_ventana(raiz):
+    from ..recursos import carpeta_recursos
+    ruta = carpeta_recursos() / "icono.png"
+    if ruta.is_file():
+        try:
+            raiz.iconphoto(True, tk.PhotoImage(file=str(ruta)))
+        except tk.TclError:
+            pass
+
+
+def comprobar(destino) -> int:
+    """Arranque sin ventana: comprueba que el programa y su material cargan. 0 si todo está bien."""
+    import json
+    import platform
+
+    from ..recursos import carpeta_recursos, logo_cna
+    informe = {"version": __version__, "python": platform.python_version(), "recursos": str(carpeta_recursos())}
+    try:
+        raiz = tk.Tk()
+        raiz.withdraw()
+        informe["tipografia"] = T.cargar_fuentes(raiz)
+        informe["tk"] = str(raiz.tk.call("info", "patchlevel"))
+        raiz.destroy()
+        from ..configuracion.valores_iniciales import configuracion_inicial
+        from ..configuracion import esquema
+        informe["configuracion_inicial_valida"] = not esquema.validar(
+            {"formato": esquema.FORMATO, "version_esquema": esquema.VERSION_ESQUEMA, "guardado_en": "x",
+             "revision": 1, **configuracion_inicial()})
+        from .. import generacion, sugerencias  # noqa: F401 — que todo se pueda importar dentro del .exe
+        from . import campos, fuentes, gemini, intercambio, reglas, revision, vista_previa  # noqa: F401
+        informe["logo_cna"] = logo_cna() is not None
+        informe["logotipo"] = (carpeta_recursos() / "marca" / "logotipo_verde.png").is_file()
+        informe["ok"] = informe["configuracion_inicial_valida"]
+    except Exception as e:   # noqa: BLE001
+        informe.update(ok=False, error=f"{type(e).__name__}: {e}")
+    Path(destino).write_text(json.dumps(informe, ensure_ascii=False, indent=2), encoding="utf-8")
+    return 0 if informe["ok"] else 1
+
+
 def principal():
     raiz = tk.Tk()
     raiz.withdraw()
@@ -202,7 +242,8 @@ def principal():
     T.cargar_fuentes(raiz)
     raiz.minsize(560, 560)
     raiz.geometry("1000x900")
-    almacen = AlmacenConfiguracion(carpeta_usuario(), carpeta_programa())
+    _icono_ventana(raiz)
+    almacen = AlmacenConfiguracion(carpeta_usuario(), carpeta_programa(), version_programa=__version__)
     config = cargar_configuracion(raiz, almacen)
     estados = AlmacenEstado(carpeta_usuario(), carpeta_programa())
     estado = estados.cargar()

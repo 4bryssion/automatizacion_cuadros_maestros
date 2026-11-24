@@ -1,0 +1,53 @@
+name: Empaquetar .exe
+
+# Arma «Cuadro maestro internacional.exe» en Windows, comprueba que arranca y lo deja para descargar.
+# El material de marca va cifrado en empaquetado/marca.cifrada; se descifra con el secreto MARCA_CLAVE.
+# Con una etiqueta v* (por ejemplo v0.1.0) además publica una versión (Releases) con el .exe.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[empaquetado]"
+      - name: Material de marca
+        env:
+          MARCA_CLAVE: ${{ secrets.MARCA_CLAVE }}
+        run: python tools/marca.py descifrar
+      - run: python tools/empaquetar.py
+      - name: Comprobar que el .exe arranca
+        shell: pwsh
+        env:
+          HAY_MARCA: ${{ secrets.MARCA_CLAVE != '' }}
+        run: |
+          $p = Start-Process -FilePath "dist\Cuadro maestro internacional.exe" -ArgumentList "--comprobar","comprobacion.json" -Wait -PassThru
+          Get-Content comprobacion.json
+          if ($p.ExitCode -ne 0) { throw "El .exe no arrancó bien (código $($p.ExitCode))" }
+          $c = Get-Content comprobacion.json | ConvertFrom-Json
+          if ($env:HAY_MARCA -eq "true" -and (-not $c.logo_cna -or $c.tipografia -notlike "Brown*")) {
+            throw "El .exe no trae el material de marca"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cuadro maestro internacional (Windows)
+          path: dist/Cuadro maestro internacional.exe
+      - name: Publicar versión
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          Copy-Item "dist\Cuadro maestro internacional.exe" "Cuadro.maestro.internacional.exe"
+          gh release create "${{ github.ref_name }}" "Cuadro.maestro.internacional.exe" --title "${{ github.ref_name }}" --notes "Programa portable para Windows: descárgalo y ábrelo con doble clic. No necesita instalación."
