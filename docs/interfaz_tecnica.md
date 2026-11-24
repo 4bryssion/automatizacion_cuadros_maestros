@@ -8,6 +8,8 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 | `app.py` | Arranque: tipografías, configuración (avisos 46 y 47), estado guardado y carpeta perdida (48) |
 | `ventana.py` | Ventana principal (mockups 01, 02, 34, 35, 39, 40), con la fecha de modificación de la matriz |
 | `dialogos.py` | Confirmar (03), progreso con cancelar (30), cuadro generado (31, 33), generación detenida (43-45), avisos (46-49) |
+| `revision.py` | Ver revisión (10-12, 41), Elegir institución (28), salir con cambios sin incluir (13) |
+| `flujo.py` | Generar desde cualquier pantalla (confirmar, progreso, errores) y guardar la última generación |
 | `modelo.py` | Lógica de la ventana sin Tkinter: tabla de archivos, «x de y encontrados», mensajes, cuándo se puede generar |
 | `tema.py` | Colores y estados del manual, Brown Std, botones, enlaces, «?» con su ayuda, símbolos dibujados |
 | `ayudas.py` | Textos de los «?» (los mismos de `docs/textos_ayuda.md`) |
@@ -32,7 +34,23 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 GitHub Actions lo corre en Windows en cada push y las sube como artefacto «capturas-windows» (sin la tipografía de
 marca ni el logo, que no están en el repositorio).
 
+## Ver revisión y cambios sin incluir
+
+La lógica está en `src/cuadro_maestro/revision.py` (se prueba sin ventanas en `tests/test_revision.py`):
+
+- Con la última generación se guardan sus avisos, una huella de cada fila del cuadro y de cada sección de la
+  configuración. Ver revisión funciona al reabrir el programa sin volver a leer.
+- **Recargar archivos** lee y cruza de nuevo sin escribir; compara los avisos por su clave (resueltos, siguen, nuevos) y
+  cuenta las filas del cuadro que cambiarían. Si un archivo no se puede leer, muestra la Hoja de errores.
+- **Cambios sin incluir** = alguna fila cambiaría, o la configuración cambió después de generar. Se guarda al instante.
+- Con cambios sin incluir: volver al cuadro maestro o cerrar la ventana obliga a generar (13); al reabrir aparece el aviso
+  36; cambiar carpeta, programa o vigencia pide generar antes o cancelar el cambio (38). Si la generación falla (no si
+  se cancela) se deja salir y lo pendiente queda guardado.
+- **Resolver aquí:** Elegir institución guarda una equivalencia de instituciones (origen Revisión); Confirmar sugerencia
+  guarda la columna elegida en Fuentes de datos, la columna del programa o una equivalencia de programas. Los botones que
+  abren Configuración (Fuentes, Programas, Tipos, Gemini) quedan desactivados hasta que exista esa pantalla.
+- Generar de nuevo usa el programa, la vigencia y la carpeta del último cuadro, pasa por la alerta y muestra el mockup 32.
+
 ## Pendiente
 
-Previsualizar cuadro, Configuración y Ver revisión (con Recargar, Elegir institución y Confirmar sugerencias), el aviso
-de cambios sin incluir al salir o al cambiar carpeta, programa o vigencia, y el empaquetado en .exe.
+Previsualizar cuadro, Configuración (con sus modales), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.

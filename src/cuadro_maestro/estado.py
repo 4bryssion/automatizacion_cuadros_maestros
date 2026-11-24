@@ -27,6 +27,14 @@ class UltimaGeneracion:
     hora: str                                   # ISO, hora local
     avisos: dict = field(default_factory=dict)  # grupo -> cantidad
     cambios_sin_incluir: bool = False
+    avisos_lista: list = field(default_factory=list)     # avisos al generar (para Ver revisión al reabrir)
+    avisos_actuales: list | None = None                   # avisos de la última recarga (None si no se recargó)
+    firmas: list = field(default_factory=list)            # huella de cada fila del cuadro generado
+    config_firmas: dict = field(default_factory=dict)     # huella de cada sección de la configuración al generar
+    filas_cambian: int = 0                                # según la última recarga
+    leidos: int = 0
+    esperados: int = 0
+    ultima_lectura: str = ""                              # hora de la última lectura (generación o recarga)
 
     @property
     def total_avisos(self) -> int:

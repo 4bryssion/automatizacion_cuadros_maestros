@@ -57,6 +57,50 @@ def cargar_configuracion(raiz, almacen: AlmacenConfiguracion) -> dict:
     return r.configuracion
 
 
+class Aplicacion:
+    """Une las dos pantallas (principal y revisión) y lo que comparten: configuración y estado."""
+
+    def __init__(self, raiz, almacen, config, estados, estado):
+        self.raiz, self.almacen, self.config, self.estados, self.estado = raiz, almacen, config, estados, estado
+        self.ventana = VentanaPrincipal(raiz, almacen, config, estados, estado)
+        self.ventana.al_abrir_revision = self.abrir_revision
+        self.ventana.app = self
+        self.revision = None
+        raiz.protocol("WM_DELETE_WINDOW", self.cerrar)
+
+    def guardar_estado(self):
+        self.estados.guardar(self.estado)
+        self.ventana._pintar_ultimo()
+
+    def abrir_revision(self):
+        from .revision import PantallaRevision
+        if not self.estado.ultima:
+            return
+        self.ventana.pack_forget()
+        self.raiz.title("Cuadro maestro internacional · Revisión")
+        self.revision = PantallaRevision(self, self.volver_a_principal)
+        self.revision.pack(fill="both", expand=True)
+
+    def volver_a_principal(self):
+        if self.revision:
+            self.revision.destroy()
+            self.revision = None
+        self.raiz.title("Cuadro maestro internacional")
+        self.ventana.pack(fill="both", expand=True)
+        self.ventana.config = self.config
+        self.ventana.actualizar()
+
+    def cerrar(self):
+        """Con cambios sin incluir no se cierra sin generar (mockup 13); si la generación falla, sí."""
+        from .revision import salir_con_cambios
+        u = self.estado.ultima
+        if u and u.cambios_sin_incluir:
+            recarga = self.revision.recarga if self.revision else None
+            if not salir_con_cambios(self, recarga, self.revision):
+                return
+        self.raiz.destroy()
+
+
 def principal():
     raiz = tk.Tk()
     raiz.withdraw()
@@ -70,11 +114,27 @@ def principal():
     estados = AlmacenEstado(carpeta_usuario(), carpeta_programa())
     estado = estados.cargar()
     raiz.deiconify()
-    ventana = VentanaPrincipal(raiz, almacen, config, estados, estado)
+    app = Aplicacion(raiz, almacen, config, estados, estado)
     if estado.carpeta and not Path(estado.carpeta).is_dir():
-        raiz.after(300, lambda: _carpeta_perdida(ventana, estado.carpeta))
+        raiz.after(300, lambda: _carpeta_perdida(app.ventana, estado.carpeta))
+    elif estado.ultima and estado.ultima.cambios_sin_incluir:
+        raiz.after(300, lambda: reapertura_con_cambios(app))
     raiz.mainloop()
 
+
+def reapertura_con_cambios(app):
+    """Mockup 36: el programa se cerró antes de incluir los cambios en un cuadro nuevo."""
+    from .revision import generar_de_nuevo
+    u = app.estado.ultima
+    r = D.aviso(app.raiz, "Hay cambios sin incluir en el último cuadro", "aviso",
+                f"La última vez el programa se cerró antes de que el cuadro nuevo de {u.programa} quedara generado (por "
+                "un cierre inesperado o porque la generación falló). El cuadro guardado no tiene esas correcciones.",
+                [("Generar cuadro de nuevo", "generar", "primario"), ("Ver revisión", "revision", "secundario"),
+                 ("Cerrar", "cerrar", "enlace")])
+    if r == "generar":
+        generar_de_nuevo(app)
+    elif r == "revision":
+        app.abrir_revision()
 
 def _carpeta_perdida(ventana: VentanaPrincipal, carpeta: str):
     while True:

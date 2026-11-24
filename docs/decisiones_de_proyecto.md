@@ -190,3 +190,14 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   que los nombres de la ayuda se reconocen.
 - Mientras no estén listos, Previsualizar, Configuración y Ver revisión se ven desactivados con una nota.
 - Detalle en [interfaz_tecnica.md](interfaz_tecnica.md).
+
+## Ver revisión (24-nov-2026)
+
+- **Qué cuenta como cambio:** que alguna fila del cuadro cambiaría (se compara una huella de cada fila, no los archivos)
+  o que la configuración cambió después de generar. Guardar un Excel sin cambiar nada no cuenta.
+- **Cancelar no deja salir; fallar sí:** con cambios sin incluir, si la persona cancela la generación vuelve a la
+  revisión; si la generación falla, puede salir y lo pendiente queda guardado para la próxima apertura (aviso 36).
+- **Generar de nuevo** usa los datos del último cuadro (programa, vigencia y carpeta), no los que estén elegidos en la
+  ventana principal.
+- Los nombres de ejemplo de «Falta el archivo…» siguen los de la ayuda (`Movilidad_2021.xlsx`, `IntCasa_2021-1.xlsx`).
+- Mientras no exista la pantalla de Configuración, los botones que llevan a ella se ven desactivados.

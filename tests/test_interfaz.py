@@ -110,3 +110,40 @@ def test_la_ventana_principal_arranca_y_reacciona(muestra, tmp_path, config):
         assert estados.cargar().anio_inicio == 2023
     finally:
         raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_ver_revision_recarga_y_marca_cambios_sin_incluir(muestra, tmp_path, config):
+    import tkinter as tk
+
+    import openpyxl
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.generacion import generar
+    from cuadro_maestro.interfaz import flujo
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    from muestra_sintetica import guardar
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        cfg = almacen.cargar().configuracion
+        estados = AlmacenEstado(tmp_path / "u", tmp_path / "p")
+        estado = Estado(str(muestra), "administracion-de-empresas", 2022, 2022)
+        app = Aplicacion(raiz, almacen, cfg, estados, estado)
+        g = generar(muestra, cfg, "administracion-de-empresas", 2022, 2022, logo=None)
+        estado.ultima = flujo.ultima_generacion(g, cfg)
+        app.abrir_revision()
+        raiz.update()
+        assert len(app.revision.avisos()) == 4 and not estado.ultima.cambios_sin_incluir
+        wb = openpyxl.load_workbook(muestra / NOMBRES["movilidad"])
+        wb["BD GENERAL"]["R2"] = "Univ. Ficticia del Nrte"
+        guardar(wb, muestra / NOMBRES["movilidad"])
+        app.revision.recargar()
+        raiz.update()
+        assert estado.ultima.cambios_sin_incluir and estado.ultima.filas_cambian == 1
+        assert estados.cargar().ultima.cambios_sin_incluir           # queda guardado por si el programa se cierra
+        assert len(app.revision.recarga.comparacion.nuevos) == 1
+    finally:
+        raiz.destroy()

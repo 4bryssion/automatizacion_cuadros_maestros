@@ -275,7 +275,8 @@ class Progreso(Modal):
 
 
 # ---------------------------------------------------------------- 31 / 33 cuadro generado
-def cuadro_generado(duena, g, abrir_revision=None) -> str | None:
+def cuadro_generado(duena, g, abrir_revision=None, desde_revision=False) -> str | None:
+    """31 (primera vez, con avisos), 32 (de nuevo, desde la revisión) o 33 (sin avisos)."""
     r = g.resultado
     grupos = r.por_grupo()
     total = len(r.avisos)
@@ -336,7 +337,11 @@ def cuadro_generado(duena, g, abrir_revision=None) -> str | None:
     else:
         T.Franja(m.cuerpo, "info", "No quedó nada por revisar: todos los registros se cruzaron.").pack(fill="x")
     pie = m.botones()
-    if total:
+    if desde_revision:
+        T.Boton(pie, "Abrir cuadro", lambda: (abrir(g.ruta), m.cerrar("abrir")), ancho=200).pack(side="right")
+        T.Boton(pie, "Volver a la revisión", lambda: m.cerrar("revision"), tipo="secundario",
+                ancho=230).pack(side="right", padx=(0, 14))
+    elif total:
         T.Enlace(pie, "Cerrar", lambda: m.cerrar("cerrar")).pack(side="left")
         ver = T.Boton(pie, f"Ver revisión ({total})", lambda: m.cerrar("revision"), ancho=240)
         ver.pack(side="right")

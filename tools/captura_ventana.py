@@ -25,7 +25,9 @@ from cuadro_maestro.estado import AlmacenEstado, Estado  # noqa: E402
 from cuadro_maestro.generacion import GeneracionDetenida, generar  # noqa: E402
 from cuadro_maestro.interfaz import dialogos as D  # noqa: E402
 from cuadro_maestro.interfaz import tema as T  # noqa: E402
-from cuadro_maestro.interfaz.ventana import VentanaPrincipal  # noqa: E402
+from cuadro_maestro.interfaz import flujo  # noqa: E402
+from cuadro_maestro.interfaz import revision as IR  # noqa: E402
+from cuadro_maestro.interfaz.app import Aplicacion  # noqa: E402
 from muestra_sintetica import NOMBRES, crear_muestra  # noqa: E402
 
 datos = TEMP / "Excel"
@@ -37,7 +39,9 @@ raiz.geometry("1000x920+20+20")
 almacen = AlmacenConfiguracion(TEMP / "appdata", TEMP / "junto")
 config = almacen.cargar().configuracion
 estados = AlmacenEstado(TEMP / "appdata", TEMP / "junto")
-ventana = VentanaPrincipal(raiz, almacen, config, estados, Estado(str(datos), "administracion-de-empresas", 2021, 2022))
+estado = Estado(str(datos), "administracion-de-empresas", 2021, 2022)
+app = Aplicacion(raiz, almacen, config, estados, estado)
+ventana = app.ventana
 
 
 def foto(nombre, ventana_tk=None):
@@ -77,9 +81,29 @@ params = dict(carpeta=datos, config=config, programa_id="administracion-de-empre
 raiz.after(150, lambda: foto("30_progreso", modal_abierto()))
 salida = D.Progreso(raiz, params, ["Programa: Administración de Empresas", "Vigencia: 2021–2022", "7 archivos"]).mostrar()
 if salida and salida[0] == "fin":
-    ventana._generado = lambda g: None
     capturar_y_cerrar("31_cuadro_generado")
     D.cuadro_generado(raiz, salida[1])
+    # Ver revisión con el cuadro recién generado
+    estado.ultima = flujo.ultima_generacion(salida[1], config)
+    estados.guardar(estado)
+    ventana.actualizar()
+    foto("35_principal_con_ultimo_cuadro")
+    app.abrir_revision()
+    foto("10_revision_antes_de_recargar")
+    # Un error de escritura en la movilidad y recargar
+    import openpyxl
+    from muestra_sintetica import guardar
+    wb = openpyxl.load_workbook(datos / NOMBRES["movilidad"])
+    wb["BD GENERAL"]["R2"] = "Univ. Ficticia del Nrte"
+    guardar(wb, datos / NOMBRES["movilidad"])
+    app.revision.recargar()
+    foto("12_revision_despues_de_recargar")
+    aviso_inst = next(a for a in app.revision.avisos() if a.tipo == "institucion_sin_coincidencia")
+    capturar_y_cerrar("28_elegir_institucion", 1500)
+    app.revision.elegir_institucion(aviso_inst)
+    capturar_y_cerrar("13_salir_con_cambios")
+    IR.salir_con_cambios(app, app.revision.recarga)
+    app.volver_a_principal()
 (datos / NOMBRES["ic1"]).write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\0" * 64 + "EncryptedPackage".encode("utf-16-le"))
 try:
     generar(datos, config, "administracion-de-empresas", 2022, 2022)

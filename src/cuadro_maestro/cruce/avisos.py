@@ -58,7 +58,8 @@ def desde_lectura(a: LM.Aviso, carpeta: Path, programa: dict, hojas: dict) -> Av
         unidad = "semestre quedó sin actividades" if a.semestre else "año quedó sin movilidades"
         if a.fuente == "internacionalizacion_en_casa" and not a.semestre:
             unidad = "año quedó sin actividades"
-        ejemplo = f"{NOMBRE_FUENTE.get(a.fuente, a.fuente)} {periodo(a.anio, a.semestre)}.xlsx"
+        ejemplo = f"IntCasa_{a.anio}-{a.semestre}.xlsx" if a.semestre else (
+            f"Movilidad_{a.anio}.xlsx" if a.fuente == "movilidad" else f"{a.fuente}_{a.anio}.xlsx")
         return AvisoRevision(M.EXCEL, a.tipo, f"Falta el archivo de {f}", f"Carpeta {carpeta}",
                              f"No hay un archivo de {f.lower()} en la carpeta, así que ese {unidad}.",
                              f"Copia el archivo a la carpeta con un nombre que lleve el {'año y el semestre' if a.semestre else 'año'} "
@@ -224,9 +225,12 @@ def sin_convenio_del_programa(g: Grupo, programa):
 
 
 def sin_convenio_declarado(g: Grupo):
+    if g.n == 1:
+        que = f"El archivo dice que {g.esas} se hizo sin convenio (o no tiene institución) y no está en la matriz."
+    else:
+        que = f"El archivo dice que {g.esas} se hicieron sin convenio (o no tienen institución) y no están en la matriz."
     return g.aviso(M.INFORMATIVO, "sin_convenio_declarado", f"{g.plural.capitalize()} sin convenio",
-                   f"El archivo dice que {g.esas} se hicieron sin convenio, o no tienen institución, y no están en la "
-                   "matriz. No entran al cuadro.", "Nada. Solo se informa.", [])
+                   que + " No entran al cuadro.", "Nada. Solo se informa.", [])
 
 
 def tipo_no_reconocido(g: Grupo):

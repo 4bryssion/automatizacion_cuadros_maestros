@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 import tkinter as tk
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, ttk
 
 from .. import __version__
 from ..configuracion import AlmacenConfiguracion
-from ..cruce.modelos import EXCEL, INFORMATIVO, PROGRAMA
-from ..estado import AlmacenEstado, Estado, UltimaGeneracion
+from ..estado import AlmacenEstado, Estado
 from ..recursos import carpeta_recursos
 from . import dialogos as D
+from . import flujo
 from . import tema as T
 from .modelo import ENCONTRADO, cuando, mensaje_faltantes, motivo_para_no_generar, resumir, vigencia
 from .sistema import abrir
@@ -27,6 +27,9 @@ class VentanaPrincipal(tk.Frame):
         self.raiz, self.almacen, self.config, self.estados, self.estado = raiz, almacen, config, estados, estado
         self.resumen = None
         self.uso_vista_previa = False
+        self.al_abrir_revision = None            # lo pone la aplicación (cambia a la pantalla de revisión)
+        self.app = None
+        self._revirtiendo = False
         self.v_carpeta = tk.StringVar(value=estado.carpeta or "")
         anio = datetime.now().year
         self.anios = [str(a) for a in range(ANIO_MINIMO, anio + 2)]
@@ -150,10 +153,9 @@ class VentanaPrincipal(tk.Frame):
         self.b_config.activar(False)
         T.Ayuda(abajo, "config").pack(side="left", padx=8)
         T.Ayuda(abajo, "revision").pack(side="right")
-        self.l_revision = T.Enlace(abajo, "Ver revisión", None)
+        self.l_revision = T.Enlace(abajo, "Ver revisión", self.abrir_revision)
         self.l_revision.pack(side="right", padx=(0, 8))
-        self.l_revision.activar(False)
-        tk.Label(c, text="Previsualizar, Configuración y Ver revisión llegan en la próxima versión.",
+        tk.Label(c, text="Previsualizar y Configuración llegan en la próxima versión.",
                  font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
 
     def _logo(self, padre):
@@ -234,7 +236,12 @@ class VentanaPrincipal(tk.Frame):
             self.v_carpeta.set(str(Path(carpeta)))
             self.actualizar()
 
+    def _valores(self):
+        return (self.v_carpeta.get(), self.v_programa.get(), self.v_desde.get(), self.v_hasta.get())
+
     def actualizar(self):
+        if not self._confirmar_cambio():
+            return
         desde, hasta = self.anios_elegidos()
         carpeta = self.v_carpeta.get()
         invertida = desde is not None and hasta is not None and desde > hasta
@@ -248,8 +255,36 @@ class VentanaPrincipal(tk.Frame):
         self._pintar_ultimo()
         motivo = motivo_para_no_generar(carpeta, self.programa_id(), desde, hasta, self.resumen)
         self.b_generar.activar(motivo is None)
+        self.l_revision.activar(self.estado.ultima is not None)
         self.lbl_motivo.configure(text=motivo or "")
         self._guardar_estado()
+
+    def _confirmar_cambio(self) -> bool:
+        """Mockup 38: cambiar carpeta, programa o vigencia con cambios sin incluir pide generar antes."""
+        nuevos = self._valores()
+        anteriores = getattr(self, "_anteriores", None)
+        self._anteriores = nuevos
+        u = self.estado.ultima
+        if anteriores is None or nuevos == anteriores or not (u and u.cambios_sin_incluir) or self._revirtiendo:
+            return True
+        r = D.aviso(self.raiz, "Hay cambios sin incluir en el último cuadro", "aviso",
+                    f"El cuadro de {u.programa} ({vigencia(u.anio_inicio, u.anio_fin)}) tiene correcciones que todavía no "
+                    "se incluyeron. Si cambias la carpeta, el programa o la vigencia ahora, esas correcciones se pierden "
+                    "de vista. Genera el cuadro de nuevo primero; después se aplica tu cambio.",
+                    [("Generar cuadro de nuevo", "generar", "primario"), ("Cancelar el cambio", "cancelar", "secundario")])
+        if r == "generar":
+            from .revision import generar_de_nuevo
+            estado, g = generar_de_nuevo(self.app)
+            if g:
+                return True                   # se aplica el cambio y se vuelve a leer la tabla de archivos
+        self._revirtiendo = True              # se deshace el cambio sin volver a preguntar
+        try:
+            for var, valor in zip((self.v_carpeta, self.v_programa, self.v_desde, self.v_hasta), anteriores):
+                var.set(valor)
+        finally:
+            self._revirtiendo = False
+        self._anteriores = anteriores
+        return False
 
     def _guardar_estado(self):
         desde, hasta = self.anios_elegidos()
@@ -386,43 +421,25 @@ class VentanaPrincipal(tk.Frame):
     # ------------------------------------------------------------ generar
     def generar(self):
         desde, hasta = self.anios_elegidos()
-        r, pid, nombre = self.resumen, self.programa_id(), self.v_programa.get()
-        if motivo_para_no_generar(self.v_carpeta.get(), pid, desde, hasta, r):
+        pid = self.programa_id()
+        if motivo_para_no_generar(self.v_carpeta.get(), pid, desde, hasta, self.resumen):
             return
-        guardado = datetime.fromisoformat(self.almacen.actual["guardado_en"]).astimezone() \
-            if self.almacen.actual else datetime.now(timezone.utc).astimezone()
-        if not D.confirmar_generacion(self.raiz, nombre, desde, hasta, r.encontrados, r.esperados, r.faltan,
-                                      cuando(guardado.replace(tzinfo=None)), self.uso_vista_previa):
-            return
-        parametros = dict(carpeta=Path(self.v_carpeta.get()), config=self.config, programa_id=pid,
-                          anio_inicio=desde, anio_fin=hasta)
-        chips = [f"Programa: {nombre}", f"Vigencia: {vigencia(desde, hasta)}", f"{r.esperados + 1} archivos"]
-        while True:
-            salida = D.Progreso(self.raiz, parametros, chips).mostrar()
-            tipo = salida[0] if salida else "cancelado"
-            if tipo == "fin":
-                self._generado(salida[1])
-                return
-            if tipo == "detenida":
-                ctx = {"Programa": nombre, "Vigencia": vigencia(desde, hasta, "-"), "Carpeta": self.v_carpeta.get(),
-                       "Versión del programa": __version__}
-                if D.generacion_detenida(self.raiz, salida[1], ctx) == "reintentar":
-                    self.actualizar()
-                    continue
-                return
-            if tipo == "fallo":
-                D.aviso(self.raiz, "Ocurrió un error inesperado", "error",
-                        "La generación no terminó y no se creó ningún archivo. Copia este detalle y envíalo a Sistemas.",
-                        [("Cerrar", "cerrar", "primario")], [f"{type(salida[1]).__name__}: {salida[1]}"])
-            return
+        estado, g = flujo.generar(self.raiz, self.almacen, self.config, self.v_carpeta.get(), pid, desde, hasta,
+                                  self.uso_vista_previa)
+        if g:
+            self.al_generar(g, desde_revision=False)
 
-    def _generado(self, g):
-        r = g.resultado
-        grupos = r.por_grupo()
-        self.estado.ultima = UltimaGeneracion(
-            r.programa["id"], r.programa["nombre"], r.anio_inicio, r.anio_fin, str(g.lectura.carpeta), str(g.ruta),
-            g.ahora.isoformat(), {EXCEL: len(grupos[EXCEL]), PROGRAMA: len(grupos[PROGRAMA]),
-                                  INFORMATIVO: len(grupos[INFORMATIVO])})
+    def al_generar(self, g, desde_revision):
+        """Guarda la última generación y muestra el cuadro generado (31/33, o 32 si vino de la revisión)."""
+        self.estado.ultima = flujo.ultima_generacion(g, self.config)
         self.estados.guardar(self.estado)
         self.actualizar()
-        D.cuadro_generado(self.raiz, g, abrir_revision=None)
+        if desde_revision:
+            return D.cuadro_generado(self.raiz, g, desde_revision=True)
+        if D.cuadro_generado(self.raiz, g, abrir_revision=self.abrir_revision) == "revision":
+            self.abrir_revision()
+        return None
+
+    def abrir_revision(self):
+        if self.al_abrir_revision:
+            self.al_abrir_revision()

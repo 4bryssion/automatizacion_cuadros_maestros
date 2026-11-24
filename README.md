@@ -4,8 +4,8 @@ Programa portable que genera el **cuadro maestro internacional** de un programa 
 Excel de la Oficina de Relaciones Internacionales (Areandina, sede Pereira), sin instalación y sin enviar datos a internet.
 
 > **Estado: en construcción.** El diseño de la interfaz (49 mockups) y las reglas de negocio están cerrados.
-> El motor está completo y la ventana principal ya genera el cuadro (confirmar, progreso, cuadro generado y Hoja de
-> errores). Siguen Previsualizar, Ver revisión, Configuración y el ejecutable.
+> El motor está completo; la ventana principal genera el cuadro y Ver revisión permite recargar, resolver avisos y
+> generar de nuevo. Siguen Previsualizar, Configuración y el ejecutable.
 > Todavía no existe un ejecutable.
 
 ## Qué resuelve
@@ -120,7 +120,8 @@ Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en 
 - [x] Motor de cruce y conteo, con los avisos de la revisión
 - [x] Generación del Excel del cuadro maestro, con la Hoja de errores
 - [x] Ventana principal y generación en Tkinter (confirmar, progreso, cuadro generado, Hoja de errores, avisos de arranque)
-- [ ] Previsualizar, Ver revisión y Configuración en Tkinter
+- [x] Ver revisión: recargar, resueltos y nuevos, Elegir institución, confirmar sugerencias y cambios sin incluir
+- [ ] Previsualizar y Configuración en Tkinter
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
 - [x] Datos de prueba: muestra inventada (en el repositorio) y copias anonimizadas de los reales (solo locales)
 - [ ] Datos de ejemplo ficticios para capacitación
