@@ -375,3 +375,90 @@ def fecha_confirmada(config: dict) -> str:
 
 def carpeta_valida(carpeta) -> Path | None:
     return Path(carpeta) if carpeta and Path(carpeta).is_dir() else None
+
+
+# ---------------------------------------------------------------- Ver cómo se aplican las reglas (21)
+NOMBRE_REGLA = {1: "Qué convenios entran al cuadro", 2: "A qué convenio va cada registro", 3: "Qué se cuenta",
+                4: "Vigencia y fecha de fin", 5: "Activo o No activo"}
+ORDEN_EJEMPLOS = ["r2_preferido_movilidad", "r2_preferido_internacionalizacion_en_casa", "r2_unico_movilidad",
+                  "r2_unico_internacionalizacion_en_casa", "r2_desempate", "r2_sin_vigente", "r1_entra_vencido",
+                  "r1_fuera_vencido", "r1_fuera_vigente", "r1_entra_vigente", "r4_calculada", "r4_revision"]
+
+
+def _miles(n: int) -> str:
+    return f"{n:,}".replace(",", ".")
+
+
+def _plural(n: int, palabra: str) -> str:
+    plural = palabra + ("es" if palabra.endswith("d") else "s")
+    return f"{_miles(n)} {palabra if n == 1 else plural}"
+
+
+def con_reglas_confirmadas(config: dict) -> dict:
+    otra = copy.deepcopy(config)
+    otra["reglas"] = copy.deepcopy(REGLAS_CONFIRMADAS)
+    return otra
+
+
+@dataclass
+class Aplicacion:
+    confirmado: object                 # ResultadoCruce con las reglas confirmadas
+    actual: object                     # ResultadoCruce con las reglas de hoy
+    cambiadas: list[int]               # números de las reglas cambiadas
+
+    def efecto(self) -> list[tuple[str, int, int]]:
+        a, b = self.confirmado, self.actual
+        return [("Convenios en el cuadro", a.convenios_en_cuadro, b.convenios_en_cuadro),
+                ("Convenios sin resultados (Sin evidencia)", a.sin_resultados, b.sin_resultados),
+                ("Movilidades contadas", a.movilidades_contadas, b.movilidades_contadas),
+                ("Actividades de internacionalización en casa", a.actividades_contadas, b.actividades_contadas)]
+
+    def frase_efecto(self) -> str | None:
+        if not self.cambiadas:
+            return None
+        cambios = [(n, x, y) for n, x, y in self.efecto() if x != y]
+        reglas = " y ".join(", ".join(str(n) for n in self.cambiadas).rsplit(", ", 1))
+        quien = f"Tu cambio en la regla {reglas}" if len(self.cambiadas) == 1 else f"Tus cambios en las reglas {reglas}"
+        if not cambios:
+            return f"{quien} no cambia ninguna cifra del cuadro con estos archivos."
+        a, b = self.confirmado, self.actual
+        partes = []
+        d = b.convenios_en_cuadro - a.convenios_en_cuadro
+        d_sin = b.sin_resultados - a.sin_resultados
+        if d:
+            todos = ", todos sin resultados" if d == d_sin and abs(d) > 1 else ", sin resultados" if d == d_sin else ""
+            partes.append(f"{'agrega' if d > 0 else 'quita'} {_plural(abs(d), 'convenio')} "
+                          f"{'al' if d > 0 else 'del'} cuadro{todos}")
+        if d_sin and d_sin != d:
+            partes.append(f"{_plural(abs(d_sin), 'convenio')} {'más' if d_sin > 0 else 'menos'} con «Sin evidencia»")
+        for n, x, y in cambios[2:]:
+            unidad = "movilidad" if n.startswith("Movilidades") else "actividad"
+            partes.append(f"cuenta {_plural(abs(y - x), unidad)} {'más' if y > x else 'menos'}")
+        return f"{quien} " + ", ".join(partes[:-1]) + (" y " if len(partes) > 1 else "") + partes[-1] + "."
+
+    def decisiones(self) -> list[tuple[int, str, bool]]:
+        r, t = self.actual, self.actual.traza
+        return [
+            (1, f"{_miles(r.convenios_en_cuadro)} entran · {_miles(t.fuera_por_regla_1)} quedan fuera por no tener "
+                f"resultados ({_miles(t.vigentes_fuera)} vigentes, {_miles(t.vencidos_fuera)} vencidos)", 1 in self.cambiadas),
+            (2, f"{_miles(r.registros_asignados)} registros asignados · {_miles(t.sin_convenio_que_cubra)} sin convenio "
+                "que cubra el año (van a Ver revisión)", 2 in self.cambiadas),
+            (3, f"{_plural(r.movilidades_contadas, 'movilidad')} · {_plural(r.actividades_contadas, 'actividad')} de "
+                "internacionalización en casa", 3 in self.cambiadas),
+            (4, f"{_miles(t.vigencia_calculada)} vigencia{'s' if t.vigencia_calculada != 1 else ''} calculada{'s' if t.vigencia_calculada != 1 else ''} con año de inicio + vigencia · "
+                f"{_miles(t.sin_fin_usable + t.sin_inicio)} sin fechas usables (van a Ver revisión)", 4 in self.cambiadas),
+            (5, f"{_miles(r.activos)} activos · {_miles(r.convenios_en_cuadro - r.activos)} no activos, según la matriz "
+                "de hoy", 5 in self.cambiadas),
+        ]
+
+    def ejemplos(self, cuantos=6) -> list:
+        e = self.actual.traza.ejemplos
+        return [e[k] for k in ORDEN_EJEMPLOS if k in e][:cuantos]
+
+
+def aplicar_reglas(lectura: Lectura, config: dict, programa_id: str) -> Aplicacion:
+    from .cruce import cruzar
+    cambiadas = [i for i, k in enumerate(CLAVES_REGLAS, start=1) if regla_cambiada(config, k)]
+    actual = cruzar(lectura, config, programa_id)
+    confirmado = cruzar(lectura, con_reglas_confirmadas(config), programa_id) if cambiadas else actual
+    return Aplicacion(confirmado, actual, cambiadas)

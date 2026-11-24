@@ -222,6 +222,17 @@ class AlmacenConfiguracion:
             self._copia_de_sesion_hecha = True
         return self.guardar(doc)
 
+    def importar(self, configuracion: dict) -> dict:
+        """Guarda una configuración importada; antes deja una copia «Antes de importar» de la actual."""
+        doc = self._con_metadatos(esquema.sin_metadatos(configuracion), (self.actual or {}).get("revision", 0) + 1)
+        problemas = esquema.validar(doc)
+        if problemas:
+            raise ValueError("La configuración importada no es válida: " + "; ".join(problemas[:5]))
+        if self.actual is not None:
+            self._crear_copia(ANTES_DE_IMPORTAR, self.actual)
+            self._copia_de_sesion_hecha = True
+        return self.guardar(configuracion)
+
     # ------------------------------------------------------------------ internos
     def _con_metadatos(self, contenido: dict, revision: int) -> dict:
         return {"formato": esquema.FORMATO, "version_esquema": esquema.VERSION_ESQUEMA,

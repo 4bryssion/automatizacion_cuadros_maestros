@@ -8,7 +8,7 @@ VERSION_ESQUEMA = 1
 METADATOS = ("formato", "version_esquema", "guardado_en", "revision", "version_programa")
 
 FUENTES_DE_CAMPO = {"matriz", "reportes", "calculado", "vacio"}
-TIPOS_DE_CAMPO = {"numero", "texto", "texto_calculado", "opciones"}
+TIPOS_DE_CAMPO = {"numero", "texto", "texto_calculado", "opciones", "fecha"}
 ORIGENES_EQUIVALENCIA = {"tu", "gemini", "revision"}
 SECCIONES = ("programas", "campos", "fuentes", "equivalencias_instituciones", "equivalencias_programas",
              "tipos_persona", "reglas")

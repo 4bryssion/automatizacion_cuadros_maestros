@@ -19,7 +19,7 @@ from ..lectura.modelos import EXACTA, Lectura
 from ..texto import normalizar
 from . import avisos as T
 from .instituciones import Equivalencias, IndiceInstituciones, parecido_al_programa, programa_coincide
-from .modelos import ORDEN_GRUPOS, Convenio, FilaCuadro, ResultadoCruce
+from .modelos import ORDEN_GRUPOS, Convenio, Ejemplo, FilaCuadro, ResultadoCruce, Traza
 
 REQUERIDAS = {"matriz": ("institucion", "tipo_convenio", "fecha_inicio", "estado"),
               "movilidad": ("institucion", "programa", "vinculo"),
@@ -37,7 +37,8 @@ def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
     hojas = {a.ruta: a.hoja for a in lectura.archivos}
     avisos = [x for a in lectura.avisos if (x := T.desde_lectura(a, lectura.carpeta, programa, hojas))]
 
-    convenios, del_programa, indice = _convenios(lectura, programa, reglas, eq_inst, avisos)
+    traza = Traza()
+    convenios, del_programa, indice = _convenios(lectura, programa, reglas, eq_inst, avisos, traza)
     por_clave = defaultdict(list)
     for c in convenios:
         por_clave[c.clave].append(c)
@@ -110,8 +111,13 @@ def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
                     agrupar("institucion_sin_coincidencia", inst, reg.fila)
                 continue
             candidatos = [c for c in propios if not r2["solo_dentro_de_vigencia"] or c.anio_inicio <= anio <= c.anio_fin]
+            registro = _registro(origen, anio, v, archivo, tipo, inst)
             if not candidatos:
                 agrupar("sin_convenio_vigente", propios[0].institucion, reg.fila)
+                traza.sin_convenio_que_cubra += 1
+                traza.ejemplo("r2_sin_vigente", Ejemplo(
+                    registro, f"Ningún convenio con esa institución cubre {anio}: no se cuenta y va a Ver revisión.",
+                    2, cuenta=False))
                 continue
             preferido = r2["preferido_movilidad"] if origen == "movilidad" else r2["preferido_internacionalizacion"]
             elegidos = [c for c in candidatos if c.tipo == preferido] or candidatos
@@ -119,6 +125,7 @@ def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
             elegido = (min if mas_antiguo else max)(elegidos, key=lambda c: (c.inicio, c.fila))
             resultados[elegido.fila][anio][tipo] += 1
             contadas[origen] += 1
+            _ejemplo_asignacion(traza, registro, origen, anio, elegido, candidatos, elegidos, preferido, mas_antiguo)
 
         sin_institucion_total += sin_institucion
         for (tipo, _), g in grupos.items():
@@ -126,12 +133,43 @@ def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
         if sin_institucion:
             avisos.append(T.actividades_sin_institucion(archivo.ruta, sin_institucion))
 
-    filas = _filas(convenios, resultados, reglas["r1_convenios_que_entran"])
+    filas = _filas(convenios, resultados, reglas["r1_convenios_que_entran"], traza)
     avisos.sort(key=lambda a: ORDEN_GRUPOS.index(a.grupo))
     return ResultadoCruce(programa, lectura.anio_inicio, lectura.anio_fin, filas, avisos,
                           archivos_leidos=len(lectura.archivos), movilidades_contadas=contadas["movilidad"],
                           actividades_contadas=contadas["internacionalizacion_en_casa"],
-                          actividades_sin_institucion=sin_institucion_total, convenios_del_programa=del_programa)
+                          actividades_sin_institucion=sin_institucion_total, convenios_del_programa=del_programa,
+                          traza=traza)
+
+
+def _registro(origen, anio, v, archivo, tipo, inst) -> str:
+    if origen == "movilidad":
+        return f"Movilidad {anio} · {tipo} · {str(inst).strip()}"
+    periodo = f"{anio}-{archivo.semestre}" if archivo.semestre else str(anio)
+    actividad = str(v.get("tipo_actividad") or "Actividad").strip()
+    return f"Int. en casa {periodo} · {actividad} · {str(inst).strip()}"
+
+
+def _convenio_texto(c) -> str:
+    tipo = {"marco": "Convenio marco", "especifico": "Convenio específico"}.get(c.tipo, "Convenio")
+    codigo = f" {c.codigo}" if c.codigo else ""
+    return f"{tipo}{codigo} ({c.anio_inicio}–{c.anio_fin})"
+
+
+def _ejemplo_asignacion(traza, registro, origen, anio, elegido, candidatos, elegidos, preferido, mas_antiguo):
+    nombre = {"especifico": "el específico", "marco": "el marco"}.get(preferido)
+    fuente = "movilidad" if origen == "movilidad" else "internacionalización en casa"
+    if len(candidatos) == 1:
+        traza.ejemplo(f"r2_unico_{origen}", Ejemplo(
+            registro, f"{_convenio_texto(elegido)}: es el único convenio que cubre {anio}.", 2))
+    elif len(elegidos) < len(candidatos):
+        traza.ejemplo(f"r2_preferido_{origen}", Ejemplo(
+            registro, f"{_convenio_texto(elegido)}: hay {len(candidatos)} convenios que cubren {anio} y para {fuente} "
+                      f"se prefiere {nombre}.", 2))
+    else:
+        cual = "más antiguo" if mas_antiguo else "más reciente"
+        traza.ejemplo("r2_desempate", Ejemplo(
+            registro, f"{_convenio_texto(elegido)}: {len(elegidos)} convenios empatan y gana el de inicio {cual}.", 2))
 
 
 def _aviso_de_grupo(tipo, g, programa, indice):
@@ -148,7 +186,7 @@ def _aviso_de_grupo(tipo, g, programa, indice):
     return T.programa_parecido(g, programa)
 
 
-def _convenios(lectura, programa, reglas, eq_inst, avisos):
+def _convenios(lectura, programa, reglas, eq_inst, avisos, traza=None):
     matriz = lectura.matriz
     if matriz is None:
         return [], 0, IndiceInstituciones([], eq_inst)
@@ -171,6 +209,8 @@ def _convenios(lectura, programa, reglas, eq_inst, avisos):
         inicio = V.a_fecha(v.get("fecha_inicio"))
         if inicio is None:
             avisos.append(T.convenio_sin_inicio(matriz.ruta, matriz.hoja, r.fila, inst))
+            if traza:
+                traza.sin_inicio += 1
             continue
         fin, vigencia = V.a_fecha(v.get("fecha_fin")), V.a_entero(v.get("vigencia_anios"))
         if fin is not None:
@@ -180,8 +220,18 @@ def _convenios(lectura, programa, reglas, eq_inst, avisos):
             anio_fin = fin.year
         elif vigencia is not None and reglas["r4_fecha_fin"]["si_no_es_fecha"] == "inicio_mas_vigencia":
             anio_fin = inicio.year + vigencia                      # P3 / regla 4
+            if traza:
+                traza.vigencia_calculada += 1
+                traza.ejemplo("r4_calculada", Ejemplo(
+                    f"Convenio · {inst}", f"La fecha de fin es «{str(v.get('fecha_fin') or 'vacía').strip()}»: la "
+                                          f"vigencia va de {inicio.year} a {anio_fin} ({inicio.year} + {vigencia} años).", 4))
         else:
             avisos.append(T.convenio_sin_fin(matriz.ruta, matriz.hoja, r.fila, inst))
+            if traza:
+                traza.sin_fin_usable += 1
+                traza.ejemplo("r4_revision", Ejemplo(
+                    f"Convenio · {inst}", "La fecha de fin no es una fecha usable: el convenio no entra y va a Ver "
+                                          "revisión.", 4, cuenta=False))
             continue
         estado = normalizar(v.get("estado"))
         activo = estado in activos
@@ -197,14 +247,28 @@ def _convenios(lectura, programa, reglas, eq_inst, avisos):
     return convenios, del_programa, indice
 
 
-def _filas(convenios, resultados, r1):
+def _filas(convenios, resultados, r1, traza=None):
     filas = []
     for c in convenios:
         res = {a: dict(t) for a, t in sorted(resultados.get(c.fila, {}).items())}
         con_resultados = any(res.values())
         regla = r1["vigentes"] if c.activo else r1["vencidos"]
+        estado = "vigente" if c.activo else "vencido"
         if regla == "solo_con_resultados" and not con_resultados:
+            if traza:
+                traza.fuera_por_regla_1 += 1
+                if c.activo:
+                    traza.vigentes_fuera += 1
+                else:
+                    traza.vencidos_fuera += 1
+                traza.ejemplo(f"r1_fuera_{estado}", Ejemplo(
+                    f"Convenio · {c.institucion} ({estado}, sin resultados)",
+                    f"Queda fuera: los convenios {estado}s solo entran si tienen resultados.", 1, cuenta=False))
             continue
+        if traza and not con_resultados:
+            traza.ejemplo(f"r1_entra_{estado}", Ejemplo(
+                f"Convenio · {c.institucion} ({estado}, sin resultados)",
+                f"Entra al cuadro con «Sin evidencia»: los convenios {estado}s entran con o sin resultados.", 1))
         filas.append(FilaCuadro(0, c, res))
     filas.sort(key=lambda f: (normalizar(f.convenio.institucion), f.convenio.inicio, f.convenio.fila))
     for i, f in enumerate(filas, start=1):

@@ -127,6 +127,9 @@ class Aplicacion:
         elif clave == "campos":
             from .campos import ModalCampos
             ModalCampos(self, duena).mostrar()
+        elif clave == "exportar":
+            from .intercambio import ModalIntercambio
+            ModalIntercambio(self, duena).mostrar()
         elif clave == "reglas":
             from .reglas import ModalReglas
             ModalReglas(self, duena).mostrar()

@@ -204,3 +204,27 @@ def test_opciones_de_reglas_que_ofrece_la_pantalla_las_aplica_el_motor(muestra, 
     assert any(not f.total and not f.convenio.activo for f in todos.filas)
     config["reglas"]["r2_asignacion"]["preferido_movilidad"] = "ninguno"
     cruzar(leer_carpeta(muestra, config, 2022, 2022), config, ADMIN)                       # no falla
+
+
+# ---------------------------------------------------------------- Ver cómo se aplican las reglas
+def test_ver_como_se_aplican_sin_cambios(muestra, config):
+    a = A.aplicar_reglas(leer_carpeta(muestra, config, 2022, 2022), config, ADMIN)
+    assert a.cambiadas == [] and a.frase_efecto() is None
+    assert all(x == y for _, x, y in a.efecto())
+    decisiones = dict((n, t) for n, t, _ in a.decisiones())
+    assert decisiones[3] == "2 movilidades · 3 actividades de internacionalización en casa"
+    assert decisiones[2].startswith("5 registros asignados")
+    ejemplos = a.ejemplos()
+    assert ejemplos and all(e.regla in (1, 2, 4) for e in ejemplos)
+    assert any("Movilidad 2022" in e.registro for e in ejemplos)
+
+
+def test_ver_como_se_aplican_con_un_cambio(muestra, config):
+    config["reglas"]["r1_convenios_que_entran"]["vencidos"] = "con_o_sin_resultados"
+    a = A.aplicar_reglas(leer_carpeta(muestra, config, 2022, 2022), config, ADMIN)
+    assert a.cambiadas == [1]
+    (_, antes, despues), (_, sin_a, sin_d) = a.efecto()[:2]
+    assert despues - antes == sin_d - sin_a > 0
+    assert a.frase_efecto().startswith("Tu cambio en la regla 1 agrega ")
+    assert a.decisiones()[0][2] is True
+    assert any(e.regla == 1 and "vencidos entran con o sin resultados" in e.decision for e in a.ejemplos(12))

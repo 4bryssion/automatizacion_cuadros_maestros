@@ -67,6 +67,31 @@ class AvisoRevision:
 
 
 @dataclass
+class Ejemplo:
+    """Un registro real y lo que decidió una regla con él («Ver cómo se aplican las reglas», mockup 21)."""
+    registro: str
+    decision: str
+    regla: int
+    cuenta: bool = True               # False: el registro no se contó o el convenio quedó fuera
+
+
+@dataclass
+class Traza:
+    """Cifras de lo que decidió cada regla y un ejemplo por cada clase de decisión."""
+    fuera_por_regla_1: int = 0                    # aplican al programa pero la regla 1 los deja fuera
+    vigentes_fuera: int = 0
+    vencidos_fuera: int = 0
+    sin_convenio_que_cubra: int = 0               # registros de una institución con convenio, pero no para ese año
+    vigencia_calculada: int = 0                   # regla 4: año de inicio + vigencia en años
+    sin_fin_usable: int = 0                       # regla 4: van a la revisión
+    sin_inicio: int = 0
+    ejemplos: dict[str, Ejemplo] = field(default_factory=dict)
+
+    def ejemplo(self, clase: str, e: Ejemplo) -> None:
+        self.ejemplos.setdefault(clase, e)
+
+
+@dataclass
 class ResultadoCruce:
     programa: dict
     anio_inicio: int
@@ -78,6 +103,19 @@ class ResultadoCruce:
     actividades_contadas: int
     actividades_sin_institucion: int
     convenios_del_programa: int = 0            # los que APLICAN, antes de la regla 1
+    traza: Traza = field(default_factory=Traza)
+
+    @property
+    def registros_asignados(self) -> int:
+        return self.movilidades_contadas + self.actividades_contadas
+
+    @property
+    def sin_resultados(self) -> int:
+        return sum(1 for f in self.filas if not f.total)
+
+    @property
+    def activos(self) -> int:
+        return sum(1 for f in self.filas if f.convenio.activo)
 
     @property
     def sin_convenios(self) -> bool:

@@ -299,3 +299,63 @@ def test_fuentes_campos_y_reglas(muestra, tmp_path):
         assert EN_CONSTRUCCION == {"gemini"}
     finally:
         raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_ver_como_se_aplican_y_exportar_importar(muestra, tmp_path):
+    import tkinter as tk
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    from cuadro_maestro.interfaz.intercambio import ModalIntercambio
+    from cuadro_maestro.interfaz.reglas import VerComoSeAplican
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        app = Aplicacion(raiz, almacen, almacen.cargar().configuracion, AlmacenEstado(tmp_path / "u", tmp_path / "p"),
+                         Estado(str(muestra), "administracion-de-empresas", 2022, 2022))
+        raiz.update()
+        cfg = app.config
+        cfg["reglas"]["r1_convenios_que_entran"]["vencidos"] = "con_o_sin_resultados"
+        app.guardar_config()
+        from cuadro_maestro import ajustes as A
+        from cuadro_maestro.lectura import leer_carpeta
+        aplicacion = A.aplicar_reglas(leer_carpeta(muestra, app.config, 2022, 2022), app.config,
+                                      "administracion-de-empresas")
+        from cuadro_maestro.interfaz import dialogos
+        original = dialogos.en_espera
+        dialogos.en_espera = lambda duena, trabajo, *a, **k: aplicacion      # sin la ventana de espera
+        try:
+            v = VerComoSeAplican(app)
+        finally:
+            dialogos.en_espera = original
+        raiz.update()
+        textos = [w.cget("text") for w in _descendientes(v) if isinstance(w, tk.Label)]
+        assert "1 regla cambiada" in textos and any(t.startswith("Tu cambio en la regla 1") for t in textos)
+        v.destroy()
+        # Exportar y volver a importar (combinar) con una copia «Antes de importar»
+        m = ModalIntercambio(app)
+        m.carpeta = tmp_path
+        m.v_nombre.set("mi configuracion")
+        ruta = m.exportar()
+        assert ruta.name == "mi configuracion.json" and ruta.exists()
+        app.config["equivalencias_programas"].append({"como_aparece": "Admin", "es": "Administración de Empresas",
+                                                      "origen": "tu"})
+        app.guardar_config()
+        m.elegir_archivo(str(ruta))
+        textos = [w.cget("text") for w in _descendientes(m) if isinstance(w, tk.Label)]
+        assert "−1" not in textos                  # combinar no quita la equivalencia nueva
+        m.modo.set("reemplazar")
+        m.pintar()
+        textos = [w.cget("text") for w in _descendientes(m) if isinstance(w, tk.Label)]
+        assert "−1" in textos                      # reemplazar sí (el archivo no la tiene)
+        m.importar()
+        assert app.config["equivalencias_programas"] == [] and almacen.actual["equivalencias_programas"] == []
+        assert any(c.motivo == "antes_de_importar" for c in almacen.copias_de_seguridad())
+        m.elegir_archivo(str(tmp_path / "no existe.json"))
+        assert "No se pudo abrir" in m.error_archivo
+        m.destroy()
+    finally:
+        raiz.destroy()

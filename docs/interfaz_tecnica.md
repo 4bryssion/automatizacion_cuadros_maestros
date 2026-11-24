@@ -13,7 +13,8 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 | `configuracion.py` | Configuración (06) y sus modales: Programas (07), Equivalencias (16, 17), Tipos (18), Copias (24) |
 | `fuentes.py` | Fuentes de datos (15), Elegir columna… y Probar lectura de la carpeta (22, también encima de la vista previa: 27) |
 | `campos.py` | Campos del cuadro maestro (14): ordenar arrastrando, editor en la fila, campos base con candado |
-| `reglas.py` | Reglas de cruce (19): Confirmada / Cambiada, restablecer una o todas |
+| `reglas.py` | Reglas de cruce (19): Confirmada / Cambiada, restablecer una o todas; Ver cómo se aplican (21) |
+| `intercambio.py` | Exportar e importar configuración (23) |
 | `flujo.py` | Generar desde cualquier pantalla (confirmar, progreso, errores) y guardar la última generación |
 | `modelo.py` | Lógica de la ventana sin Tkinter: tabla de archivos, «x de y encontrados», mensajes, cuándo se puede generar |
 | `tema.py` | Colores y estados del manual, Brown Std, botones, enlaces, «?» con su ayuda, símbolos dibujados |
@@ -88,7 +89,23 @@ La lógica está en `src/cuadro_maestro/ajustes.py` (se prueba sin ventanas en `
 - **Reglas**: solo se ofrecen las opciones que el motor aplica (vigentes/vencidos con o sin resultados, preferido
   específico, marco o ninguno, desempate, fecha de fin, varios programas). Lo fijo se muestra con candado.
 
+## Ver cómo se aplican las reglas
+
+Lee la carpeta, el programa y la vigencia de la ventana principal y cruza dos veces: con las reglas confirmadas y con
+las de hoy (`ajustes.aplicar_reglas`). Muestra la diferencia en cuatro cifras, una frase con el efecto, qué decidió cada
+regla y un ejemplo real por cada clase de decisión. Las cifras y los ejemplos los anota el motor de cruce mientras decide
+(`ResultadoCruce.traza`), así que lo que se ve es exactamente lo que se aplicaría al generar.
+
+## Exportar e importar
+
+`configuracion/intercambio.py`. El archivo es el mismo JSON de la configuración (formato y versión de esquema), así que
+se valida igual que al abrir; uno de una versión más nueva no se importa. Exportar nunca sobrescribe («… (2).json»).
+Importar deja antes una copia «Antes de importar». La tabla muestra hoy contra cómo quedaría con el modo elegido:
+
+- **Combinar** (recomendado): agrega programas, campos (con la columna de la matriz que necesiten), equivalencias,
+  tipos y valores de tipo que falten; lo tuyo gana; fuentes y reglas no cambian.
+- **Reemplazar todo**: la configuración queda igual a la del archivo.
+
 ## Pendiente
 
-Ver cómo se aplican (21), Exportar/importar (23), Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y
-el empaquetado en .exe.
+Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.

@@ -92,7 +92,7 @@ def test_guardar_escribe_en_ambos_y_hace_una_copia_automatica_por_sesion(carpeta
 def test_guardar_rechaza_una_configuracion_invalida(carpetas, reloj):
     a = nuevo(carpetas, reloj)
     doc = esquema.sin_metadatos(a.cargar().configuracion)
-    doc["campos"][0]["tipo"] = "fecha"
+    doc["campos"][0]["tipo"] = "moneda"
     with pytest.raises(ValueError):
         a.guardar(doc)
 
@@ -242,3 +242,14 @@ def test_copias_se_leen_desde_cualquiera_de_los_dos_lugares(carpetas, reloj):
     import shutil
     shutil.rmtree(carpetas[0] / A.CARPETA_COPIAS)          # el perfil perdió sus copias
     assert len(nuevo(carpetas, reloj).copias_de_seguridad()) == 1
+
+
+def test_la_configuracion_inicial_no_comparte_listas():
+    """Cambiar una configuración no puede cambiar la inicial (los valores de un tipo eran la misma lista)."""
+    from cuadro_maestro.configuracion.valores_iniciales import configuracion_inicial
+    a = configuracion_inicial()
+    a["tipos_persona"][0]["valores"].append("x")
+    a["fuentes"][0]["columnas"]["institucion"]["sinonimos"].append("x")
+    b = configuracion_inicial()
+    assert "x" not in b["tipos_persona"][0]["valores"]
+    assert "x" not in b["fuentes"][0]["columnas"]["institucion"]["sinonimos"]

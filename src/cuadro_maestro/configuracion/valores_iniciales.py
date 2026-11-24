@@ -154,7 +154,7 @@ REGLAS_CONFIRMADAS = {
 
 def configuracion_inicial() -> dict:
     """Documento completo de configuración, sin los metadatos de guardado (los pone el almacén)."""
-    return {
+    return copy.deepcopy({        # copia: nada de lo que se cambie después puede tocar estos valores iniciales
         "programas": [{"id": identificador(n), "nombre": n, "columna_matriz": c} for n, c in _PROGRAMAS],
         "campos": [
             {"id": i, "nombre": n, "fuente": f, "dato": d, "tipo": t, "base": b, "ancho": w}
@@ -164,5 +164,5 @@ def configuracion_inicial() -> dict:
         "equivalencias_instituciones": [],
         "equivalencias_programas": [],
         "tipos_persona": [{"id": identificador(n), "nombre": n, "valores": v, "base": b} for n, v, b in _TIPOS],
-        "reglas": copy.deepcopy(REGLAS_CONFIRMADAS),
-    }
+        "reglas": REGLAS_CONFIRMADAS,
+    })

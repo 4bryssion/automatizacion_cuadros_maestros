@@ -67,7 +67,8 @@ def valor_campo(campo: dict, fila, config: dict):
 
 
 def _formato(campo: dict) -> str:
-    return {"numero": "0", "texto": "@", "texto_calculado": "@", "opciones": "@"}.get(campo["tipo"], "General")
+    return {"numero": "0", "texto": "@", "texto_calculado": "@", "opciones": "@", "fecha": "DD/MM/YYYY"}.get(
+        campo["tipo"], "General")
 
 
 def _alto(valores, anchos) -> float:

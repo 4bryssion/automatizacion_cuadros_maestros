@@ -32,6 +32,8 @@ from cuadro_maestro.interfaz.app import Aplicacion  # noqa: E402
 from muestra_sintetica import NOMBRES, crear_muestra  # noqa: E402
 
 datos = TEMP / "Excel"
+import faulthandler  # noqa: E402
+faulthandler.dump_traceback_later(230, exit=False)
 threading.Timer(240, lambda: (print("Tiempo agotado: alguna ventana quedó esperando"), os._exit(1))).start()
 crear_muestra(datos)
 raiz = tk.Tk()
@@ -162,6 +164,7 @@ from muestra_sintetica import guardar  # noqa: E402
 wb = openpyxl.load_workbook(datos / NOMBRES["movilidad"])
 wb["BD GENERAL"]["C1"] = "TIPO DE PERSONA"
 guardar(wb, datos / NOMBRES["movilidad"])
+estado.ultima.cambios_sin_incluir = False
 ventana.v_desde.set("2021")
 abrir_editando(FU.ModalFuentes, "15_fuentes", accion=lambda m: m.seleccionar("movilidad"))
 capturar_y_cerrar("22_probar_lectura", 1500)
@@ -169,6 +172,23 @@ FU.ProbarLectura(raiz, app).mostrar()
 abrir_editando(CA.ModalCampos, "14_campos", accion=lambda m: m.editar(2))
 abrir_editando(RE.ModalReglas, "19_reglas",
                accion=lambda m: m.controles[("r1_convenios_que_entran", "vencidos")].elegir("con_o_sin_resultados"))
+estado.ultima.cambios_sin_incluir = False                # la configuración cambió: si no, pediría generar (38)
+ventana.v_desde.set("2022")
+capturar_y_cerrar("21_ver_como_se_aplican", 1500)
+RE.VerComoSeAplican(app, raiz).mostrar()
+from cuadro_maestro.interfaz import intercambio as IN  # noqa: E402
+
+
+def _exportar_e_importar(m):
+    m.carpeta = TEMP
+    ruta = m.exportar()
+    app.config["equivalencias_programas"].append({"como_aparece": "Admin. de Empresas", "es": "Administración de "
+                                                  "Empresas", "origen": "tu"})
+    app.guardar_config()
+    m.elegir_archivo(str(ruta))
+
+
+abrir_editando(IN.ModalIntercambio, "23_exportar_importar", accion=_exportar_e_importar)
 app.volver_de_configuracion()
 raiz.destroy()
 print("Capturas en", SALIDA, sorted(p.name for p in SALIDA.glob("*.png")))

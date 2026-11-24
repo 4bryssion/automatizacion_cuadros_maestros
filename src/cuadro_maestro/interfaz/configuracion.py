@@ -147,10 +147,9 @@ class PantallaConfiguracion(tk.Frame):
         T.Enlace(izq, "Copias y almacenamiento ›", lambda: self.app.abrir_modal("copias", self.app.raiz, self.pintar),
                  fuente="pequena_b").pack(anchor="w")
         T.Boton(pie, "Volver al cuadro maestro", self.al_volver, ancho=280).pack(side="right")
-        exportar = T.Boton(pie, "Exportar / importar", None, tipo="secundario", ancho=210)
-        exportar.pack(side="right", padx=14)
-        exportar.activar(False)
-        tk.Label(c, text="El asistente con Gemini y Exportar / importar llegan en la próxima versión.", font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
+        T.Boton(pie, "Exportar / importar", lambda: self.app.abrir_modal("exportar", self.app.raiz, self.pintar),
+                tipo="secundario", ancho=210).pack(side="right", padx=14)
+        tk.Label(c, text="El asistente con Gemini llega en la próxima versión.", font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
 
     def _conteo(self, clave, cfg):
         verde = ("#E3EED2", T.OK_TXT)

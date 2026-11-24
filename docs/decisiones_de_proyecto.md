@@ -226,3 +226,14 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   una fuente se ve también en los avisos y la Hoja de errores.
 - **Caída al leer en segundo plano:** el recolector de basura podía borrar variables de Tk desde el hilo de lectura y
   cerrar el programa. Se pausa mientras el otro hilo trabaja.
+
+## Ver cómo se aplican y Exportar / importar (24-nov-2026)
+
+- **Ver cómo se aplican** compara lo confirmado con tus reglas usando tus archivos reales; los ejemplos son registros
+  reales, uno por cada clase de decisión, anotados por el mismo motor que genera el cuadro.
+- **Importar** muestra qué cambiaría según el modo elegido (combinar no quita nada; reemplazar sí). Combinar no toca las
+  fuentes ni las reglas: las reglas las confirma la jefatura y no deberían llegar mezcladas desde otro equipo.
+- **Incongruencias corregidas:** Campos ofrecía el tipo «Fecha», pero la configuración no lo aceptaba y el cambio no se
+  guardaba; ahora es válido y se escribe como fecha (DD/MM/AAAA). La configuración inicial compartía listas con los
+  valores de fábrica, así que agregar un valor a un tipo de persona cambiaba también los valores iniciales mientras el
+  programa estaba abierto; ahora es una copia.
