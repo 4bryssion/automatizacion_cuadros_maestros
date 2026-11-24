@@ -56,6 +56,8 @@ def generar(carpeta: Path, config: dict, programa_id: str, anio_inicio: int, ani
             ahora: datetime | None = None, logo: Path | None = None,
             al_avanzar: Callable[[str, str, str], None] | None = None,
             cancelado: Callable[[], bool] | None = None) -> Generacion:
+    from ..cruce.avisos import usar_nombres
+    usar_nombres(config)                     # la Hoja de errores nombra las fuentes como en Configuración
     pasos = {p: EstadoPaso(p) for p, _ in E.PASOS}
     orden = [p for p, _ in E.PASOS]
 

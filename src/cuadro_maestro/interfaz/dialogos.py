@@ -221,7 +221,10 @@ class Progreso(Modal):
         tk.Label(pie, text="Si cancelas, no se crea ningún archivo.", font=T.F["pequena"], bg=T.BLANCO,
                  fg=T.GRIS).pack(side="left")
         T.Boton(pie, "Cancelar generación", self.al_cerrar, tipo="secundario", ancho=230).pack(side="right")
-        threading.Thread(target=self._trabajar, daemon=True).start()
+        pausar_recolector()
+        self.hilo = threading.Thread(target=self._trabajar, daemon=True)
+        self.hilo.start()
+        reanudar_recolector_al_terminar(duena.winfo_toplevel(), self.hilo)
         self.after(100, self._revisar)
 
     def _trabajar(self):
@@ -486,6 +489,59 @@ def aviso(duena, titulo, tipo, mensaje, botones: list[tuple[str, str, str]], det
             T.Boton(pie, texto, lambda v=valor: m.cerrar(v), tipo=estilo,
                     ancho=max(130, 11 * len(texto) + 40)).pack(side="right", padx=(14, 0))
     return m.mostrar()
+
+
+def pausar_recolector():
+    """Si el recolector de basura de Python corriera en un hilo de trabajo podría borrar variables de Tk (StringVar
+    de pantallas ya cerradas) desde ese hilo, y Tcl se cae («Segmentation fault»). Se recoge aquí, en el hilo de la
+    ventana, y se pausa mientras el otro hilo trabaja."""
+    import gc
+    gc.collect()
+    gc.disable()
+
+
+def reanudar_recolector_al_terminar(ventana, hilo):
+    import gc
+
+    def revisar():
+        if hilo.is_alive():
+            ventana.after(150, revisar)
+        else:
+            gc.enable()
+    ventana.after(150, revisar)
+
+
+def en_espera(duena, trabajo, titulo="Leyendo los archivos…", subtitulo="Solo se leen: no se crea ni se cambia nada."):
+    """Hace `trabajo()` en otro hilo con una ventana de espera encima de `duena`; devuelve su resultado o
+    vuelve a lanzar su error. Sirve para todo lo que lee Excel desde la interfaz (vista previa, Fuentes, Campos)."""
+    import threading
+    salida = {}
+    pausar_recolector()
+
+    def trabajar():
+        try:
+            salida["r"] = trabajo()
+        except Exception as e:   # noqa: BLE001
+            salida["e"] = e
+
+    espera = Modal(duena, "Leyendo los archivos", ancho=460)
+    espera.encabezado("curso", titulo, subtitulo)
+    hilo = threading.Thread(target=trabajar, daemon=True)
+    hilo.start()
+
+    def revisar():
+        if hilo.is_alive():
+            espera.after(100, revisar)
+        else:
+            espera.cerrar(True)
+    espera.after(100, revisar)
+    espera.protocol("WM_DELETE_WINDOW", lambda: None)
+    espera.unbind("<Escape>")
+    reanudar_recolector_al_terminar(espera.master.winfo_toplevel(), hilo)
+    espera.mostrar()
+    if "e" in salida:
+        raise salida["e"]
+    return salida["r"]
 
 
 def ahora_texto() -> str:

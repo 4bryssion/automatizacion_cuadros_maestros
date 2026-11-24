@@ -31,6 +31,23 @@ def periodo(nombre: str, fuente: dict):
     return anio, semestre
 
 
+PREFIJO_EJEMPLO = {"matriz": "Convenios", "movilidad": "Movilidad", "internacionalizacion_en_casa": "IntCasa"}
+
+
+def ejemplo(fuente: dict, anio=None, semestre=None) -> str:
+    """Nombre de ejemplo que el programa sí reconoce (lo sugieren la ayuda, los avisos y Probar lectura)."""
+    regla = fuente["archivo"]
+    base = PREFIJO_EJEMPLO.get(fuente["id"])
+    if not base or not reconocer(f"{base}.xlsx", fuente):
+        palabra = (regla.get("contiene") or [fuente["id"]])[0]
+        base = palabra[:1].upper() + palabra[1:]
+    if regla.get("patron_semestre") and anio:
+        return f"{base}_{anio}-{semestre or 1}.xlsx"
+    if regla.get("patron_anio") and anio:
+        return f"{base}_{anio}.xlsx"
+    return f"{base}.xlsx"
+
+
 def candidatos(carpeta: Path) -> list[Path]:
     try:
         return sorted(p for p in Path(carpeta).iterdir()

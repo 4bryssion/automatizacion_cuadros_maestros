@@ -213,3 +213,89 @@ def test_modales_de_configuracion_crean_editan_y_eliminan(muestra, tmp_path):
         assert "25 programas" in textos and "8 tipos" in textos
     finally:
         raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_fuentes_campos_y_reglas(muestra, tmp_path):
+    import tkinter as tk
+
+    import openpyxl
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    from cuadro_maestro.interfaz.campos import ModalCampos
+    from cuadro_maestro.interfaz.fuentes import ModalFuentes, ProbarLectura
+    from cuadro_maestro.interfaz.reglas import ModalReglas
+    from muestra_sintetica import guardar
+    wb = openpyxl.load_workbook(muestra / NOMBRES["movilidad"])
+    wb["BD GENERAL"]["C1"] = "TIPO DE PERSONA"
+    guardar(wb, muestra / NOMBRES["movilidad"])
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        app = Aplicacion(raiz, almacen, almacen.cargar().configuracion, AlmacenEstado(tmp_path / "u", tmp_path / "p"),
+                         Estado(str(muestra), "administracion-de-empresas", 2022, 2022))
+        raiz.update()
+        lectura = __import__("cuadro_maestro.lectura", fromlist=["leer_carpeta"]).leer_carpeta(
+            muestra, app.config, 2022, 2022)
+        # Fuentes: la columna sin identificar se elige y se guarda
+        m = ModalFuentes(app, fuente_id="movilidad", lectura=lectura)
+        raiz.update()
+        textos = [w.cget("text") for w in _descendientes(m) if isinstance(w, tk.Label)]
+        assert "1 sin identificar" in textos and "Sin identificar" in textos
+        e = m.estados["movilidad"]
+        dato = next(d for d in e.datos if d.dato == "vinculo")
+        assert "TIPO DE PERSONA" in e.encabezados
+        m.lectura = None                       # sin releer (en las pruebas no hay ventana de espera)
+        m.carpeta = None
+        from cuadro_maestro import ajustes as A
+        A.elegir_columna(app.config, "movilidad", dato.dato, "TIPO DE PERSONA")
+        m.cambio()
+        assert almacen.actual["fuentes"][1]["columnas"]["vinculo"]["elegida"] == "TIPO DE PERSONA"
+        m.seleccionar("internacionalizacion_en_casa")
+        m.opc_modo.elegir(A.POR_ANIO)
+        assert app.config["fuentes"][2]["archivo"]["patron_semestre"] is None
+        m.opc_modo.elegir(A.POR_SEMESTRE)
+        m.renombrando = True
+        m.pintar()
+        m.guardar_nombre()
+        m.destroy()
+        p = ProbarLectura(raiz, app, lectura)
+        raiz.update()
+        textos = [w.cget("text") for w in _descendientes(p) if isinstance(w, tk.Label)]
+        assert "1 sin identificar" in textos and "Arreglar ›" in textos
+        p.destroy()
+        # Campos: crear uno con otra columna de la matriz, ordenar y eliminar
+        c = ModalCampos(app, matriz=lectura.matriz)
+        raiz.update()
+        c.crear()
+        raiz.update()
+        c.v_nombre_edicion.set("País")
+        c.opc_columna.elegir("enc:PAÍS")
+        c.guardar_edicion()
+        assert app.config["campos"][-1]["dato"] == "col-pais" and almacen.actual["campos"][-1]["nombre"] == "País"
+        c.mover(len(app.config["campos"]) - 1, 1)
+        assert app.config["campos"][1]["nombre"] == "País"
+        c.pedir_eliminar(1)
+        raiz.update()
+        c.confirmar_eliminacion()
+        assert all(x["nombre"] != "País" for x in app.config["campos"])
+        c.destroy()
+        # Reglas: cambiar marca «Cambiada» y se restablece
+        r = ModalReglas(app)
+        raiz.update()
+        r.controles[("r1_convenios_que_entran", "vencidos")].elegir("con_o_sin_resultados")
+        textos = [w.cget("text") for w in _descendientes(r) if isinstance(w, tk.Label)]
+        assert "Cambiada" in textos and "5 reglas · 1 cambiada" in textos
+        r.controles[("r3_conteo", "varios_programas_cuentan_para_cada_uno")].alternar()
+        assert almacen.actual["reglas"]["r3_conteo"]["varios_programas_cuentan_para_cada_uno"] is False
+        r.restablecer()
+        assert not A.regla_cambiada(app.config, "r1_convenios_que_entran")
+        r.destroy()
+        # Configuración: las tres tarjetas ya se pueden abrir
+        from cuadro_maestro.interfaz.configuracion import EN_CONSTRUCCION
+        assert EN_CONSTRUCCION == {"gemini"}
+    finally:
+        raiz.destroy()

@@ -53,6 +53,7 @@ def cargar_fuentes(raiz: tk.Tk) -> str:
     estilo.map("CM.TCombobox", bordercolor=[("focus", VERDE_CTA)], fieldbackground=[("readonly", BLANCO)],
                foreground=[("disabled", DESACT_TXT)])
     estilo.configure("Error.CM.TCombobox", bordercolor=MAGENTA)
+    estilo.configure("Cambiada.CM.TCombobox", bordercolor=NARANJA)
     raiz.option_add("*TCombobox*Listbox.font", F["cuerpo"])
     raiz.option_add("*TCombobox*Listbox.selectBackground", TINTE_VERDE)
     raiz.option_add("*TCombobox*Listbox.selectForeground", NEGRO)
@@ -344,3 +345,162 @@ class Franja(tk.Frame):
                               anchor="w", wraplength=600)
         self.texto.pack(side="left", fill="x", expand=True, padx=(12, 0))
         self.bind("<Configure>", lambda e: self.texto.configure(wraplength=max(200, e.width - 70)))
+
+
+# ---------------------------------------------------------------- interruptor, casilla y lista de opciones
+class Interruptor(tk.Frame):
+    """Interruptor Sí/No dibujado (mockups 15 y 19). `al_cambiar(valor)` se llama al pulsarlo."""
+
+    def __init__(self, padre, valor: bool, al_cambiar=None, texto_si="Sí", texto_no="No", activo=True):
+        super().__init__(padre, bg=padre["bg"])
+        self.valor, self.al_cambiar, self.activo = bool(valor), al_cambiar, activo
+        self.textos = (texto_no, texto_si)
+        self.etiqueta = tk.Label(self, font=F["pequena_b"], bg=padre["bg"], fg=GRIS_OSC)
+        self.etiqueta.pack(side="left", padx=(0, 10))
+        self.lienzo = tk.Canvas(self, width=56, height=30, bg=padre["bg"], highlightthickness=0,
+                                cursor="hand2" if activo else "arrow")
+        self.lienzo.pack(side="left")
+        for w in (self.lienzo, self.etiqueta):
+            w.bind("<Button-1>", lambda e: self.alternar())
+        self._pintar()
+
+    def _pintar(self):
+        c, si = self.lienzo, self.valor
+        c.delete("all")
+        color = (VERDE_CTA if si else "#BDBDBD") if self.activo else DESACT_BG
+        c.create_oval(1, 1, 29, 29, fill=color, outline=color)
+        c.create_oval(27, 1, 55, 29, fill=color, outline=color)
+        c.create_rectangle(15, 1, 41, 29, fill=color, outline=color)
+        x = 41 if si else 15
+        c.create_oval(x - 11, 4, x + 11, 26, fill=BLANCO, outline=BLANCO)
+        self.etiqueta.configure(text=self.textos[si])
+
+    def alternar(self):
+        if not self.activo:
+            return
+        self.valor = not self.valor
+        self._pintar()
+        if self.al_cambiar:
+            self.al_cambiar(self.valor)
+
+
+class Casilla(tk.Frame):
+    """Casilla de verificación dibujada con su texto (mockup 15, «Qué filas se usan»)."""
+
+    def __init__(self, padre, texto, valor: bool, al_cambiar=None, wraplength=640):
+        super().__init__(padre, bg=padre["bg"], cursor="hand2")
+        self.valor, self.al_cambiar = bool(valor), al_cambiar
+        self.lienzo = tk.Canvas(self, width=24, height=24, bg=padre["bg"], highlightthickness=0, cursor="hand2")
+        self.lienzo.pack(side="left", anchor="n")
+        self.etiqueta = tk.Label(self, text=texto, font=F["cuerpo"], bg=padre["bg"], anchor="w", justify="left",
+                                 wraplength=wraplength, cursor="hand2")
+        self.etiqueta.pack(side="left", fill="x", padx=(10, 0))
+        for w in (self, self.lienzo, self.etiqueta):
+            w.bind("<Button-1>", lambda e: self.alternar())
+        self._pintar()
+
+    def _pintar(self):
+        c = self.lienzo
+        c.delete("all")
+        if self.valor:
+            c.create_rectangle(2, 2, 22, 22, fill=VERDE_CTA, outline=VERDE_CTA)
+            c.create_line(6, 12, 10, 17, 18, 7, fill=BLANCO, width=3, capstyle="round", joinstyle="round")
+        else:
+            c.create_rectangle(2, 2, 22, 22, fill=BLANCO, outline=GRIS, width=2)
+
+    def alternar(self):
+        self.valor = not self.valor
+        self._pintar()
+        if self.al_cambiar:
+            self.al_cambiar(self.valor)
+
+
+class Opciones(ttk.Combobox):
+    """Lista desplegable de solo lectura que muestra textos y devuelve valores internos.
+
+    `pares` = [(valor, texto), ...]. Si el valor actual no está en la lista se muestra tal cual (no se pierde).
+    """
+
+    def __init__(self, padre, pares, valor, al_cambiar=None, ancho=None, editable=False):
+        self.pares = list(pares)
+        if valor is not None and all(v != valor for v, _ in self.pares):
+            self.pares.append((valor, str(valor)))
+        self.variable = tk.StringVar(value=self.texto_de(valor))
+        super().__init__(padre, textvariable=self.variable, values=[t for _, t in self.pares],
+                         state="normal" if editable else "readonly", style="CM.TCombobox", font=F["cuerpo"],
+                         height=14, **({"width": ancho} if ancho else {}))
+        self.al_cambiar, self.editable = al_cambiar, editable
+        self.bind("<<ComboboxSelected>>", lambda e: self._cambio())
+        if editable:
+            self.bind("<FocusOut>", lambda e: self._cambio(), add="+")
+            self.bind("<Return>", lambda e: self._cambio(), add="+")
+        self._ultimo = valor
+
+    def texto_de(self, valor):
+        return next((t for v, t in self.pares if v == valor), "" if valor is None else str(valor))
+
+    def valor(self):
+        t = self.variable.get()
+        v = next((v for v, x in self.pares if x == t), None)
+        if v is None and self.editable:
+            v = " ".join(t.split())
+        return v
+
+    def elegir(self, valor):
+        """Lo mismo que elegir la opción con el ratón (lo usan las pruebas)."""
+        self.variable.set(self.texto_de(valor))
+        self._cambio()
+
+    def _cambio(self):
+        v = self.valor()
+        if v == self._ultimo or (self.editable and not v):
+            if self.editable and not v:
+                self.variable.set(self.texto_de(self._ultimo))
+            return
+        self._ultimo = v
+        if self.al_cambiar:
+            self.al_cambiar(v)
+
+
+def campo_bloqueado(padre, texto, ancho_px=None):
+    """Campo gris con candado: un valor que se muestra pero no se puede cambiar (mockup 19, regla 4)."""
+    borde = tk.Frame(padre, bg=LINEA, padx=1, pady=1)
+    d = tk.Frame(borde, bg=FONDO)
+    d.pack(fill="both", expand=True)
+    tk.Label(d, text=texto, font=F["cuerpo"], bg=FONDO, fg=GRIS, anchor="w").pack(side="left", padx=12, pady=8)
+    c = tk.Canvas(d, width=18, height=20, bg=FONDO, highlightthickness=0)
+    c.create_arc(4, 2, 14, 12, start=0, extent=180, style="arc", outline=GRIS, width=2)
+    c.create_rectangle(2, 8, 16, 18, fill=GRIS, outline=GRIS)
+    c.pack(side="right", padx=10)
+    return borde
+
+
+def chip(padre, texto, tipo="ok", bg=None):
+    """Etiqueta redondeada de estado: ok (verde), aviso (naranja), error (magenta), gris."""
+    fondo, color = {"ok": ("#E3EED2", OK_TXT), "aviso": (AVISO_BG, AVISO_TXT), "error": (ROSA_SUAVE, MAGENTA),
+                    "gris": ("#EDEDED", GRIS_OSC)}[tipo]
+    return tk.Label(padre, text=texto, font=F["pequena_b"], bg=fondo, fg=color, padx=10, pady=4)
+
+
+def desplazable(padre, alto, bg=BLANCO):
+    """Marco con barra vertical; la rueda del ratón lo mueve solo mientras el puntero está encima."""
+    marco = tk.Frame(padre, bg=bg)
+    lienzo = tk.Canvas(marco, bg=bg, highlightthickness=0, height=alto)
+    barra = tk.Scrollbar(marco, orient="vertical", command=lienzo.yview)
+    interior = tk.Frame(lienzo, bg=bg)
+    ventana = lienzo.create_window(0, 0, window=interior, anchor="nw")
+    interior.bind("<Configure>", lambda e: lienzo.configure(scrollregion=lienzo.bbox("all")))
+    lienzo.bind("<Configure>", lambda e: lienzo.itemconfigure(ventana, width=e.width))
+    lienzo.configure(yscrollcommand=barra.set)
+    barra.pack(side="right", fill="y")
+    lienzo.pack(side="left", fill="both", expand=True)
+
+    def rueda(e):
+        if lienzo.yview() != (0.0, 1.0):
+            lienzo.yview_scroll(-1 if (e.delta > 0 or e.num == 4) else 1, "units")
+    marco.bind("<Enter>", lambda e: (lienzo.bind_all("<MouseWheel>", rueda), lienzo.bind_all("<Button-4>", rueda),
+                                     lienzo.bind_all("<Button-5>", rueda)))
+    marco.bind("<Leave>", lambda e: (lienzo.unbind_all("<MouseWheel>"), lienzo.unbind_all("<Button-4>"),
+                                     lienzo.unbind_all("<Button-5>")))
+    marco.lienzo, marco.interior = lienzo, interior
+    return marco

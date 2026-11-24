@@ -99,7 +99,7 @@ class Aplicacion:
                 return c
         return None
 
-    def abrir_modal(self, clave, duena=None, al_cerrar=None):
+    def abrir_modal(self, clave, duena=None, al_cerrar=None, **opciones):
         """Abre un modal de Configuración encima de la pantalla actual (decisión 3 de flujo)."""
         from ..revision import instituciones_de_la_matriz
         from . import configuracion as C
@@ -121,6 +121,15 @@ class Aplicacion:
             C.ModalTipos(self, duena, vistos).mostrar()
         elif clave == "copias":
             C.ModalCopias(self, duena).mostrar()
+        elif clave == "fuentes":
+            from .fuentes import ModalFuentes
+            ModalFuentes(self, duena, **opciones).mostrar()
+        elif clave == "campos":
+            from .campos import ModalCampos
+            ModalCampos(self, duena).mostrar()
+        elif clave == "reglas":
+            from .reglas import ModalReglas
+            ModalReglas(self, duena).mostrar()
         if al_cerrar:
             al_cerrar()
         if self.revision:

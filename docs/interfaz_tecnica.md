@@ -11,6 +11,9 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 | `revision.py` | Ver revisión (10-12, 41), Elegir institución (28), salir con cambios sin incluir (13) |
 | `vista_previa.py` | Previsualizar cuadro (20, 42): lee y cruza sin crear nada; avisos con su botón; primeras filas |
 | `configuracion.py` | Configuración (06) y sus modales: Programas (07), Equivalencias (16, 17), Tipos (18), Copias (24) |
+| `fuentes.py` | Fuentes de datos (15), Elegir columna… y Probar lectura de la carpeta (22, también encima de la vista previa: 27) |
+| `campos.py` | Campos del cuadro maestro (14): ordenar arrastrando, editor en la fila, campos base con candado |
+| `reglas.py` | Reglas de cruce (19): Confirmada / Cambiada, restablecer una o todas |
 | `flujo.py` | Generar desde cualquier pantalla (confirmar, progreso, errores) y guardar la última generación |
 | `modelo.py` | Lógica de la ventana sin Tkinter: tabla de archivos, «x de y encontrados», mensajes, cuándo se puede generar |
 | `tema.py` | Colores y estados del manual, Brown Std, botones, enlaces, «?» con su ayuda, símbolos dibujados |
@@ -24,6 +27,9 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 - **Brown Std** se carga solo para el programa con `AddFontResourceExW` (privada, sin instalar). Si no está, Segoe UI.
   Los archivos de marca (logotipo, tipografías, logo del CNA) viven en `assets/`, que no se sube al repositorio.
 - **Generación en otro hilo:** la ventana sigue respondiendo; el avance llega por una cola. Cancelar (o la X) es inmediato.
+- **Lecturas en otro hilo** (vista previa, Fuentes, Campos, Probar lectura) con `dialogos.en_espera`. Mientras trabaja
+  otro hilo se pausa el recolector de basura de Python: si recogiera allí variables de Tk de pantallas cerradas, Tcl se
+  cae («Segmentation fault»). Pasaba en 2 de cada 3 corridas de las capturas; con la pausa, 0 de 6.
 - **Lo que recuerda la ventana** (carpeta, programa, vigencia y la última generación) se guarda en `estado.json` en los
   mismos dos lugares que la configuración; gana el más reciente.
 - **Ventana angosta** (menos de 760 px): Programa y Vigencia se apilan, la tabla muestra solo las marcas y el texto de lo
@@ -49,8 +55,8 @@ La lógica está en `src/cuadro_maestro/revision.py` (se prueba sin ventanas en 
   36; cambiar carpeta, programa o vigencia pide generar antes o cancelar el cambio (38). Si la generación falla (no si
   se cancela) se deja salir y lo pendiente queda guardado.
 - **Resolver aquí:** Elegir institución guarda una equivalencia de instituciones (origen Revisión); Confirmar sugerencia
-  guarda la columna elegida en Fuentes de datos, la columna del programa o una equivalencia de programas. Los botones que
-  abren Configuración (Fuentes, Programas, Tipos, Gemini) quedan desactivados hasta que exista esa pantalla.
+  guarda la columna elegida en Fuentes de datos, la columna del programa o una equivalencia de programas. «Abrir
+  Fuentes de datos» abre la fuente del aviso con el dato resaltado. Solo «Preguntar a Gemini» sigue desactivado.
 - Generar de nuevo usa el programa, la vigencia y la carpeta del último cuadro, pasa por la alerta y muestra el mockup 32.
 
 ## Configuración
@@ -63,7 +69,26 @@ La lógica está en `src/cuadro_maestro/revision.py` (se prueba sin ventanas en 
   nuevo propone la columna «<nombre> - Pereira». Los tipos base y los campos base muestran candado en vez de papelera.
 - Los modales se abren encima de la pantalla desde la que se piden (Configuración, Ver revisión o la vista previa).
 
+## Fuentes de datos, Campos y Reglas
+
+La lógica está en `src/cuadro_maestro/ajustes.py` (se prueba sin ventanas en `tests/test_ajustes.py`).
+
+- **Fuentes de datos** lee la carpeta y la vigencia de la ventana principal (sin vigencia válida, solo la matriz) y
+  muestra el peor estado de cada dato entre los archivos leídos, con el encabezado del archivo más reciente. Cada cambio
+  se guarda y se vuelve a leer para mostrar cómo queda. Sin carpeta se puede configurar igual («Sin leer»).
+- **Elegir columna…** lista los encabezados de los archivos leídos de esa fuente (marca la sugerida y las que ya usa otro
+  dato) y permite escribir uno que no esté. Se guarda como `elegida` y tiene prioridad sobre los sinónimos.
+- **Año y semestre**: «se lee el año del nombre» o «se leen año y semestre»; la matriz es siempre un solo archivo.
+- **Cambiar nombre** de una fuente cambia cómo la nombran los avisos, la revisión y la Hoja de errores.
+- **Probar lectura** muestra un renglón por archivo esperado: los que faltan con el nombre de ejemplo que el programa sí
+  reconoce (sale de la misma función que los avisos). «Arreglar ›» abre la fuente; sirve para columnas y encabezados.
+- **Campos**: un campo de la matriz puede usar cualquier columna de la matriz; si no se leía, se agrega a la fuente
+  «Matriz de convenios» como dato propio (`col-…`) y se quita al borrar el campo. Las columnas de programas
+  («Derecho - Bogotá») no se ofrecen. Los campos base solo se renombran.
+- **Reglas**: solo se ofrecen las opciones que el motor aplica (vigentes/vencidos con o sin resultados, preferido
+  específico, marco o ninguno, desempate, fecha de fin, varios programas). Lo fijo se muestra con candado.
+
 ## Pendiente
 
-Campos del cuadro (14), Fuentes de datos (15) y Probar lectura (22), Reglas de cruce (19) y Ver cómo se aplican (21),
-Exportar/importar (23), Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y el empaquetado en .exe.
+Ver cómo se aplican (21), Exportar/importar (23), Asistente con Gemini (08, 09), Confirmar sugerencias en bloque (29) y
+el empaquetado en .exe.

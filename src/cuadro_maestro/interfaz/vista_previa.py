@@ -1,7 +1,6 @@
 """Previsualizar cuadro (mockups 20 y 42): lee y cruza sin crear ningún archivo ni cambiar la configuración."""
 from __future__ import annotations
 
-import threading
 import tkinter as tk
 from pathlib import Path
 
@@ -20,32 +19,11 @@ COLOR_GRUPO = {EXCEL: T.MAGENTA, PROGRAMA: T.NARANJA, INFORMATIVO: "#9A9A9A"}
 
 
 def leer_y_cruzar(raiz, carpeta, config, programa_id, desde, hasta):
-    """Lee en otro hilo mostrando una ventana de espera (la matriz real tarda uno o dos segundos)."""
-    salida = {}
-
-    def trabajar():
-        try:
-            lectura = leer_carpeta(Path(carpeta), config, desde, hasta)
-            salida["r"] = (lectura, cruzar(lectura, config, programa_id))
-        except Exception as e:   # noqa: BLE001
-            salida["e"] = e
-
-    espera = D.Modal(raiz, "Leyendo los archivos", ancho=460)
-    espera.encabezado("curso", "Leyendo los archivos…", "Solo se leen: no se crea ni se cambia nada.")
-    hilo = threading.Thread(target=trabajar, daemon=True)
-    hilo.start()
-
-    def revisar():
-        if hilo.is_alive():
-            espera.after(100, revisar)
-        else:
-            espera.cerrar(True)
-    espera.after(100, revisar)
-    espera.protocol("WM_DELETE_WINDOW", lambda: None)
-    espera.mostrar()
-    if "e" in salida:
-        raise salida["e"]
-    return salida["r"]
+    """Lee y cruza en otro hilo mostrando una ventana de espera (la matriz real tarda uno o dos segundos)."""
+    def trabajo():
+        lectura = leer_carpeta(Path(carpeta), config, desde, hasta)
+        return lectura, cruzar(lectura, config, programa_id)
+    return D.en_espera(raiz, trabajo)
 
 
 class VistaPrevia(D.Modal):
@@ -139,6 +117,21 @@ class VistaPrevia(D.Modal):
             if n:
                 tk.Label(caja, text=f"{n} {texto}", font=T.F["pequena_b"], bg=fondo, fg=fg, padx=10,
                          pady=3).pack(side="left", padx=(0, 6))
+        T.Enlace(caja, "Ver cómo se leyó cada archivo ›", self.ver_lectura, fuente="pequena_b").pack(side="right")
+
+    def ver_lectura(self):
+        """Mockup 27: la prueba de lectura encima de la vista previa, con lo que ya se leyó."""
+        from .fuentes import ProbarLectura
+        arreglar = ProbarLectura(self, self.app, self.lectura, desde_vista_previa=True).mostrar()
+        if arreglar:
+            self.abrir_fuentes(arreglar)
+
+    def abrir_fuentes(self, fuente_id=None, dato=None):
+        import json
+        antes = json.dumps(self.app.config, sort_keys=True, default=str)
+        self.app.abrir_modal("fuentes", self, fuente_id=fuente_id, dato=dato)
+        if json.dumps(self.app.config, sort_keys=True, default=str) != antes:
+            self.leer()                       # se cambió cómo se leen los archivos: la vista previa se actualiza
 
     def _avisos(self, c):
         avisos = self.r.avisos
@@ -177,6 +170,9 @@ class VistaPrevia(D.Modal):
             return crear("Elegir institución…", lambda: self._elegir(a))
         if "abrir_carpeta" in a.acciones:
             return crear("Abrir carpeta", lambda: abrir(a.ruta.parent if a.ruta else Path(self.carpeta)))
+        if "abrir_fuentes" in a.acciones and "confirmar_sugerencia" not in a.acciones:
+            return crear("Abrir Fuentes de datos", lambda: self.abrir_fuentes(a.detalle.get("fuente"),
+                                                                              a.detalle.get("dato")))
         if "confirmar_sugerencia" in a.acciones:
             from ..revision import confirmar_sugerencia
             return crear("Confirmar sugerencia", lambda: (confirmar_sugerencia(self.app.config, a),

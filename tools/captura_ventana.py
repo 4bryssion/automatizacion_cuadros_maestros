@@ -152,6 +152,23 @@ abrir_editando(C.ModalEqInstituciones, "16_equivalencias_instituciones",
                ["INSTITUTO DE PRUEBA DEL SUR", "UNIVERSIDAD FICTICIA DEL NORTE"], accion=lambda m: m.crear())
 abrir_editando(C.ModalTipos, "18_tipos_de_persona", ["Pasante internacional"])
 abrir_editando(C.ModalCopias, "24_copias", accion=lambda m: None)
+# Fuentes de datos con una columna sin identificar, Probar lectura, Campos y Reglas
+from cuadro_maestro.interfaz import campos as CA  # noqa: E402
+from cuadro_maestro.interfaz import fuentes as FU  # noqa: E402
+from cuadro_maestro.interfaz import reglas as RE  # noqa: E402
+import openpyxl  # noqa: E402
+from muestra_sintetica import guardar  # noqa: E402
+
+wb = openpyxl.load_workbook(datos / NOMBRES["movilidad"])
+wb["BD GENERAL"]["C1"] = "TIPO DE PERSONA"
+guardar(wb, datos / NOMBRES["movilidad"])
+ventana.v_desde.set("2021")
+abrir_editando(FU.ModalFuentes, "15_fuentes", accion=lambda m: m.seleccionar("movilidad"))
+capturar_y_cerrar("22_probar_lectura", 1500)
+FU.ProbarLectura(raiz, app).mostrar()
+abrir_editando(CA.ModalCampos, "14_campos", accion=lambda m: m.editar(2))
+abrir_editando(RE.ModalReglas, "19_reglas",
+               accion=lambda m: m.controles[("r1_convenios_que_entran", "vencidos")].elegir("con_o_sin_resultados"))
 app.volver_de_configuracion()
 raiz.destroy()
 print("Capturas en", SALIDA, sorted(p.name for p in SALIDA.glob("*.png")))

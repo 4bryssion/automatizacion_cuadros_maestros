@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..lectura import archivos as LA
 from ..lectura import modelos as LM
 from ..texto import normalizar
 from . import modelos as M
@@ -24,6 +25,15 @@ SIN_LA_COLUMNA = {"vinculo": "Sin ella no distingue el tipo de persona.",
                   "programa": "Sin ella no se sabe de qué programa es cada fila.",
                   "fecha_inicio": "Sin ella no se sabe en qué años cuenta cada convenio.",
                   "estado": "Sin ella no se sabe si cada convenio está activo."}
+
+
+def usar_nombres(config: dict) -> None:
+    """Los avisos y la Hoja de errores nombran cada fuente como se llama en Configuración (se puede cambiar)."""
+    NOMBRE_FUENTE.update({f["id"]: f["nombre"] for f in config.get("fuentes", [])})
+    FUENTES.update({f["id"]: f for f in config.get("fuentes", [])})
+
+
+FUENTES: dict[str, dict] = {}            # las de la configuración en uso (para los nombres de ejemplo)
 
 
 def periodo(anio, semestre) -> str:
@@ -58,8 +68,8 @@ def desde_lectura(a: LM.Aviso, carpeta: Path, programa: dict, hojas: dict) -> Av
         unidad = "semestre quedó sin actividades" if a.semestre else "año quedó sin movilidades"
         if a.fuente == "internacionalizacion_en_casa" and not a.semestre:
             unidad = "año quedó sin actividades"
-        ejemplo = f"IntCasa_{a.anio}-{a.semestre}.xlsx" if a.semestre else (
-            f"Movilidad_{a.anio}.xlsx" if a.fuente == "movilidad" else f"{a.fuente}_{a.anio}.xlsx")
+        ejemplo = LA.ejemplo(FUENTES[a.fuente], a.anio, a.semestre) if a.fuente in FUENTES else \
+            f"{a.fuente}_{periodo(a.anio, a.semestre)}.xlsx"
         return AvisoRevision(M.EXCEL, a.tipo, f"Falta el archivo de {f}", f"Carpeta {carpeta}",
                              f"No hay un archivo de {f.lower()} en la carpeta, así que ese {unidad}.",
                              f"Copia el archivo a la carpeta con un nombre que lleve el {'año y el semestre' if a.semestre else 'año'} "
@@ -82,7 +92,8 @@ def desde_lectura(a: LM.Aviso, carpeta: Path, programa: dict, hojas: dict) -> Av
                              "En las primeras filas no hay ningún encabezado conocido, así que no se leyó ninguna fila.",
                              "Revisa que sea el archivo correcto y que tenga la fila de títulos de las columnas. Si los títulos "
                              "cambiaron, indícalos en Fuentes de datos y pulsa Recargar archivos.",
-                             [M.ABRIR_ARCHIVO, M.ABRIR_FUENTES], ruta=a.ruta, clave=_clave(a.tipo, a.ruta.name))
+                             [M.ABRIR_ARCHIVO, M.ABRIR_FUENTES], ruta=a.ruta, detalle={"fuente": a.fuente},
+                             clave=_clave(a.tipo, a.ruta.name))
     if a.tipo == LM.ABIERTO_EN_EXCEL:
         return AvisoRevision(M.INFORMATIVO, a.tipo, f"Archivo abierto en Excel: {f}", donde(a.ruta),
                              "Este archivo está abierto en Excel; lo que no se haya guardado no se lee.",

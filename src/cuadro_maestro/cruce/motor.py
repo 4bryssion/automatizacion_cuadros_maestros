@@ -29,6 +29,7 @@ UMBRAL_PROGRAMA_PARECIDO = 0.9
 
 def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
     programa = next(p for p in config["programas"] if p["id"] == programa_id)
+    T.usar_nombres(config)
     reglas = config["reglas"]
     eq_inst = Equivalencias(config.get("equivalencias_instituciones", []))
     eq_prog = Equivalencias(config.get("equivalencias_programas", []))
@@ -73,6 +74,8 @@ def cruzar(lectura: Lectura, config: dict, programa_id: str) -> ResultadoCruce:
                 continue
             if filtros.get("solo_programa_elegido", True):
                 partes = V.separar_lista(v.get("programa"))
+                if not reglas["r3_conteo"].get("varios_programas_cuentan_para_cada_uno", True):
+                    partes = partes[:1]      # la fila cuenta solo para el primer programa que lista
                 if not any(programa_coincide(p, programa, eq_prog) for p in partes):
                     for p in partes:
                         if (eq_prog.clave(p) not in nombres_programas

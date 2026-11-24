@@ -1,5 +1,5 @@
 """Configuración (mockup 06) y sus modales de listas: Programas (07), Equivalencias (16, 17), Tipos de persona (18) y
-Copias y almacenamiento (24). Todo se guarda al instante; los Excel nunca se tocan."""
+Copias y almacenamiento (24). Fuentes de datos, Campos y Reglas están en fuentes.py, campos.py y reglas.py. Todo se guarda al instante; los Excel nunca se tocan."""
 from __future__ import annotations
 
 import tkinter as tk
@@ -84,7 +84,7 @@ TARJETAS = [
     ("gemini", "Asistente con Gemini", "gemini", "Ayuda a emparejar columnas y nombres. Solo usa títulos de columnas y "
      "nombres de instituciones."),
 ]
-EN_CONSTRUCCION = {"campos", "fuentes", "reglas", "gemini"}
+EN_CONSTRUCCION = {"gemini"}
 
 
 class PantallaConfiguracion(tk.Frame):
@@ -150,8 +150,7 @@ class PantallaConfiguracion(tk.Frame):
         exportar = T.Boton(pie, "Exportar / importar", None, tipo="secundario", ancho=210)
         exportar.pack(side="right", padx=14)
         exportar.activar(False)
-        tk.Label(c, text="Campos, Fuentes de datos, Reglas de cruce, Gemini y Exportar / importar llegan en la próxima "
-                         "versión.", font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
+        tk.Label(c, text="El asistente con Gemini y Exportar / importar llegan en la próxima versión.", font=T.F["pequena"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w").pack(fill="x", pady=(8, 0))
 
     def _conteo(self, clave, cfg):
         verde = ("#E3EED2", T.OK_TXT)

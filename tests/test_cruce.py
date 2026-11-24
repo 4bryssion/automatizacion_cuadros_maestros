@@ -110,6 +110,15 @@ def test_regla_2_desempate_por_el_inicio_mas_reciente(muestra, config):
     assert recibe == {2021: 0, 2022: 1}
 
 
+def test_regla_3_una_fila_con_varios_programas(muestra, config):
+    # La fila de movilidad 3 lista «Administración de Empresas» y «Contaduría Pública».
+    assert cruce(muestra, config, "contaduria-publica").movilidades_contadas == 0     # Contaduría no tiene convenio con SUR
+    config["reglas"]["r3_conteo"]["varios_programas_cuentan_para_cada_uno"] = False
+    assert cruce(muestra, config).movilidades_contadas == 2                           # Administración va primero
+    editar(muestra / NOMBRES["movilidad"], "BD GENERAL", {"J3": "Contaduría Pública\nAdministración de Empresas"})
+    assert cruce(muestra, config).movilidades_contadas == 1                           # ya no es el primero
+
+
 def test_regla_5_estado_no_reconocido_cuenta_como_no_activo(muestra, config):
     editar(muestra / NOMBRES["matriz"], "CONV_INTERNACIONALES", {"S5": "EN TRÁMITE"})
     r = cruce(muestra, config)

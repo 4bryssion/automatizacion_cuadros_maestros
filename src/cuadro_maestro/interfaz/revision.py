@@ -24,7 +24,7 @@ GRUPOS = {
 }
 MARCAS = {"nuevo": ("Nuevo", T.ROSA_SUAVE, T.MAGENTA), "sigue": ("Sigue pendiente", T.AVISO_BG, T.AVISO_TXT),
           "igual": ("Sin cambios", "#EDEDED", T.GRIS)}
-ACCIONES_SIN_PANTALLA = {"abrir_fuentes": "Abrir Fuentes de datos", "preguntar_a_gemini": "Preguntar a Gemini"}
+ACCIONES_SIN_PANTALLA = {"preguntar_a_gemini": "Preguntar a Gemini"}
 ACCIONES_MODAL = {"abrir_programas": ("Abrir Programas", "programas"), "abrir_tipos": ("Abrir Tipos de persona", "tipos"),
                   "abrir_equivalencias_programas": ("Abrir Equivalencias de programas", "eq_prog")}
 
@@ -246,9 +246,12 @@ class PantallaRevision(tk.Frame):
         if accion in ACCIONES_MODAL:
             texto, clave = ACCIONES_MODAL[accion]
             return crear(texto, lambda: self.app.abrir_modal(clave, self.app.raiz))
+        if accion == "abrir_fuentes":
+            return crear("Abrir Fuentes de datos", lambda: self.app.abrir_modal(
+                "fuentes", self.app.raiz, fuente_id=a.detalle.get("fuente"), dato=a.detalle.get("dato")))
         if accion in ACCIONES_SIN_PANTALLA:
             b = crear(ACCIONES_SIN_PANTALLA[accion], None)
-            b.activar(False)            # Configuración llega en la próxima versión
+            b.activar(False)            # el asistente con Gemini llega en la próxima versión
             return b
         return None
 

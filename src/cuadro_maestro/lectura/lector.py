@@ -104,7 +104,9 @@ def _leer_libro(libro, fuente, esperado, config, sede, avisos, cancelado) -> Arc
         if ind_prog:
             valores["programas"] = {p: _celda(fila, j) for p, j in ind_prog.items()}
         registros.append(Registro(n, valores))
-    return ArchivoLeido(**base, fila_encabezados=fila_hdr, columnas=columnas, registros=registros, programas=programas)
+    nombres = [str(h).strip() for h in encabezados if h is not None and str(h).strip()]
+    return ArchivoLeido(**base, fila_encabezados=fila_hdr, columnas=columnas, registros=registros, programas=programas,
+                        encabezados=nombres)
 
 
 def _celda(fila, j):

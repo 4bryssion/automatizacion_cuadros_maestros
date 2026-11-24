@@ -73,6 +73,7 @@ class ArchivoLeido:
     columnas: dict[str, Columna]
     registros: list[Registro]
     programas: dict[str, Columna] = field(default_factory=dict)   # solo la matriz: programa -> su columna
+    encabezados: list[str] = field(default_factory=list)          # tal como están en el Excel (para «Elegir columna…»)
 
     @property
     def estado(self) -> str:

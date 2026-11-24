@@ -209,3 +209,20 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
 - **Cambiar la configuración** cuando ya hay un cuadro generado lo deja con cambios sin incluir (como ya estaba decidido).
 - En los botones de los avisos, si el nombre del archivo es largo se dice «Abrir el archivo»; el nombre ya está en «Dónde».
 - Tipos de persona: un mismo valor no puede estar en dos tipos (el programa no sabría a cuál contarlo).
+
+## Fuentes de datos, Campos del cuadro y Reglas de cruce (24-nov-2026)
+
+- **Sin «Agregar fuente»:** el cálculo necesita exactamente la matriz, la movilidad y la internacionalización en casa;
+  una fuente nueva no tendría dónde contarse. Se pueden renombrar y ajustar.
+- **Campos:** «De dónde sale el dato» ofrece Matriz, Calculado o Vacío (no «Reportes»: la movilidad y la
+  internacionalización en casa llegan al cuadro a través de «Resultados»). Un campo de la matriz puede usar cualquier
+  columna de la matriz, por ejemplo País.
+- **Regla 3:** el interruptor «Una fila con varios programas cuenta para cada uno» ahora sí cambia el cálculo: apagado,
+  la fila cuenta solo para el primer programa que lista.
+- **Reglas fijas a la vista:** lo que el programa no sabe hacer de otra manera (qué cuenta cada fuente, la fecha de inicio
+  inválida, cómo se decide Activo) se muestra con candado en vez de una lista con una sola opción.
+- **Incongruencias corregidas:** el nombre de ejemplo de un archivo que falta salía fijo («IntCasa_…») aunque se cambiara
+  cómo se reconoce el archivo; ahora sale de la configuración y siempre es un nombre reconocible. Cambiar el nombre de
+  una fuente se ve también en los avisos y la Hoja de errores.
+- **Caída al leer en segundo plano:** el recolector de basura podía borrar variables de Tk desde el hilo de lectura y
+  cerrar el programa. Se pausa mientras el otro hilo trabaja.
