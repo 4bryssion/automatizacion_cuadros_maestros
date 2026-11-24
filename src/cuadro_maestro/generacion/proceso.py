@@ -113,7 +113,8 @@ def generar(carpeta: Path, config: dict, programa_id: str, anio_inicio: int, ani
     marcar(E.PASO_ESCRITURA, EN_CURSO)
     ahora = ahora or datetime.now()
     try:
-        ruta = escribir(resultado, config, Path(carpeta), ahora, logo=logo or logo_cna(), cancelado=cancelado)
+        ruta = escribir(resultado, config, Path(carpeta), ahora, logo=logo or logo_cna(),
+                       matriz=lectura.matriz.ruta, cancelado=cancelado)
     except CanceladoEscritura as e:
         raise Cancelado() from e
     except ErrorEscritura as e:

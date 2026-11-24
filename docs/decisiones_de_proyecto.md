@@ -180,3 +180,13 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   público (como el resto del material de marca); si está, va en B1, un poco más pequeño para que no tape la fila 5. Por
   decidir: cómo incluirlo en el .exe que arma GitHub Actions (repositorio privado o subirlo como secreto).
 - **Impresión:** A4 vertical ajustado al ancho de la página (el original no tenía ajuste).
+
+## Ventana principal (24-nov-2026)
+
+- **Fecha de la matriz** (aprobado): la fila de la Matriz de convenios muestra «Modificada hoy 11:01» y la hoja «Acerca de
+  este cuadro» guarda el nombre y la fecha de la matriz usada. Cada cuadro es una foto de la matriz del día en que se genera.
+- **Incongruencia corregida:** la ayuda de «Carpeta con los Excel» propone nombres como `IntCasa_2021-1.xlsx`, que el
+  programa no reconocía (pedía «internacionalizaci» y «casa»). Ahora basta con «casa» en el nombre; una prueba comprueba
+  que los nombres de la ayuda se reconocen.
+- Mientras no estén listos, Previsualizar, Configuración y Ver revisión se ven desactivados con una nota.
+- Detalle en [interfaz_tecnica.md](interfaz_tecnica.md).

@@ -3,7 +3,7 @@
 Hoja «Convenios»: títulos del CNA (filas 1 a 3), sección de convenios nacionales vacía con sus filas de ejemplo
 (P13) y la sección internacional desde la fila 16. Century Gothic 10, celdas centradas con ajuste de texto, marco
 exterior grueso y líneas finas por dentro. Las columnas salen de Configuración › Campos del cuadro maestro.
-Hoja «Acerca de este cuadro»: programa, vigencia, fecha, archivos leídos y cifras. Ninguna de las dos tiene datos de personas.
+Hoja «Acerca de este cuadro»: programa, vigencia, fecha, matriz usada (nombre y fecha), archivos leídos y cifras. Ninguna de las dos tiene datos de personas.
 """
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def _alto(valores, anchos) -> float:
 
 # ---------------------------------------------------------------- libro
 def construir_libro(resultado: ResultadoCruce, config: dict, ahora: datetime, carpeta_excel: Path,
-                    logo: Path | None = None) -> Workbook:
+                    logo: Path | None = None, matriz: Path | None = None) -> Workbook:
     campos = config["campos"]
     n = len(campos)
     ultima = get_column_letter(n)
@@ -129,7 +129,7 @@ def construir_libro(resultado: ResultadoCruce, config: dict, ahora: datetime, ca
         except Exception:   # noqa: BLE001 — sin logo el cuadro sigue siendo válido
             pass
 
-    _hoja_acerca(wb.create_sheet("Acerca de este cuadro"), resultado, ahora, carpeta_excel)
+    _hoja_acerca(wb.create_sheet("Acerca de este cuadro"), resultado, ahora, carpeta_excel, matriz)
     wb.properties.creator = "Cuadro maestro internacional"
     wb.properties.title = f"Cuadro maestro - {resultado.programa['nombre']}"
     return wb
@@ -170,14 +170,24 @@ def _tabla(ws, fila0, filas, campos, altos):
         ws.row_dimensions[r].height = altos[i]
 
 
-def _hoja_acerca(ws, r: ResultadoCruce, ahora: datetime, carpeta_excel: Path):
+def fecha_modificacion(ruta: Path | None) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(Path(ruta).stat().st_mtime) if ruta else None
+    except OSError:
+        return None
+
+
+def _hoja_acerca(ws, r: ResultadoCruce, ahora: datetime, carpeta_excel: Path, matriz: Path | None = None):
     grupos = r.por_grupo()
+    modificada = fecha_modificacion(matriz)
     filas = [
         ("Programa", r.programa["nombre"]),
         ("Sede", "Pereira"),
         ("Vigencia", vigencia_texto(r.anio_inicio, r.anio_fin)),
         ("Generado el", f"{ahora:%d/%m/%Y %H:%M}"),
         ("Carpeta de los Excel", str(carpeta_excel)),
+        ("Matriz de convenios usada", matriz.name if matriz else "—"),
+        ("Matriz modificada el", f"{modificada:%d/%m/%Y %H:%M}" if modificada else "—"),
         ("Archivos leídos", r.archivos_leidos),
         ("Convenios en el cuadro", r.convenios_en_cuadro),
         ("Movilidades contadas", r.movilidades_contadas),
@@ -204,11 +214,12 @@ def _hoja_acerca(ws, r: ResultadoCruce, ahora: datetime, carpeta_excel: Path):
 
 # ---------------------------------------------------------------- archivo
 def escribir(resultado: ResultadoCruce, config: dict, carpeta_excel: Path, ahora: datetime | None = None, *,
-             logo: Path | None = None, cancelado: Callable[[], bool] | None = None) -> Path:
+             logo: Path | None = None, matriz: Path | None = None,
+             cancelado: Callable[[], bool] | None = None) -> Path:
     """Escribe en `Cuadros generados` a un temporal y lo renombra al final. Nunca sobrescribe ni deja nada a medias."""
     ahora = ahora or datetime.now()
     salida = Path(carpeta_excel) / CARPETA_SALIDA
-    wb = construir_libro(resultado, config, ahora, Path(carpeta_excel), logo)
+    wb = construir_libro(resultado, config, ahora, Path(carpeta_excel), logo, matriz)
     tmp = salida / f".~cuadro-{uuid.uuid4().hex[:8]}.xlsx"
     try:
         salida.mkdir(parents=True, exist_ok=True)

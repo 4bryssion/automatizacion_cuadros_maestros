@@ -65,8 +65,9 @@ def test_el_cuadro_tiene_el_formato_del_hecho_a_mano(muestra, config, monkeypatc
     assert ws["B18"].border.left.style == "thin" and ws["E18"].number_format == "0"
     assert ws.column_dimensions["C"].width == 64.5 and ws.row_dimensions[18].height >= 25
     acerca = {wb["Acerca de este cuadro"].cell(r, 1).value: wb["Acerca de este cuadro"].cell(r, 2).value
-              for r in range(3, 17)}
+              for r in range(3, 20)}
     assert acerca["Programa"] == "Administración de Empresas" and acerca["Convenios en el cuadro"] == 3
+    assert acerca["Matriz de convenios usada"] == NOMBRES["matriz"] and acerca["Matriz modificada el"].count("/") == 2
     assert acerca["Movilidades contadas"] == 2 and acerca["Generado el"] == "24/11/2026 14:32"
 
 

@@ -18,3 +18,19 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[desarrollo]"
       - run: python -m pytest -q
+
+  capturas-windows:
+    # Abre la interfaz real en Windows con la muestra inventada y guarda una imagen de cada ventana.
+    runs-on: windows-latest
+    needs: pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .
+      - run: python tools/captura_ventana.py capturas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas-windows
+          path: capturas/*.png

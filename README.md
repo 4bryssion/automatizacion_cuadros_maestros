@@ -4,8 +4,8 @@ Programa portable que genera el **cuadro maestro internacional** de un programa 
 Excel de la Oficina de Relaciones Internacionales (Areandina, sede Pereira), sin instalación y sin enviar datos a internet.
 
 > **Estado: en construcción.** El diseño de la interfaz (49 mockups) y las reglas de negocio están cerrados.
-> El motor está completo: configuración (guardado doble y copias), lectura de los Excel, cruce con los avisos de la
-> revisión y generación del cuadro con el formato del CNA. Siguen la interfaz y el ejecutable.
+> El motor está completo y la ventana principal ya genera el cuadro (confirmar, progreso, cuadro generado y Hoja de
+> errores). Siguen Previsualizar, Ver revisión, Configuración y el ejecutable.
 > Todavía no existe un ejecutable.
 
 ## Qué resuelve
@@ -75,7 +75,9 @@ casa cuenta actividades. El detalle completo está en [docs/reglas_de_negocio.md
 | [docs/lectura_tecnica.md](docs/lectura_tecnica.md) | Cómo se buscan, abren y leen los Excel (para mantenimiento) |
 | [docs/cruce_tecnico.md](docs/cruce_tecnico.md) | Cómo se aplican las reglas y se arman los avisos de la revisión (para mantenimiento) |
 | [docs/generacion_tecnica.md](docs/generacion_tecnica.md) | Pasos de la generación, Hoja de errores y formato del Excel (para mantenimiento) |
-| `src/cuadro_maestro/` | Código del programa: `configuracion/`, `lectura/`, `cruce/` y `generacion/` |
+| [docs/interfaz_tecnica.md](docs/interfaz_tecnica.md) | Cómo está hecha la interfaz y cómo se revisa en Windows (para mantenimiento) |
+| `src/cuadro_maestro/` | Código del programa: `configuracion/`, `lectura/`, `cruce/`, `generacion/` e `interfaz/` |
+| `tools/captura_ventana.py` | Capturas de la interfaz real con la muestra inventada |
 | `tests/` | Pruebas automáticas (`python -m pytest`); corren en Windows y Linux en cada push |
 | `tests/muestra_sintetica.py` | Muestra inventada de los cuatro Excel de entrada, con las rarezas de los reales |
 | `tools/anonimizar_reales.py` | Crea, solo en el equipo local, copias anonimizadas de los Excel reales para las pruebas ([detalle](tests/datos/reales_anonimizados/LEEME.md)) |
@@ -117,7 +119,8 @@ Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en 
 - [x] Motor de lectura y mapeo de columnas
 - [x] Motor de cruce y conteo, con los avisos de la revisión
 - [x] Generación del Excel del cuadro maestro, con la Hoja de errores
-- [ ] Interfaz real (Tkinter) con la tipografía y colores de la marca
+- [x] Ventana principal y generación en Tkinter (confirmar, progreso, cuadro generado, Hoja de errores, avisos de arranque)
+- [ ] Previsualizar, Ver revisión y Configuración en Tkinter
 - [ ] Empaquetado con GitHub Actions (PyInstaller, Windows) y pruebas con datos ficticios
 - [x] Datos de prueba: muestra inventada (en el repositorio) y copias anonimizadas de los reales (solo locales)
 - [ ] Datos de ejemplo ficticios para capacitación
@@ -126,4 +129,4 @@ Los logos, fuentes y Excel reales (originales o anonimizados) no se incluyen en 
 
 Python 3.11 o más reciente con Tkinter y openpyxl, empaquetado con PyInstaller en un runner de Windows de GitHub Actions.
 
-Para desarrollar: `python -m pip install -e ".[desarrollo]"` y `python -m pytest`.
+Para desarrollar: `python -m pip install -e ".[desarrollo]"` y `python -m pytest`. Para abrir la ventana: `python -m cuadro_maestro`.

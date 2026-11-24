@@ -95,7 +95,7 @@ _FUENTES = [
         "id": "internacionalizacion_en_casa",
         "nombre": "Internacionalización en casa",
         "base": True,
-        "archivo": {"contiene": ["internacionalizaci", "casa"], "excluye": ["cuadro"], "patron_anio": r"(20\d{2})",
+        "archivo": {"contiene": ["casa"], "excluye": ["cuadro"], "patron_anio": r"(20\d{2})",
                     "patron_semestre": r"20\d{2}\s*-\s*([12])"},
         "hoja": {"preferida": None},
         "fila_encabezado": {"automatica": True, "fila": 1},
