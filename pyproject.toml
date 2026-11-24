@@ -11,7 +11,7 @@ dependencies = ["openpyxl>=3.1", "Pillow>=10"]   # Pillow: logo del CNA en el cu
 
 [project.optional-dependencies]
 desarrollo = ["pytest>=8"]
-empaquetado = ["pyinstaller>=6", "cryptography>=42"]   # tools/empaquetar.py y tools/marca.py
+empaquetado = ["pyinstaller>=6"]   # tools/empaquetar.py
 
 [tool.setuptools.packages.find]
 where = ["src"]

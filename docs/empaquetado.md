@@ -14,17 +14,15 @@ se abre con doble clic). Lo arma GitHub Actions en Windows (`.github/workflows/e
 Después de armarlo, el flujo abre el .exe con `--comprobar` (sin ventana) y falla si no arranca o si, habiendo clave,
 no trae el logo del CNA y Brown Std.
 
-## Material de marca (decisión: opción 3, secreto de GitHub)
+## Material de marca (decisión del 24-nov-2026)
 
-El logotipo de Areandina, el logo del CNA y Brown Std no se publican en el repositorio. Van cifrados en
-`empaquetado/marca.cifrada` (AES, Fernet) y la clave está en el secreto **MARCA_CLAVE** del repositorio
-(Settings › Secrets and variables › Actions). Un secreto de GitHub admite hasta 48 KB y el material pesa unos 290 KB:
-por eso se sube cifrado y el secreto guarda solo la clave, que es lo que recomienda GitHub para archivos grandes.
-
-- Sin el secreto, el .exe se arma igual: Segoe UI y el cuadro sin el logo del CNA (aviso en la ejecución).
-- Para cambiar el material: poner los archivos en `assets/` y correr `python tools/marca.py cifrar` con la misma clave
-  en la variable `MARCA_CLAVE` (o sin ella para crear una clave nueva, que luego hay que poner en el secreto).
-- El icono del programa es la «A» del logotipo; se crea al empaquetar (`tools/empaquetar.py`).
+- **Logotipo de Areandina:** está en el repositorio (`assets/marca/logotipo_verde.png`) y va dentro del .exe (cabecera
+  de las pantallas e icono del programa, que es la «A» del logotipo y se crea al empaquetar).
+- **Logo del CNA:** no se publica. El .exe arma el cuadro sin ese logo; quien tenga el archivo puede ponerlo en
+  `assets/logo_cna.png` y empaquetar en su equipo (`pip install -e ".[empaquetado]"` y `python tools/empaquetar.py`).
+- **Brown Std:** es una tipografía comercial (Lineto); la licencia de escritorio no permite publicarla ni incluirla en
+  un programa que se reparte. El .exe usa Segoe UI, que viene con Windows. Si la institución tiene una licencia que
+  permita incrustarla en una aplicación, basta con ponerla en `assets/marca/fuentes/` al empaquetar.
 
 ## En el equipo de la persona
 

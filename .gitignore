@@ -1,5 +1,9 @@
-# Material de marca (licencia y uso institucional): NO se sube al repositorio
-assets/
+# Material de marca: solo se publica el logotipo de Areandina (autorizado). El logo del CNA y Brown Std (tipografía
+# comercial de Lineto, con licencia) no se suben; el icono se crea al empaquetar.
+assets/*
+!assets/marca/
+assets/marca/*
+!assets/marca/logotipo_verde.png
 *.otf
 *.ttf
 *.pdf
