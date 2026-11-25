@@ -1,8 +1,7 @@
 name: Empaquetar .exe
 
 # Arma «Cuadro maestro internacional.exe» en Windows, comprueba que arranca y lo deja para descargar.
-# Lleva el logotipo de Areandina (assets/marca). El logo del CNA y Brown Std no se publican: el .exe usa Segoe UI y el
-# cuadro sale sin el logo del CNA.
+# Lleva el logotipo de Areandina y Brown Std (assets/marca). El logo del CNA no se publica: el cuadro sale sin él.
 # Con una etiqueta v* (por ejemplo v0.1.0) además publica una versión (Releases) con el .exe.
 
 on:
@@ -32,6 +31,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "El .exe no arrancó bien (código $($p.ExitCode))" }
           $c = Get-Content comprobacion.json | ConvertFrom-Json
           if (-not $c.logotipo) { throw "El .exe no trae el logotipo de Areandina" }
+          if ($c.tipografia -notlike "Brown*") { throw "El .exe no cargó Brown Std" }
       - uses: actions/upload-artifact@v4
         with:
           name: Cuadro maestro internacional (Windows)

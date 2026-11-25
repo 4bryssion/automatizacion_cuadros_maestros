@@ -1,11 +1,11 @@
-# Material de marca: solo se publica el logotipo de Areandina (autorizado). El logo del CNA y Brown Std (tipografía
-# comercial de Lineto, con licencia) no se suben; el icono se crea al empaquetar.
+# Material de marca: se publican el logotipo de Areandina y Brown Std (la institución tiene permiso, 25-nov-2026).
+# El logo del CNA no se sube; el icono se crea al empaquetar.
 assets/*
 !assets/marca/
 assets/marca/*
 !assets/marca/logotipo_verde.png
-*.otf
-*.ttf
+!assets/marca/fuentes/
+!assets/marca/fuentes/BrownStd-*.ttf
 *.pdf
 *.pptx
 

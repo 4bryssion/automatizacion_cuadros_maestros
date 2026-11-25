@@ -51,12 +51,12 @@ class VistaPrevia(D.Modal):
         fila.pack(fill="x")
         tk.Label(fila, text="Previsualizar cuadro", font=T.F["modal_titulo"], bg=T.BLANCO).pack(side="left")
         T.Ayuda(fila, "vista_previa").pack(side="left", padx=10)
-        tk.Label(fila, text="Solo vista previa", font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="right")
+        T.chip(fila, "Solo vista previa", "gris").pack(side="right")
         chips = tk.Frame(c, bg=T.BLANCO)
         chips.pack(fill="x", pady=(10, 10))
         for texto in (f"Programa: {r.programa['nombre']}", f"Vigencia: {vigencia(self.desde, self.hasta)}",
                       f"Carpeta: {self.carpeta}"):
-            tk.Label(chips, text=texto, font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="left", padx=(0, 8))
+            T.chip_contexto(chips, texto).pack(side="left", padx=(0, 8))
         T.Franja(c, "info", "Es solo una prueba: lee tus archivos y muestra cómo quedaría el cuadro. No crea ningún "
                  "archivo ni cambia tu configuración.").pack(fill="x", pady=(0, 12))
         if lectura.errores:
@@ -74,7 +74,7 @@ class VistaPrevia(D.Modal):
         T.Boton(pie, "Cerrar", lambda: self.cerrar(None), tipo="secundario", ancho=130).pack(side="left")
         T.Boton(pie, "Volver a leer los archivos", lambda: self.leer(), tipo="secundario", ancho=260).pack(side="left", padx=14)
         tk.Label(pie, text="Después de corregir algo, vuelve a leer.", font=T.F["pequena"], bg=T.BLANCO,
-                 fg=T.GRIS).pack(side="left")
+                 fg=T.GRIS).pack(side="left", padx=(0, 24))
         generar = T.Boton(pie, "Generar cuadro maestro", lambda: self.cerrar("generar"), ancho=270)
         generar.pack(side="right")
         generar.activar(not r.sin_convenios)
@@ -92,14 +92,9 @@ class VistaPrevia(D.Modal):
                  (str(r.movilidades_contadas + r.actividades_contadas), "movilidades y actividades", T.VERDE_CTA, ""),
                  (str(total), "avisos para revisar", T.MAGENTA if total else T.VERDE_CTA, "Ver abajo" if total else "")]
         for i, (num, etiqueta, color, nota) in enumerate(datos):
-            borde = tk.Frame(fila, bg=T.LINEA, padx=1, pady=1)
-            borde.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 10, 0))
+            x = T.tarjeta(fila, color, padx=14, pady=8)
+            x.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 10, 0))
             fila.grid_columnconfigure(i, weight=1, uniform="c")
-            d = tk.Frame(borde, bg=T.BLANCO)
-            d.pack(fill="both", expand=True)
-            tk.Frame(d, bg=color, width=4).pack(side="left", fill="y")
-            x = tk.Frame(d, bg=T.BLANCO, padx=14, pady=8)
-            x.pack(side="left", fill="both", expand=True)
             tk.Label(x, text=nota or " ", font=T.F["pequena_b"], bg=T.BLANCO, fg=color, anchor="e").pack(fill="x")
             tk.Label(x, text=num, font=T.F["cifra"], bg=T.BLANCO, anchor="w").pack(fill="x")
             tk.Label(x, text=etiqueta, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x")
@@ -107,16 +102,14 @@ class VistaPrevia(D.Modal):
     def _lectura(self, c):
         estados = [a.estado for a in self.lectura.archivos]
         faltan = sum(1 for e in self.lectura.esperados if not e.encontrado)
-        caja = tk.Frame(c, bg=T.FONDO, padx=16, pady=10)
+        caja = T.Caja(c, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO + 2, padx=16, pady=10)
         caja.pack(fill="x", pady=(0, 12))
         tk.Label(caja, text="Lectura de archivos", font=T.F["cuerpo_b"], bg=T.FONDO).pack(side="left", padx=(0, 12))
-        for n, texto, fondo, fg in ((estados.count(EXACTA), "listos", "#E3EED2", T.OK_TXT),
-                                    (estados.count(POR_CONFIRMAR), "por confirmar", T.AVISO_BG, T.AVISO_TXT),
-                                    (estados.count(SIN_IDENTIFICAR), "sin identificar", T.ROSA_SUAVE, T.MAGENTA),
-                                    (faltan, "no se encontró" if faltan == 1 else "no se encontraron", T.ROSA_SUAVE, T.MAGENTA)):
+        for n, texto, tipo in ((estados.count(EXACTA), "listos", "ok"), (estados.count(POR_CONFIRMAR), "por confirmar", "aviso"),
+                               (estados.count(SIN_IDENTIFICAR), "sin identificar", "error"),
+                               (faltan, "no se encontró" if faltan == 1 else "no se encontraron", "error")):
             if n:
-                tk.Label(caja, text=f"{n} {texto}", font=T.F["pequena_b"], bg=fondo, fg=fg, padx=10,
-                         pady=3).pack(side="left", padx=(0, 6))
+                T.chip(caja, f"{n} {texto}", tipo).pack(side="left", padx=(0, 6))
         T.Enlace(caja, "Ver cómo se leyó cada archivo ›", self.ver_lectura, fuente="pequena_b").pack(side="right")
 
     def ver_lectura(self):
@@ -143,7 +136,7 @@ class VistaPrevia(D.Modal):
         tk.Label(cab, text="Avisos de la vista previa", font=T.F["seccion"], bg=T.BLANCO).pack(side="left")
         tk.Label(cab, text=f"Mostrando {min(AVISOS_VISIBLES, len(avisos))} de {len(avisos)}", font=T.F["pequena"],
                  bg=T.BLANCO, fg=T.GRIS).pack(side="right")
-        caja = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        caja = T.borde(c, T.LINEA, radio=T.RADIO + 2, padx=4, pady=4)
         caja.pack(fill="x", pady=(8, 4))
         for i, a in enumerate(avisos[:AVISOS_VISIBLES]):
             fondo = T.BLANCO if i % 2 == 0 else T.FONDO
@@ -195,19 +188,23 @@ class VistaPrevia(D.Modal):
         tk.Label(cab, text="Así quedaría el cuadro", font=T.F["seccion"], bg=T.BLANCO).pack(side="left")
         tk.Label(cab, text=f"Mostrando {min(FILAS_VISIBLES, len(filas))} de {len(filas)}", font=T.F["pequena"],
                  bg=T.BLANCO, fg=T.GRIS).pack(side="right")
-        t = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        t = T.tabla(c, pie=True)
         t.pack(fill="x")
-        dentro = tk.Frame(t, bg=T.BLANCO)
-        dentro.pack(fill="both")
+        cab_t = T.cabecera(t, relleno=(4, 4, 4, 0))
+        cab_t.pack(fill="x")
+        dentro = tk.Frame(t, bg=T.BLANCO, padx=4)
+        dentro.pack(fill="x")
         r5 = self.app.config["reglas"]["r5_activo"]
         for j, (h, peso) in enumerate((("No.", 0), ("Institución", 3), ("Resultados concretos", 3), ("Vigencia", 1),
                                        ("Activo", 1))):
-            tk.Label(dentro, text=h, font=T.F["pequena_b"], bg=T.GRIS_OSC, fg=T.BLANCO, anchor="w", padx=12,
-                     pady=8).grid(row=0, column=j, sticky="ew")
-            dentro.grid_columnconfigure(j, weight=peso, uniform=None if j == 0 else f"u{peso}")
+            tk.Label(cab_t, text=h, font=T.F["pequena_b"], bg=T.GRIS_OSC, fg=T.BLANCO, anchor="w", padx=12,
+                     pady=7).grid(row=0, column=j, sticky="ew", pady=(0, 2))
+            for x in (dentro, cab_t):          # mismas columnas arriba y abajo: quedan alineadas
+                x.grid_columnconfigure(j, weight=peso, uniform=None if j == 0 else f"u{peso}", minsize=56 if j == 0 else 0)
         envoltura = (self.ancho - 120) * 3 // 11
-        for i, f in enumerate(filas[:FILAS_VISIBLES], start=1):
-            fondo = T.BLANCO if i % 2 else T.FONDO
+        visibles = filas[:FILAS_VISIBLES]
+        for i, f in enumerate(visibles, start=1):
+            fondo = T.BLANCO if (len(visibles) - i) % 2 == 0 else T.FONDO
             activo = f.convenio.activo
             valores = (str(f.numero), f.convenio.institucion, texto_resultados(f, self.app.config["tipos_persona"]),
                        str(f.convenio.vigencia_anios or ""))
@@ -217,17 +214,14 @@ class VistaPrevia(D.Modal):
                          wraplength=envoltura if j in (1, 2) else 0).grid(row=i, column=j, sticky="nsew")
             celda = tk.Frame(dentro, bg=fondo, padx=12)
             celda.grid(row=i, column=4, sticky="nsew")
-            tk.Label(celda, text=r5["etiqueta_activo"] if activo else r5["etiqueta_no_activo"], font=T.F["pequena_b"],
-                     bg=T.OK_BG if activo else "#EDEDED", fg=T.OK_TXT if activo else T.GRIS_OSC, padx=10,
-                     pady=3).pack(anchor="w", pady=8)
+            T.chip(celda, r5["etiqueta_activo"] if activo else r5["etiqueta_no_activo"],
+                   "ok" if activo else "gris").pack(anchor="w", pady=8, expand=True)
 
     def _sin_convenios(self, c):
         """Mockup 42: el programa no tiene convenios; Generar queda bloqueado."""
         r = self.r
-        borde = tk.Frame(c, bg=T.MAGENTA, padx=1, pady=1)
-        borde.pack(fill="x", pady=(4, 0))
-        d = tk.Frame(borde, bg=T.BLANCO, padx=24, pady=20)
-        d.pack(fill="both")
+        d = T.Caja(c, fondo=T.BLANCO, borde=T.MAGENTA, radio=T.RADIO_GRANDE, padx=24, pady=20)
+        d.pack(fill="x", pady=(4, 0))
         T.icono(d, "error", 44).pack(anchor="w")
         if r.convenios_del_programa:
             titulo = f"Ningún convenio de {r.programa['nombre']} entra al cuadro"

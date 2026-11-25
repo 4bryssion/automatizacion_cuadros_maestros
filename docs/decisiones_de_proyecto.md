@@ -247,3 +247,14 @@ Detalle en [generacion_tecnica.md](generacion_tecnica.md).
   aquí» de Ver revisión, con la cantidad.
 - **Incongruencia corregida:** «Muy parecida» se marcaba desde 90 %, pero la ayuda y el mockup dicen 95 % (97 % «Muy
   parecida», 92 % «Revisa»). Ahora es 95 % en todas partes, también en Elegir institución.
+
+## Interfaz igual a los mockups (25-nov-2026)
+
+- **Brown Std** se publica en el repositorio y va dentro del .exe: la oficina confirmó que la institución tiene permiso.
+- Todo lo redondeado y los iconos se dibujan suavizados (antes se veían los pixeles y las esquinas eran rectas).
+- Correcciones pedidas: «?» centrado; panel de ayuda a la medida del texto; lápiz, papelera y candado nuevos; barra de
+  desplazamiento separada 8 px; Fuentes de datos sin parpadeo al cambiar de fuente; Reglas de cruce ya no cambia una
+  regla al desplazarse con la rueda; icono de advertencia de Gemini centrado; más espacio entre «Después de corregir
+  algo, vuelve a leer» y «Generar cuadro maestro».
+- **Incongruencia corregida:** con la rueda del ratón sobre una lista desplegable se cambiaba la opción y, en Reglas de
+  cruce, eso guardaba una regla distinta sin que la persona lo notara. Ahora la rueda solo desplaza.

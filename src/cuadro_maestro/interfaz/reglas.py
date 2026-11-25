@@ -98,17 +98,12 @@ class ModalReglas(D.Modal):
 
     def _tarjeta(self, padre, n, clave, titulo, texto):
         cambiada = A.regla_cambiada(self.app.config, clave)
-        borde = tk.Frame(padre, bg=T.NARANJA if cambiada else T.LINEA, padx=2 if cambiada else 1,
-                         pady=2 if cambiada else 1)
-        borde.pack(fill="x", pady=(0, 12), padx=(0, 8))
-        t = tk.Frame(borde, bg=T.BLANCO, padx=22, pady=14)
-        t.pack(fill="both")
+        t = T.Caja(padre, fondo=T.BLANCO, borde=T.NARANJA if cambiada else T.LINEA, grosor=2 if cambiada else 1,
+                   radio=T.RADIO_GRANDE, padx=24, pady=16)
+        t.pack(fill="x", pady=(0, 12))
         cab = tk.Frame(t, bg=T.BLANCO)
         cab.pack(fill="x")
-        num = tk.Canvas(cab, width=32, height=32, bg=T.BLANCO, highlightthickness=0)
-        num.create_oval(1, 1, 31, 31, fill=T.VERDE_CTA, outline=T.VERDE_CTA)
-        num.create_text(16, 16, text=str(n), fill=T.BLANCO, font=T.F["cuerpo_b"])
-        num.pack(side="left")
+        T.numero(cab, n, 32).pack(side="left")
         tk.Label(cab, text=titulo, font=T.F["seccion"], bg=T.BLANCO).pack(side="left", padx=12)
         if cambiada:
             T.chip(cab, "Cambiada", "aviso").pack(side="right")
@@ -126,7 +121,7 @@ class ModalReglas(D.Modal):
         f.pack(fill="x")
         tk.Label(f, text=texto, font=T.F["cuerpo"], bg=T.BLANCO, anchor="w", justify="left",
                  wraplength=470).pack(side="left")
-        der = tk.Frame(f, bg=T.BLANCO, width=440, height=42)
+        der = tk.Frame(f, bg=T.BLANCO, width=440, height=46)
         der.pack(side="right")
         der.pack_propagate(False)
         return der, f
@@ -175,9 +170,9 @@ class ModalReglas(D.Modal):
         self._opciones(t, "Internacionalización en casa prefiere el convenio", clave, "preferido_internacionalizacion",
                        PREFERIDO)
         self._opciones(t, "Si sigue habiendo empate, gana", clave, "desempate", DESEMPATE)
-        nota = tk.Frame(t, bg=T.FONDO, padx=12, pady=8)
+        nota = T.Caja(t, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO, padx=12, pady=8)
         nota.pack(fill="x", pady=(6, 0))
-        T.icono(nota, "gris", 18, bg=T.FONDO).pack(side="left", anchor="n")
+        T.icono(nota, "gris", 18, bg=T.FONDO).pack(side="left")
         tk.Label(nota, text="Si la institución no tiene ningún convenio que cubra el año del registro, se omite y se "
                             "lista en Ver revisión. Esta parte no se puede cambiar.", font=T.F["pequena"], bg=T.FONDO,
                  anchor="w", justify="left", wraplength=820).pack(side="left", padx=8)
@@ -246,7 +241,7 @@ class VerComoSeAplican(D.Modal):
         programa = next((p["nombre"] for p in self.app.config["programas"] if p["id"] == self.programa_id), "—")
         vig = vigencia(self.desde, self.hasta) if self.desde and self.hasta and self.desde <= self.hasta else "—"
         for texto in (f"Programa: {programa}", f"Vigencia: {vig}", f"Carpeta: {self.carpeta or '—'}"):
-            tk.Label(chips, text=texto, font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="left", padx=(0, 8))
+            T.chip_contexto(chips, texto).pack(side="left", padx=(0, 8))
         T.Franja(c, "info", "Usa tus archivos reales y solo los lee: muestra qué decidió cada regla y qué efecto tienen "
                  "tus cambios. No crea archivos ni guarda nada.").pack(fill="x", pady=(0, 12))
         if self.falta:
@@ -264,9 +259,9 @@ class VerComoSeAplican(D.Modal):
                  bg=T.BLANCO, fg=T.GRIS).pack(side="right")
 
     def _tabla(self, padre, columnas, anchos):
-        caja = tk.Frame(padre, bg=T.LINEA, padx=1, pady=1)
-        caja.pack(fill="x", padx=(0, 8))
-        cab = tk.Frame(caja, bg=T.GRIS_OSC, padx=14, pady=9)
+        caja = T.tabla(padre)
+        caja.pack(fill="x")
+        cab = T.cabecera(caja)
         cab.pack(fill="x")
         for j, (texto, w) in enumerate(zip(columnas, anchos)):
             cab.grid_columnconfigure(j, minsize=w)
@@ -274,9 +269,9 @@ class VerComoSeAplican(D.Modal):
                                                                                                           sticky="w")
         return caja
 
-    def _fila(self, caja, i, anchos):
+    def _fila(self, caja, i, anchos, ultima=False):
         fondo = T.BLANCO if i % 2 == 0 else T.FONDO
-        f = tk.Frame(caja, bg=fondo, padx=14, pady=8)
+        f = T.fila(caja, fondo, 14, 8, ultima=ultima)
         f.pack(fill="x")
         for j, w in enumerate(anchos):
             f.grid_columnconfigure(j, minsize=w)
@@ -296,7 +291,7 @@ class VerComoSeAplican(D.Modal):
         anchos = (420, 170, 170, 120)
         caja = self._tabla(d, ("Qué se compara", "Lo confirmado", "Con tus cambios", "Diferencia"), anchos)
         for i, (nombre, x, y) in enumerate(a.efecto()):
-            f, fondo = self._fila(caja, i, anchos)
+            f, fondo = self._fila(caja, i, anchos, ultima=i == 3)
             tk.Label(f, text=nombre, font=T.F["cuerpo"], bg=fondo, anchor="w").grid(row=0, column=0, sticky="w")
             tk.Label(f, text=A._miles(x), font=T.F["cuerpo"], bg=fondo).grid(row=0, column=1, sticky="w")
             tk.Label(f, text=A._miles(y), font=T.F["cuerpo_b"] if x != y else T.F["cuerpo"], bg=fondo).grid(
@@ -306,21 +301,21 @@ class VerComoSeAplican(D.Modal):
                    "aviso" if dif else "gris").grid(row=0, column=3, sticky="w")
         frase = a.frase_efecto()
         if frase:
-            T.Franja(d, "aviso", frase).pack(fill="x", pady=(12, 0), padx=(0, 8))
+            T.Franja(d, "aviso", frase).pack(fill="x", pady=(12, 0))
 
     def _decisiones(self, d):
         tk.Label(d, text="Qué decidió cada regla", font=T.F["seccion"], bg=T.BLANCO, anchor="w").pack(fill="x",
                                                                                                     pady=(18, 8))
-        caja = tk.Frame(d, bg=T.LINEA, padx=1, pady=1)
-        caja.pack(fill="x", padx=(0, 8))
-        for i, (n, texto, cambiada) in enumerate(self.aplicacion.decisiones()):
+        caja = T.tabla(d)
+        caja.pack(fill="x")
+        decisiones = self.aplicacion.decisiones()
+        for i, (n, texto, cambiada) in enumerate(decisiones):
             fondo = T.AVISO_BG if cambiada else (T.BLANCO if i % 2 == 0 else T.FONDO)
-            f = tk.Frame(caja, bg=fondo, padx=16, pady=9)
+            f = T.Caja(caja, fondo=fondo, borde=T.LINEA, grosor=1, radio=T.RADIO + 2, padx=16, pady=9,
+                       esquinas=(i == 0, i == 0, i == len(decisiones) - 1, i == len(decisiones) - 1), recorte=1,
+                       exacto=True, exterior=T.fondo_de(d))
             f.pack(fill="x")
-            num = tk.Canvas(f, width=30, height=30, bg=fondo, highlightthickness=0)
-            num.create_oval(1, 1, 29, 29, fill=T.VERDE_CTA, outline=T.VERDE_CTA)
-            num.create_text(15, 15, text=str(n), fill=T.BLANCO, font=T.F["pequena_b"])
-            num.pack(side="left", padx=(0, 14))
+            T.numero(f, n, 30).pack(side="left", padx=(0, 14))
             tx = tk.Frame(f, bg=fondo)
             tx.pack(side="left", fill="x", expand=True)
             tk.Label(tx, text=A.NOMBRE_REGLA[n], font=T.F["cuerpo_b"], bg=fondo, anchor="w").pack(fill="x")
@@ -342,7 +337,7 @@ class VerComoSeAplican(D.Modal):
         anchos = (330, 430, 110)
         caja = self._tabla(d, ("Registro", "Qué decidió", "Regla"), anchos)
         for i, e in enumerate(ejemplos):
-            f, fondo = self._fila(caja, i, anchos)
+            f, fondo = self._fila(caja, i, anchos, ultima=i == len(ejemplos) - 1)
             tk.Label(f, text=e.registro, font=T.F["cuerpo_b"], bg=fondo, anchor="w", justify="left",
                      wraplength=anchos[0] - 16).grid(row=0, column=0, sticky="w")
             tk.Label(f, text=e.decision, font=T.F["cuerpo"], bg=fondo, anchor="w", justify="left",

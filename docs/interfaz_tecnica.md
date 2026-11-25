@@ -24,6 +24,21 @@ Pruebas: `tests/test_interfaz.py` (la lógica sin Tkinter y una prueba de arranq
 
 ## Decisiones
 
+- **Igual a los mockups (25-nov-2026):** botones, campos, listas, cajas, tarjetas, chips, interruptores, casillas y
+  botones de opción son redondeados y suavizados. Se dibujan con Pillow a 4× y se reducen (`graficos.py`); las cajas son
+  marcos de ttk con una imagen que se estira solo por el centro (`tema.Caja`, `tema.tabla`, `tema.cabecera`,
+  `tema.tarjeta`). Los iconos tienen fondo transparente: sirven sobre cualquier color, también cuando la fila cambia.
+- **Tablas:** cabecera oscura con las esquinas de arriba redondeadas; la última fila o un margen abajo deja ver las
+  esquinas de abajo. Las rejillas (ventana principal, vista previa) usan las mismas columnas en la cabecera y en las
+  filas para que queden alineadas.
+- **La rueda del ratón sobre una lista desplegable no cambia la opción:** desplaza lo que la contiene. Antes, en Reglas
+  de cruce, desplazarse con la rueda cambiaba reglas sin querer.
+- **Barras de desplazamiento** delgadas, redondeadas y separadas 8 px del contenido; se esconden si todo cabe.
+- **Ayudas «?»:** el «?» se centra por su caja real; el panel tiene esquinas redondeadas (en Windows, fuera de ellas es
+  transparente) y su ancho depende del texto (400, 480 o 560 px).
+- **Fuentes de datos:** al cambiar de fuente solo se cambian las tarjetas y el detalle (el nuevo se arma y luego se
+  muestra), sin vaciar la ventana; con un cambio que no requiere leer, el detalle conserva la posición.
+
 - **Símbolos dibujados** (✓, ✗, !, i, anillo de progreso): se dibujan con figuras y no con letras, para que se vean
   igual aunque la tipografía no traiga esos símbolos.
 - **Brown Std** se carga solo para el programa con `AddFontResourceExW` (privada, sin instalar). Si no está, Segoe UI.

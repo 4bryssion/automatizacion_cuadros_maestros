@@ -44,11 +44,9 @@ class ModalIntercambio(D.Modal):
         self.pintar()
 
     def _caja(self, col):
-        borde = tk.Frame(self.columnas, bg=T.LINEA, padx=1, pady=1)
-        borde.grid(row=0, column=col, sticky="nsew", padx=(0, 10) if col == 0 else (10, 0))
+        d = T.Caja(self.columnas, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO_GRANDE + 4, padx=22, pady=18)
+        d.grid(row=0, column=col, sticky="nsew", padx=(0, 10) if col == 0 else (10, 0))
         self.columnas.grid_columnconfigure(col, weight=1, uniform="c")
-        d = tk.Frame(borde, bg=T.BLANCO, padx=20, pady=16)
-        d.pack(fill="both", expand=True)
         return d
 
     def pintar(self):
@@ -77,7 +75,7 @@ class ModalIntercambio(D.Modal):
         T.Campo(d, self.v_nombre).pack(fill="x")
         tk.Label(d, text=f"Carpeta: {self.carpeta}", font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w",
                  justify="left", wraplength=440).pack(fill="x", pady=(6, 0))
-        caja = tk.Frame(d, bg=T.FONDO, padx=14, pady=10)
+        caja = T.Caja(d, fondo=T.FONDO, borde=T.LINEA, radio=T.RADIO + 2, padx=14, pady=10)
         caja.pack(fill="x", pady=(12, 0))
         T.icono(caja, "gris", 20, bg=T.FONDO).pack(side="left", anchor="n")
         tx = tk.Frame(caja, bg=T.FONDO)
@@ -138,18 +136,19 @@ class ModalIntercambio(D.Modal):
         modo = "combinarla" if self.modo.get() == X.COMBINAR else "reemplazarla"
         tk.Label(d, text=f"Qué cambiaría al {modo}", font=T.F["cuerpo_b"], bg=T.BLANCO, anchor="w").pack(
             fill="x", pady=(12, 6))
-        caja = tk.Frame(d, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(d)
         caja.pack(fill="x")
         anchos = (190, 60, 70, 120)
-        cab = tk.Frame(caja, bg=T.GRIS_OSC, padx=12, pady=7)
+        cab = T.cabecera(caja, padx=12, pady=7)
         cab.pack(fill="x")
         for j, (t, w) in enumerate(zip(("Elemento", "Hoy", "Después", "Cambio"), anchos)):
             cab.grid_columnconfigure(j, minsize=w)
             tk.Label(cab, text=t, font=T.F["pequena_b"], bg=T.GRIS_OSC, fg=T.BLANCO).grid(row=0, column=j, sticky="w")
         despues = X.preparar(self.app.config, self.otro, self.modo.get())
-        for i, (nombre, hoy, archivo, cambio) in enumerate(X.comparar(self.app.config, despues)):
+        filas = X.comparar(self.app.config, despues)
+        for i, (nombre, hoy, archivo, cambio) in enumerate(filas):
             fondo = T.BLANCO if i % 2 == 0 else T.FONDO
-            f = tk.Frame(caja, bg=fondo, padx=12, pady=6)
+            f = T.fila(caja, fondo, 12, 6, ultima=i == len(filas) - 1)
             f.pack(fill="x")
             for j, w in enumerate(anchos):
                 f.grid_columnconfigure(j, minsize=w)
@@ -163,10 +162,8 @@ class ModalIntercambio(D.Modal):
                                      (X.REEMPLAZAR, "Reemplazar todo", "Tu configuración queda igual a la del archivo.")):
             f = tk.Frame(d, bg=T.BLANCO)
             f.pack(fill="x", pady=2)
-            tk.Radiobutton(f, variable=self.modo, value=valor, text=titulo, font=T.F["cuerpo_b"], bg=T.BLANCO,
-                           activebackground=T.BLANCO, highlightthickness=0, anchor="w", command=self.pintar,
-                           tristatevalue="\x00").pack(fill="x")
-            tk.Label(f, text=texto, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x", padx=(26, 0))
+            T.radio(f, self.modo, valor, titulo, comando=self.pintar, fuente="cuerpo_b").pack(fill="x")
+            tk.Label(f, text=texto, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x", padx=(32, 0))
         T.Franja(d, "aviso", "Antes de importar se guarda una copia de la actual (en Copias y almacenamiento).").pack(
             fill="x", pady=(10, 0))
         pie = tk.Frame(d, bg=T.BLANCO)

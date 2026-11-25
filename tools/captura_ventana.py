@@ -79,6 +79,16 @@ def capturar_y_cerrar(nombre, ms=900):
 
 raiz.update()
 foto("01_ventana_principal")
+# Ayudas «?» (mockup 04): una larga y una corta, para ver que el ancho se adapta
+from cuadro_maestro.interfaz import tema as TT  # noqa: E402
+for nombre, clave in (("04_ayuda_vigencia", "vigencia"), ("04_ayuda_previsualizar", "previsualizar")):
+    aux = TT.Ayuda(ventana.cuerpo, clave)
+    aux.place(x=600, y=200)
+    aux.alternar()
+    raiz.update()
+    foto(nombre, aux.ventana)
+    aux.cerrar()
+    aux.destroy()
 raiz.geometry("640x920")
 raiz.update()
 foto("02_ventana_angosta")

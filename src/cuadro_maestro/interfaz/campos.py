@@ -12,10 +12,11 @@ from .. import ajustes as A
 from ..lectura import leer_carpeta
 from ..lectura.modelos import EXACTA, POR_CONFIRMAR, SIN_IDENTIFICAR
 from . import dialogos as D
+from . import graficos as G
 from . import tema as T
 from .configuracion import con_ayuda, icono_lapiz, icono_papelera
 
-CHIP_FUENTE = {"matriz": ("Matriz", "ok"), "calculado": ("Calculado", "gris"), "vacio": ("Vacío", "gris")}
+CHIP_FUENTE = {"matriz": ("Matriz", "ok"), "calculado": ("Calculado", "gris"), "vacio": ("Vacío", "blanco")}
 ESTADO_COLUMNA = {EXACTA: ("ok", "Exacta", "Encontrada con este nombre en la matriz."),
                   POR_CONFIRMAR: ("aviso", "Por confirmar", "Hay una columna parecida en la matriz: confírmala en "
                                                             "Fuentes de datos."),
@@ -26,11 +27,7 @@ ANCHOS = (34, 34, 250, 330, 140)
 
 
 def _handle(padre, bg):
-    c = tk.Canvas(padre, width=20, height=26, bg=bg, highlightthickness=0, cursor="fleur")
-    for x in (6, 14):
-        for y in (6, 13, 20):
-            c.create_oval(x - 2, y - 2, x + 2, y + 2, fill="#A8A8A8", outline="#A8A8A8")
-    return c
+    return tk.Label(padre, image=G.asa(padre, bg), bg=bg, bd=0, cursor="fleur")
 
 
 class ModalCampos(D.Modal):
@@ -58,9 +55,9 @@ class ModalCampos(D.Modal):
         tk.Label(fila, text="para cambiar el orden en el cuadro", font=T.F["pequena"], bg=T.BLANCO,
                  fg=T.GRIS).pack(side="left")
         T.Boton(fila, "+  Crear campo", self.crear, ancho=200).pack(side="right")
-        caja = tk.Frame(self.cuerpo, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(self.cuerpo, pie=True)
         caja.pack(fill="x")
-        cabt = tk.Frame(caja, bg=T.GRIS_OSC, padx=14, pady=9)
+        cabt = T.cabecera(caja)
         cabt.pack(fill="x")
         for j, (texto, w) in enumerate(zip(("", "#", "Nombre en el cuadro", "De dónde sale el dato", "Tipo"), ANCHOS)):
             cabt.grid_columnconfigure(j, minsize=w)
@@ -121,7 +118,7 @@ class ModalCampos(D.Modal):
             de = tk.Frame(f, bg=fondo)
             de.grid(row=0, column=3, sticky="w")
             texto, tipo = CHIP_FUENTE[campo["fuente"]]
-            T.chip(de, texto, tipo).pack(side="left")
+            T.Chip(de, texto, tipo, borde=T.GRIS if campo["fuente"] == "vacio" else None).pack(side="left")
             tk.Label(de, text=A.describir_campo(self.app.config, campo), font=T.F["cuerpo"], bg=fondo, anchor="w",
                      justify="left", wraplength=ANCHOS[3] - 110).pack(side="left", padx=(10, 0))
             tk.Label(f, text=A.TIPOS_CAMPO.get(campo["tipo"], campo["tipo"]), font=T.F["cuerpo"], bg=fondo,
@@ -203,10 +200,8 @@ class ModalCampos(D.Modal):
 
     def _editor(self, i, campo):
         base = bool(campo and campo.get("base"))
-        borde = tk.Frame(self.lista, bg=T.VERDE_CTA, padx=2, pady=2)
-        borde.pack(fill="x", padx=8, pady=6)
-        d = tk.Frame(borde, bg=T.BLANCO, padx=18, pady=14)
-        d.pack(fill="both")
+        d = T.Caja(self.lista, fondo=T.BLANCO, borde=T.VERDE_CTA, grosor=2, radio=T.RADIO_GRANDE, padx=18, pady=14)
+        d.pack(fill="x", padx=8, pady=6)
         tk.Label(d, text=f"Editando: {campo['nombre']}" if campo else "Nuevo campo", font=T.F["cuerpo_b"], bg=T.BLANCO,
                  fg=T.OK_TXT, anchor="w").pack(fill="x", pady=(0, 8))
         g = tk.Frame(d, bg=T.BLANCO)
@@ -313,11 +308,9 @@ class ModalCampos(D.Modal):
         self.bind("<Escape>", lambda e: self.cancelar())
 
     def _confirmar_eliminar(self, i, campo):
-        borde = tk.Frame(self.lista, bg=T.NARANJA, padx=1, pady=1)
-        borde.pack(fill="x", padx=8, pady=6)
-        d = tk.Frame(borde, bg=T.AVISO_BG, padx=14, pady=10)
-        d.pack(fill="both")
-        T.icono(d, "aviso", 22, bg=T.AVISO_BG).pack(side="left", anchor="n")
+        d = T.Caja(self.lista, fondo=T.AVISO_BG, borde=T.NARANJA, radio=T.RADIO + 2, padx=14, pady=10)
+        d.pack(fill="x", padx=8, pady=6)
+        T.icono(d, "aviso", 22, bg=T.AVISO_BG).pack(side="left")
         tx = tk.Frame(d, bg=T.AVISO_BG)
         tx.pack(side="left", fill="x", expand=True, padx=10)
         tk.Label(tx, text=f"¿Eliminar el campo «{campo['nombre']}»?", font=T.F["cuerpo_b"], bg=T.AVISO_BG,
@@ -328,9 +321,7 @@ class ModalCampos(D.Modal):
         b.pack(side="right")
         T.Boton(b, "Cancelar", self.cancelar, tipo="secundario", fuente="boton_peq", ancho=110, alto=34).pack(side="left",
                                                                                                           padx=6)
-        eliminar = tk.Label(b, text="Eliminar", font=T.F["boton_peq"], bg=T.MAGENTA, fg=T.BLANCO, padx=18, pady=7,
-                            cursor="hand2")
-        eliminar.pack(side="left")
+        T.Boton(b, "Eliminar", lambda: self.confirmar_eliminacion(), tipo="peligro", fuente="boton_peq", ancho=110,
+                alto=34).pack(side="left")
         self.confirmar_eliminacion = lambda: (A.eliminar_campo(self.app.config, i), self.app.guardar_config(),
                                               self.cancelar())
-        eliminar.bind("<Button-1>", lambda e: self.confirmar_eliminacion())

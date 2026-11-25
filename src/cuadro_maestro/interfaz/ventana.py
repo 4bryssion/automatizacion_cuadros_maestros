@@ -69,7 +69,7 @@ class VentanaPrincipal(tk.Frame):
         marco = tk.Frame(self, bg=T.BLANCO)
         marco.pack(fill="both", expand=True)
         self.lienzo = tk.Canvas(marco, bg=T.BLANCO, highlightthickness=0)
-        barra = tk.Scrollbar(marco, orient="vertical", command=self.lienzo.yview)
+        barra = ttk.Scrollbar(marco, orient="vertical", command=self.lienzo.yview, style="CM.Vertical.TScrollbar")
         self.cuerpo = tk.Frame(self.lienzo, bg=T.BLANCO, padx=28, pady=20)
         vid = self.lienzo.create_window(0, 0, window=self.cuerpo, anchor="nw")
         self.cuerpo.bind("<Configure>", lambda e: self._ajustar_desplazamiento(barra))
@@ -97,6 +97,7 @@ class VentanaPrincipal(tk.Frame):
         self._titulo(self.bloque_prog, "2. Programa", None).pack(fill="x")
         self.cb_programa = ttk.Combobox(self.bloque_prog, textvariable=self.v_programa, values=list(self.programas),
                                         state="readonly", style="CM.TCombobox", font=T.F["cuerpo"], height=16)
+        T.sin_rueda(self.cb_programa)
         self.cb_programa.pack(fill="x", pady=(8, 0))
         self.bloque_vig = tk.Frame(self.zona_pv, bg=T.BLANCO)
         self._titulo(self.bloque_vig, "3. Vigencia (años completos)", "vigencia").pack(fill="x")
@@ -107,6 +108,7 @@ class VentanaPrincipal(tk.Frame):
             tk.Label(fv, text=texto, font=T.F["cuerpo"], bg=T.BLANCO).pack(side="left", padx=(0 if texto == "Desde" else 16, 10))
             cb = ttk.Combobox(fv, textvariable=var, values=self.anios, state="readonly", width=7,
                               style="CM.TCombobox", font=T.F["cuerpo"])
+            T.sin_rueda(cb)
             cb.pack(side="left", fill="x", expand=True)
             (self.cb_desde if texto == "Desde" else self.cb_hasta).append(cb)
         self.lbl_vig_error = tk.Label(self.bloque_vig, text="", font=T.F["pequena"], bg=T.BLANCO, fg=T.MAGENTA, anchor="w")
@@ -118,18 +120,18 @@ class VentanaPrincipal(tk.Frame):
         cab_arch = tk.Frame(c, bg=T.BLANCO)
         cab_arch.pack(fill="x", pady=(0, 8))
         self._titulo(cab_arch, "Archivos que se usarán", "archivos").pack(side="left")
-        self.chip = tk.Label(cab_arch, text="", font=T.F["pequena_b"], padx=14, pady=5)
-        self.chip.pack(side="right")
+        self.zona_chip = tk.Frame(cab_arch, bg=T.BLANCO)
+        self.zona_chip.pack(side="right")
         T.Enlace(cab_arch, "Actualizar", self.actualizar).pack(side="right", padx=(0, 18))
 
-        borde = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
-        borde.pack(fill="x", pady=(0, 10))
-        self.fila_matriz = tk.Frame(borde, bg=T.BLANCO, padx=18, pady=10)
-        self.fila_matriz.pack(fill="both")
-        self.tabla_borde = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        self.fila_matriz = T.Caja(c, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO + 2, padx=18, pady=10)
+        self.fila_matriz.pack(fill="x", pady=(0, 10))
+        self.tabla_borde = T.tabla(c, pie=True)
         self.tabla_borde.pack(fill="x")
-        self.tabla = tk.Frame(self.tabla_borde, bg=T.BLANCO)
-        self.tabla.pack(fill="both")
+        self.cab_tabla = T.cabecera(self.tabla_borde, relleno=(4, 4, 4, 0))
+        self.cab_tabla.pack(fill="x")
+        self.tabla = tk.Frame(self.tabla_borde, bg=T.BLANCO, padx=4)
+        self.tabla.pack(fill="x")
         self.zona_avisos = tk.Frame(c, bg=T.BLANCO)
         self.zona_avisos.pack(fill="x", pady=(12, 0))
         self.zona_ultimo = tk.Frame(c, bg=T.BLANCO)
@@ -138,9 +140,9 @@ class VentanaPrincipal(tk.Frame):
         # Botones
         acciones = tk.Frame(c, bg=T.BLANCO)
         acciones.pack(fill="x", pady=(18, 0))
-        self.b_generar = T.Boton(acciones, "Generar cuadro maestro", self.generar, ancho=300, alto=50)
+        self.b_generar = T.Boton(acciones, "Generar cuadro maestro", self.generar, ancho=380, alto=56)
         self.b_generar.pack(side="left")
-        self.b_previa = T.Boton(acciones, "Previsualizar cuadro", None, tipo="secundario", ancho=200, alto=50)
+        self.b_previa = T.Boton(acciones, "Previsualizar cuadro", None, tipo="secundario", ancho=250, alto=56)
         self.b_previa.pack(side="left", padx=(14, 8))
         self.b_previa.activar(False)
         T.Ayuda(acciones, "previsualizar").pack(side="left")
@@ -148,7 +150,7 @@ class VentanaPrincipal(tk.Frame):
         self.lbl_motivo.pack(fill="x", pady=(6, 0))
         abajo = tk.Frame(c, bg=T.BLANCO)
         abajo.pack(fill="x", pady=(10, 0))
-        self.b_config = T.Boton(abajo, "Configuración", None, tipo="secundario", ancho=170, alto=44)
+        self.b_config = T.Boton(abajo, "Configuración", None, tipo="secundario", ancho=210, alto=50)
         self.b_config.pack(side="left")
         self.b_config.activar(False)
         T.Ayuda(abajo, "config").pack(side="left", padx=8)
@@ -205,7 +207,7 @@ class VentanaPrincipal(tk.Frame):
         self.lienzo.configure(scrollregion=self.lienzo.bbox("all"))
         necesita = self.cuerpo.winfo_reqheight() > self.lienzo.winfo_height()
         if necesita and not barra.winfo_ismapped():
-            barra.pack(side="right", fill="y")
+            barra.pack(side="right", fill="y", padx=(8, 4), pady=4)
         elif not necesita and barra.winfo_ismapped():
             barra.pack_forget()
             self.lienzo.yview_moveto(0)
@@ -319,28 +321,30 @@ class VentanaPrincipal(tk.Frame):
                      fg=T.MAGENTA).pack(side="left")
 
     def _pintar_tabla(self, desde, hasta):
-        t = self.tabla
-        for w in t.winfo_children():
+        t, cab = self.tabla, self.cab_tabla
+        for w in (*t.winfo_children(), *cab.winfo_children(), *self.zona_chip.winfo_children()):
             w.destroy()
         angosta = bool(self._acomodo)
         encabezados = (("Año", "Movilidad", "IC · 1.er sem.", "IC · 2.º sem.") if angosta else
                        ("Año", "Movilidad (anual)", "Int. en casa · 1.er semestre", "Int. en casa · 2.º semestre"))
         for j, h in enumerate(encabezados):
-            tk.Label(t, text=h, font=T.F["cuerpo_b"], bg=T.GRIS_OSC, fg=T.BLANCO, anchor="w", padx=18,
-                     pady=10).grid(row=0, column=j, sticky="ew")
-            t.grid_columnconfigure(j, weight=1 if j else 0, uniform=None if j == 0 else "col", minsize=90 if j == 0 else 0)
+            tk.Label(cab, text=h, font=T.F["cuerpo_b"], bg=T.GRIS_OSC, fg=T.BLANCO, anchor="w", padx=14,
+                     pady=8).grid(row=0, column=j, sticky="ew", pady=(0, 2))
+            for x in (t, cab):         # mismas columnas en la cabecera y en las filas (quedan alineadas)
+                x.grid_columnconfigure(j, weight=1 if j else 0, uniform=None if j == 0 else "col",
+                                       minsize=90 if j == 0 else 0)
         r = self.resumen
         if r is None:
             tk.Label(t, text="Elige la carpeta con los Excel para ver qué archivos hay.", font=T.F["cuerpo"],
                      bg=T.BLANCO, fg=T.GRIS, pady=18).grid(row=1, column=0, columnspan=4)
-            self.chip.configure(text="", bg=T.BLANCO)
             return
+        n = len(r.filas)
         for i, (anio, *celdas) in enumerate(r.filas, start=1):
-            fondo = T.BLANCO if i % 2 else T.FONDO
-            tk.Label(t, text=str(anio), font=T.F["cuerpo"], bg=fondo, anchor="w", padx=18, pady=9).grid(
+            fondo = T.BLANCO if (n - i) % 2 == 0 else T.FONDO      # la última fila blanca (esquinas redondeadas)
+            tk.Label(t, text=str(anio), font=T.F["cuerpo"], bg=fondo, anchor="w", padx=14, pady=9).grid(
                 row=i, column=0, sticky="nsew")
             for j, celda in enumerate(celdas, start=1):
-                cf = tk.Frame(t, bg=fondo, padx=18, pady=7)
+                cf = tk.Frame(t, bg=fondo, padx=14, pady=7)
                 cf.grid(row=i, column=j, sticky="nsew")
                 ok = celda.estado == ENCONTRADO
                 T.marca(cf, "ok" if ok else "mal", bg=fondo).pack(side="left", padx=(0, 6))
@@ -354,8 +358,9 @@ class VentanaPrincipal(tk.Frame):
                 tk.Label(cf, text=texto, font=T.F["cuerpo"] if ok else T.F["cuerpo_b"], bg=fondo,
                          fg=T.GRIS if ok else T.MAGENTA, anchor="w").pack(side="left")
         completo = r.completo
-        self.chip.configure(text=f"{r.encontrados} de {r.esperados} encontrados",
-                            bg=T.VERDE_CTA if completo else T.NARANJA, fg=T.BLANCO if completo else T.GRIS_OSC)
+        self.chip = T.Chip(self.zona_chip, f"{r.encontrados} de {r.esperados} encontrados", "ok",
+                           fondo=T.VERDE_CTA if completo else T.NARANJA, color=T.BLANCO if completo else T.GRIS_OSC)
+        self.chip.pack()
 
     def _pintar_avisos(self):
         z = self.zona_avisos
@@ -389,10 +394,8 @@ class VentanaPrincipal(tk.Frame):
         u = self.estado.ultima
         if not u:
             return
-        caja = tk.Frame(z, bg=T.LINEA, padx=1, pady=1)
-        caja.pack(fill="x")
-        f = tk.Frame(caja, bg=T.FONDO, padx=18, pady=12)
-        f.pack(fill="both")
+        f = T.Caja(z, fondo=T.FONDO, borde=T.LINEA, radio=T.RADIO + 2, padx=18, pady=12)
+        f.pack(fill="x")
         color = T.NARANJA if u.cambios_sin_incluir else T.VERDE_CTA
         T.punto(f, color, 12).pack(side="left")
         tk.Label(f, text="Último cuadro:", font=T.F["cuerpo_b"], bg=T.FONDO).pack(side="left", padx=(8, 6))

@@ -79,7 +79,8 @@ class ModalFuentes(D.Modal):
         if releer and self.carpeta:
             self.releer()
         else:
-            self.pintar()
+            self.estados = {e.id: e for e in A.estado_fuentes(self.app.config, self.lectura)}
+            self._pintar_fuente(conservar=True)
 
     # pintura
     def pintar(self):
@@ -112,18 +113,14 @@ class ModalFuentes(D.Modal):
                      font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x")
         cuerpo = tk.Frame(c, bg=T.BLANCO)
         cuerpo.pack(fill="both", expand=True, pady=(12, 0))
-        izq = tk.Frame(cuerpo, bg=T.BLANCO, width=310)
-        izq.pack(side="left", fill="y", anchor="n")
-        izq.pack_propagate(False)
-        for f in self.app.config["fuentes"]:
-            self._tarjeta(izq, self.estados[f["id"]])
-        tk.Label(izq, text="Las fuentes son fijas: el cálculo necesita estos tres tipos de Excel. Si un Excel cambia, "
-                           "ajústalo aquí.", font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w", justify="left",
-                 wraplength=290).pack(fill="x", pady=(4, 0))
-        der = T.desplazable(cuerpo, 540)
-        der.pack(side="left", fill="both", expand=True, padx=(24, 0))
-        self._detalle(der.interior, self.estados[self.elegida])
-        self.lienzo_detalle = der.lienzo
+        self.izq = tk.Frame(cuerpo, bg=T.BLANCO, width=310)
+        self.izq.pack(side="left", fill="y", anchor="n")
+        self.izq.pack_propagate(False)
+        self.zona_detalle = tk.Frame(cuerpo, bg=T.BLANCO, height=540)
+        self.zona_detalle.pack(side="left", fill="both", expand=True, padx=(24, 0))
+        self.zona_detalle.pack_propagate(False)
+        self.der = None
+        self._pintar_fuente()
         pie = tk.Frame(c, bg=T.BLANCO)
         pie.pack(fill="x", pady=(14, 0))
         tk.Frame(pie, bg=T.LINEA, height=1).pack(fill="x", pady=(0, 14))
@@ -135,13 +132,35 @@ class ModalFuentes(D.Modal):
                  bg=T.BLANCO, fg=T.GRIS).pack(side="left", padx=16)
         T.Boton(pie, "Listo", lambda: self.cerrar(True), ancho=160).pack(side="right")
 
+    def _pintar_fuente(self, conservar=False):
+        """Tarjetas de la izquierda y detalle de la fuente elegida. El detalle nuevo se arma escondido y se cambia
+        de una vez: así no se ve la ventana vaciarse y volver a llenarse al cambiar de fuente."""
+        for w in self.izq.winfo_children():
+            w.destroy()
+        for f in self.app.config["fuentes"]:
+            self._tarjeta(self.izq, self.estados[f["id"]])
+        tk.Label(self.izq, text="Las fuentes son fijas: el cálculo necesita estos tres tipos de Excel. Si un Excel "
+                                "cambia, ajústalo aquí.", font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w",
+                 justify="left", wraplength=290).pack(fill="x", pady=(4, 0))
+        nuevo = T.desplazable(self.zona_detalle, 540)
+        self._detalle(nuevo.interior, self.estados[self.elegida])
+        anterior, self.der = self.der, nuevo
+        nuevo.place(x=0, y=0, relwidth=1, relheight=1)
+        if conservar and anterior is not None:
+            nuevo.update_idletasks()
+            nuevo.lienzo.yview_moveto(anterior.lienzo.yview()[0])     # se queda donde estaba
+        nuevo.lift()
+        if anterior is not None:
+            anterior.destroy()
+        self.lienzo_detalle = nuevo.lienzo
+
     def _tarjeta(self, padre, e: A.EstadoFuente):
         sel = e.id == self.elegida
-        borde = tk.Frame(padre, bg=T.VERDE_CTA if sel else T.LINEA, padx=2 if sel else 1, pady=2 if sel else 1)
-        borde.pack(fill="x", pady=(0, 12))
         fondo = T.TINTE_VERDE if sel else T.BLANCO
-        t = tk.Frame(borde, bg=fondo, padx=16, pady=12, cursor="hand2")
-        t.pack(fill="both")
+        t = T.Caja(padre, fondo=fondo, borde=T.VERDE_CTA if sel else T.LINEA, grosor=2 if sel else 1,
+                   radio=T.RADIO_GRANDE, padx=18, pady=12)
+        t.pack(fill="x", pady=(0, 12))
+        t.configure(cursor="hand2")
         partes = [tk.Label(t, text=e.nombre, font=T.F["seccion"], bg=fondo, anchor="w", cursor="hand2"),
                   tk.Label(t, text=e.archivos, font=T.F["pequena"], bg=fondo, fg=T.GRIS, anchor="w", cursor="hand2")]
         for p in partes:
@@ -160,8 +179,10 @@ class ModalFuentes(D.Modal):
             w.bind("<Button-1>", lambda ev, i=e.id: self.seleccionar(i))
 
     def seleccionar(self, fuente_id):
+        if fuente_id == self.elegida and not self.renombrando:
+            return
         self.elegida, self.resaltar, self.renombrando = fuente_id, None, False
-        self.pintar()
+        self._pintar_fuente()
 
     def _seccion(self, padre, n, texto):
         tk.Label(padre, text=f"{n}  {texto}", font=T.F["seccion"], bg=T.BLANCO, fg=T.VERDE_CTA,
@@ -189,12 +210,13 @@ class ModalFuentes(D.Modal):
                 self.cambio(releer=False)
             self.guardar_nombre = guardar
             campo.entrada.bind("<Return>", guardar)
-            campo.entrada.bind("<Escape>", lambda ev: (setattr(self, "renombrando", False), self.pintar(), "break")[2])
+            campo.entrada.bind("<Escape>", lambda ev: (setattr(self, "renombrando", False), self._pintar_fuente(),
+                                                       "break")[2])
             T.Boton(cab, "Guardar", guardar, fuente="boton_peq", ancho=110, alto=38).pack(side="left", padx=(10, 0))
             error.pack(fill="x")
         else:
             tk.Label(cab, text=f["nombre"], font=T.F["modal_titulo"], bg=T.BLANCO, anchor="w").pack(side="left")
-            T.Boton(cab, "Cambiar nombre", lambda: (setattr(self, "renombrando", True), self.pintar()),
+            T.Boton(cab, "Cambiar nombre", lambda: (setattr(self, "renombrando", True), self._pintar_fuente()),
                     tipo="secundario", fuente="boton_peq", ancho=T.F["boton_peq"].measure("Cambiar nombre") + 40, alto=36).pack(side="right")
 
         # 1 Cómo se encuentra el archivo
@@ -253,25 +275,12 @@ class ModalFuentes(D.Modal):
             T.chip(fila, A.texto_filas_detectadas(e.filas_encabezado), "gris").pack(side="right")
         else:
             tk.Label(fila, text="Fila", font=T.F["cuerpo"], bg=T.BLANCO).pack(side="left", padx=(20, 6))
-            v_fila = tk.StringVar(value=str(conf.get("fila") or 1))
-            sp = tk.Spinbox(fila, from_=1, to=50, width=4, textvariable=v_fila, font=T.F["cuerpo"], justify="center",
-                            relief="solid", bd=1)
-            sp.pack(side="left")
-
-            def guardar_fila(_=None):
-                try:
-                    n = int(v_fila.get())
-                    if n == conf.get("fila"):
-                        return
-                    A.poner_fila_encabezados(self.app.config, e.id, False, n)
-                except ValueError:
-                    v_fila.set(str(conf.get("fila") or 1))
-                    return
+            def poner_fila(n):
+                A.poner_fila_encabezados(self.app.config, e.id, False, n)
                 self.cambio()
-            self.guardar_fila = guardar_fila
-            sp.configure(command=guardar_fila)
-            sp.bind("<Return>", guardar_fila)
-            sp.bind("<FocusOut>", guardar_fila)
+            self.opc_fila = T.Opciones(fila, [(n, str(n)) for n in range(1, 31)], conf.get("fila") or 1, poner_fila,
+                                       ancho=4)
+            self.opc_fila.pack(side="left")
             tk.Label(fila, text="(la primera fila del Excel es la 1)", font=T.F["pequena"], bg=T.BLANCO,
                      fg=T.GRIS).pack(side="left", padx=8)
 
@@ -302,11 +311,11 @@ class ModalFuentes(D.Modal):
                       lambda v: poner("omitir_sin_institucion", v)).pack(fill="x", pady=(0, 8))
 
     def _tabla_datos(self, d, e: A.EstadoFuente):
-        caja = tk.Frame(d, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(d)
         caja.pack(fill="x")
-        cab = tk.Frame(caja, bg=T.GRIS_OSC, padx=14, pady=9)
+        cab = T.cabecera(caja)
         cab.pack(fill="x")
-        anchos = (200, 230, 150)
+        anchos = (170, 215, 140)
         for j, (texto, w) in enumerate(zip(("Dato que necesita", "Columna en el Excel", "Estado"), anchos)):
             cab.grid_columnconfigure(j, minsize=w)
             tk.Label(cab, text=texto, font=T.F["pequena_b"], bg=T.GRIS_OSC, fg=T.BLANCO, anchor="w").grid(row=0, column=j,
@@ -316,18 +325,18 @@ class ModalFuentes(D.Modal):
             fondo = FONDO_ESTADO.get(dato.estado, T.BLANCO if i % 2 == 0 else T.FONDO)
             if self.resaltar == dato.dato:
                 fondo = T.TINTE_VERDE
-            f = tk.Frame(caja, bg=fondo, padx=14, pady=7)
+            f = T.fila(caja, fondo, 14, 7, ultima=i == len(e.datos) - 1)
             f.pack(fill="x")
             for j, w in enumerate(anchos):
                 f.grid_columnconfigure(j, minsize=w)
             f.grid_columnconfigure(3, weight=1)
             tk.Label(f, text=dato.nombre, font=T.F["cuerpo_b"], bg=fondo, anchor="w", justify="left",
-                     wraplength=190).grid(row=0, column=0, sticky="w")
+                     wraplength=160).grid(row=0, column=0, sticky="w")
             enc = dato.encabezado or "—"
             if dato.elegida and dato.estado in (EXACTA, A.SIN_LEER):
                 enc = dato.elegida
             tk.Label(f, text=enc, font=T.F["cuerpo"], bg=fondo, anchor="w", justify="left",
-                     wraplength=220).grid(row=0, column=1, sticky="w")
+                     wraplength=205).grid(row=0, column=1, sticky="w")
             simbolo, texto, color = ESTADO_TXT[dato.estado]
             est = tk.Frame(f, bg=fondo)
             est.grid(row=0, column=2, sticky="w")
@@ -401,7 +410,7 @@ class ElegirColumna(D.Modal):
         self.v_buscar = tk.StringVar()
         T.Campo(self.cuerpo, self.v_buscar, guia="Buscar columna…").pack(fill="x")
         self.v_buscar.trace_add("write", lambda *a: self.pintar())
-        marco = tk.Frame(self.cuerpo, bg=T.LINEA, padx=1, pady=1)
+        marco = T.borde(self.cuerpo, T.LINEA, radio=T.RADIO + 2, padx=4, pady=4)
         marco.pack(fill="x", pady=(10, 0))
         self.lista = T.desplazable(marco, 300)
         self.lista.pack(fill="both", expand=True)
@@ -440,9 +449,7 @@ class ElegirColumna(D.Modal):
             fondo = T.BLANCO if i % 2 == 0 else T.FONDO
             f = tk.Frame(caja, bg=fondo, padx=12, pady=6)
             f.pack(fill="x")
-            rb = tk.Radiobutton(f, variable=self.v_elegida, value=h, bg=fondo, activebackground=fondo,
-                                highlightthickness=0, text=h, font=T.F["cuerpo"], anchor="w", justify="left",
-                                wraplength=380, tristatevalue="\x00", command=lambda: self.v_escrita.set(""))
+            rb = T.radio(f, self.v_elegida, h, h, comando=lambda: self.v_escrita.set(""), wraplength=380)
             rb.pack(side="left")
             if self.dato.estado == POR_CONFIRMAR and normalizar(h) == normalizar(self.dato.encabezado or ""):
                 T.chip(f, "Sugerida", "aviso", ).pack(side="right")
@@ -507,7 +514,7 @@ class ProbarLectura(D.Modal):
         chips = tk.Frame(c, bg=T.BLANCO)
         chips.pack(fill="x", pady=(10, 10))
         for texto in (f"Vigencia: {vigencia(self.desde, self.hasta)}", f"Carpeta: {self.carpeta or '—'}"):
-            tk.Label(chips, text=texto, font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="left", padx=(0, 8))
+            T.chip_contexto(chips, texto).pack(side="left", padx=(0, 8))
         T.Franja(c, "info", "Prueba cómo lee el programa cada archivo con lo que hay en Fuentes de datos. No crea "
                  "archivos ni cambia tu configuración.").pack(fill="x", pady=(0, 12))
         if not self.lectura:
@@ -529,19 +536,13 @@ class ProbarLectura(D.Modal):
             if n:
                 uno, *varios = texto.split("|")
                 T.chip(barra, f"{n} {uno if n == 1 or not varios else varios[0]}", tipo).pack(side="left", padx=(0, 8))
-        selector = tk.Frame(barra, bg=T.LINEA, padx=1, pady=1)
-        selector.pack(side="right")
-        for valor, texto in ((False, f"Todos ({len(filas)})"), (True, f"Con problemas ({len(problemas)})")):
-            activo = self.solo_problemas == valor
-            b = tk.Label(selector, text=texto, font=T.F["pequena_b"], padx=16, pady=6, cursor="hand2",
-                         bg=T.VERDE_CTA if activo else T.BLANCO, fg=T.BLANCO if activo else T.GRIS_OSC)
-            b.pack(side="left")
-            b.bind("<Button-1>", lambda e, v=valor: (setattr(self, "solo_problemas", v), self.pintar()))
+        T.segmentado(barra, ((False, f"Todos ({len(filas)})"), (True, f"Con problemas ({len(problemas)})")),
+                     self.solo_problemas, lambda v: (setattr(self, "solo_problemas", v), self.pintar())).pack(side="right")
         visibles = problemas if self.solo_problemas else filas
-        caja = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(c, pie=True)
         caja.pack(fill="x")
         anchos = (260, 210, 110, 100, 190)
-        cab = tk.Frame(caja, bg=T.GRIS_OSC, padx=14, pady=9)
+        cab = T.cabecera(caja)
         cab.pack(fill="x")
         for j, (texto, w) in enumerate(zip(("Archivo", "Se leyó como", "Encabezados", "Columnas", "Estado"), anchos)):
             cab.grid_columnconfigure(j, minsize=w)

@@ -121,10 +121,8 @@ def contar_lineas(partes, ancho_px: int) -> int:
 
 
 def _tabla_resumen(padre, filas):
-    caja = tk.Frame(padre, bg=T.LINEA, padx=1, pady=1)
-    caja.pack(fill="x", pady=(0, 14))
-    interior = tk.Frame(caja, bg=T.FONDO, padx=22, pady=14)
-    interior.pack(fill="both")
+    interior = T.Caja(padre, fondo=T.FONDO, borde=T.LINEA, radio=T.RADIO + 2, padx=22, pady=14)
+    interior.pack(fill="x", pady=(0, 14))
     for i, (k, v, punto) in enumerate(filas):
         tk.Label(interior, text=k, font=T.F["cuerpo_b"], bg=T.FONDO, anchor="w").grid(row=i, column=0, sticky="w", pady=3)
         celda = tk.Frame(interior, bg=T.FONDO)
@@ -187,7 +185,7 @@ class Progreso(Modal):
         fila = tk.Frame(self.cuerpo, bg=T.BLANCO)
         fila.pack(fill="x", pady=(0, 14))
         for c in chips:
-            tk.Label(fila, text=c, font=T.F["pequena_b"], bg=T.FONDO, fg=T.GRIS_OSC, padx=12, pady=5).pack(side="left", padx=(0, 8))
+            T.chip_contexto(fila, c).pack(side="left", padx=(0, 8))
         linea = tk.Frame(self.cuerpo, bg=T.BLANCO)
         linea.pack(fill="x")
         self.lbl_paso = tk.Label(linea, text="Paso 1 de 5", font=T.F["cuerpo_b"], bg=T.BLANCO, anchor="w")
@@ -197,16 +195,13 @@ class Progreso(Modal):
         from tkinter import ttk
         self.barra = ttk.Progressbar(self.cuerpo, style="CM.Horizontal.TProgressbar", maximum=5)
         self.barra.pack(fill="x", pady=(8, 14))
-        caja = tk.Frame(self.cuerpo, bg=T.LINEA, padx=1, pady=1)
-        caja.pack(fill="x")
-        lista = tk.Frame(caja, bg=T.BLANCO)
-        lista.pack(fill="both")
+        lista = T.tabla(self.cuerpo)
+        lista.pack(fill="x")
         self.filas = {}
         for i, (paso, nombre) in enumerate(GE.PASOS):
-            f = tk.Frame(lista, bg=T.BLANCO, padx=16, pady=10)
+            f = T.fila(lista, T.BLANCO, 16, 10, ultima=i == len(GE.PASOS) - 1)
             f.pack(fill="x")
-            ic = tk.Canvas(f, width=26, height=26, bg=T.BLANCO, highlightthickness=0)
-            T.dibujar_simbolo(ic, "pendiente", 26)
+            ic = T.icono(f, "pendiente", 26, bg=T.BLANCO)
             ic.pack(side="left")
             n = tk.Label(f, text=nombre, font=T.F["cuerpo_b"], bg=T.BLANCO, fg=T.DESACT_TXT, anchor="w")
             n.pack(side="left", padx=(8, 0))
@@ -263,16 +258,18 @@ class Progreso(Modal):
             i = orden.index(paso)
             self.lbl_paso.configure(text=f"Paso {i + 1} de 5  ·  {NOMBRES_PASO[paso]}")
             self.barra.configure(value=i + 0.5)
-            for w in (f, ic, n, d):
+            for w in (ic, n, d):
                 w.configure(bg=T.TINTE_VERDE)
-            T.dibujar_simbolo(ic, "curso", 26)
+            _fondo_fila(f, T.TINTE_VERDE)
+            T.poner_simbolo(ic, "curso", 26)
             n.configure(fg=T.NEGRO)
             d.configure(text=texto or "En curso", fg=T.GRIS)
         else:
-            for w in (f, ic, n, d):
+            for w in (ic, n, d):
                 w.configure(bg=T.BLANCO)
+            _fondo_fila(f, T.BLANCO)
             aviso = estado == GP.CON_AVISO
-            T.dibujar_simbolo(ic, "aviso" if aviso else "ok", 26)
+            T.poner_simbolo(ic, "aviso" if aviso else "ok", 26)
             n.configure(fg=T.NEGRO)
             d.configure(text=texto or "Listo", fg=T.AVISO_TXT if aviso else T.GRIS)
             self.barra.configure(value=orden.index(paso) + 1)
@@ -291,10 +288,8 @@ def cuadro_generado(duena, g, abrir_revision=None, desde_revision=False) -> str 
     m = Modal(duena, "Cuadro maestro generado", ancho=800)
     m.encabezado("ok", "Cuadro maestro generado",
                  f"{r.programa['nombre']}  ·  vigencia {vigencia(r.anio_inicio, r.anio_fin)}  ·  {cuando(g.ahora)}")
-    caja = tk.Frame(m.cuerpo, bg=T.LINEA, padx=1, pady=1)
-    caja.pack(fill="x", pady=(0, 14))
-    arch = tk.Frame(caja, bg=T.BLANCO, padx=20, pady=14)
-    arch.pack(fill="both")
+    arch = T.Caja(m.cuerpo, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO + 2, padx=20, pady=14)
+    arch.pack(fill="x", pady=(0, 14))
     _icono_excel(arch).pack(side="left", padx=(0, 16))
     txt = tk.Frame(arch, bg=T.BLANCO)
     txt.pack(side="left", fill="x", expand=True)
@@ -315,31 +310,25 @@ def cuadro_generado(duena, g, abrir_revision=None, desde_revision=False) -> str 
              (str(r.movilidades_contadas + r.actividades_contadas), "movilidades y actividades", T.VERDE_CTA, ""),
              (str(total), "avisos para revisar", T.MAGENTA if total else T.VERDE_CTA, "Hay que revisar" if total else "")]
     for i, (num, etiqueta, color, nota) in enumerate(datos):
-        tarjeta = tk.Frame(cifras, bg=T.LINEA, padx=1, pady=1)
-        tarjeta.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 10, 0))
+        cont = T.tarjeta(cifras, color, padx=14, pady=10)
+        cont.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 10, 0))
         cifras.grid_columnconfigure(i, weight=1, uniform="c")
-        dentro = tk.Frame(tarjeta, bg=T.BLANCO)
-        dentro.pack(fill="both", expand=True)
-        tk.Frame(dentro, bg=color, width=4).pack(side="left", fill="y")
-        cont = tk.Frame(dentro, bg=T.BLANCO, padx=14, pady=10)
-        cont.pack(side="left", fill="both", expand=True)
         tk.Label(cont, text=nota, font=T.F["pequena_b"], bg=T.BLANCO, fg=color if nota else T.BLANCO,
                  anchor="e").pack(fill="x")
         tk.Label(cont, text=num, font=T.F["cifra"], bg=T.BLANCO, anchor="w").pack(fill="x")
         tk.Label(cont, text=etiqueta, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x")
     if total:
-        bloque = tk.Frame(m.cuerpo, bg=T.FONDO, padx=18, pady=12)
+        bloque = T.Caja(m.cuerpo, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO + 2, padx=18, pady=12)
         bloque.pack(fill="x")
         tk.Label(bloque, text=f"{total} avisos para revisar antes de entregar el cuadro", font=T.F["cuerpo_b"],
                  bg=T.FONDO, anchor="w").pack(fill="x")
         chips = tk.Frame(bloque, bg=T.FONDO)
         chips.pack(fill="x", pady=(8, 0))
-        for n, texto, fondo, color in ((len(grupos[EXCEL]), "corrige el Excel", T.ROSA_SUAVE, T.MAGENTA),
-                                       (len(grupos[PROGRAMA]), "resuélvelo aquí", T.AVISO_BG, T.AVISO_TXT),
-                                       (len(grupos[INFORMATIVO]), "informativos", "#EDEDED", T.GRIS_OSC)):
+        for n, texto, tipo in ((len(grupos[EXCEL]), "corrige el Excel", "error"),
+                               (len(grupos[PROGRAMA]), "resuélvelo aquí", "aviso"),
+                               (len(grupos[INFORMATIVO]), "informativos", "blanco")):
             if n:
-                tk.Label(chips, text=f"{n} {texto}", font=T.F["pequena_b"], bg=fondo, fg=color, padx=12,
-                         pady=5).pack(side="left", padx=(0, 8))
+                T.chip(chips, f"{n} {texto}", tipo).pack(side="left", padx=(0, 8))
         m.parrafo([("Lo que no se pudo cruzar queda fuera del cuadro o como dudoso. Ábrelo en Ver revisión, corrígelo y "
                     "genera de nuevo si hace falta.", False)], color=T.GRIS, pady=(12, 0))
     else:
@@ -363,12 +352,24 @@ def cuadro_generado(duena, g, abrir_revision=None, desde_revision=False) -> str 
 
 def _icono_excel(padre, w=40, h=48):
     """Hoja de cálculo dibujada (mockup 31)."""
-    c = tk.Canvas(padre, width=w, height=h, bg=padre["bg"], highlightthickness=0)
-    c.create_rectangle(3, 3, w - 3, h - 3, outline=T.VERDE_CTA, width=2, fill=T.OK_BG)
-    for y in (h * .38, h * .56, h * .74):
-        c.create_line(10, y, w - 10, y, fill=T.VERDE_CTA, width=2)
-    c.create_line(w * .45, h * .22, w * .45, h * .82, fill=T.VERDE_CTA, width=2)
-    return c
+    from . import graficos as G
+    bg = T.fondo_de(padre)
+
+    def dibujar(d, W, H):
+        s = W / w
+        verde = G.rgb(T.VERDE_CTA)
+        d.rounded_rectangle((2 * s, 2 * s, W - 2 * s, H - 2 * s), 4 * s, fill=G.rgb(T.OK_BG), outline=verde,
+                            width=round(2 * s))
+        for y in (.38, .56, .74):
+            d.line((9 * s, H * y, W - 9 * s, H * y), fill=verde, width=round(2 * s))
+        d.line((W * .45, H * .22, W * .45, H * .82), fill=verde, width=round(2 * s))
+    return tk.Label(padre, image=G.imagen(padre, ("excel",), w, h, dibujar, bg), bg=bg, bd=0)
+
+
+def _fondo_fila(f, color):
+    """Cambia el fondo de una fila de tabla (tk.Frame o la última, redondeada)."""
+    if isinstance(f, tk.Frame):
+        f.configure(bg=color)
 
 
 # ---------------------------------------------------------------- 43-45 generación detenida
@@ -376,10 +377,8 @@ def generacion_detenida(duena, det: GeneracionDetenida, contexto: dict, abrir_pr
     m = Modal(duena, "La generación se detuvo", ancho=820)
     m.encabezado("error", "La generación se detuvo",
                  "No se creó ningún archivo. Los cambios pendientes siguen pendientes y tus Excel no se tocaron.")
-    caja = tk.Frame(m.cuerpo, bg=T.LINEA, padx=1, pady=1)
-    caja.pack(fill="x", pady=(0, 14))
-    lista = tk.Frame(caja, bg=T.BLANCO, padx=16, pady=6)
-    lista.pack(fill="both")
+    lista = T.Caja(m.cuerpo, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO + 2, padx=16, pady=8)
+    lista.pack(fill="x", pady=(0, 14))
     simbolo = {GP.HECHO: ("ok", T.VERDE_CTA), GP.CON_AVISO: ("aviso", T.NARANJA), GP.ERROR: ("error", T.MAGENTA),
                GP.NO_SE_LLEGO: ("pendiente", T.DESACT_TXT), GP.PENDIENTE: ("pendiente", T.DESACT_TXT),
                GP.EN_CURSO: ("pendiente", T.DESACT_TXT)}
@@ -415,35 +414,19 @@ def generacion_detenida(duena, det: GeneracionDetenida, contexto: dict, abrir_pr
 
 
 def _desplazable(padre, alto):
-    marco = tk.Frame(padre, bg=T.BLANCO)
+    marco = T.desplazable(padre, alto)
     marco.pack(fill="x")
-    lienzo = tk.Canvas(marco, bg=T.BLANCO, highlightthickness=0, height=alto)
-    barra = tk.Scrollbar(marco, orient="vertical", command=lienzo.yview)
-    interior = tk.Frame(lienzo, bg=T.BLANCO)
-    ventana = lienzo.create_window(0, 0, window=interior, anchor="nw")
-    interior.bind("<Configure>", lambda e: lienzo.configure(scrollregion=lienzo.bbox("all")))
-    lienzo.bind("<Configure>", lambda e: lienzo.itemconfigure(ventana, width=e.width))
-    lienzo.configure(yscrollcommand=barra.set)
-    lienzo.pack(side="left", fill="both", expand=True)
-    barra.pack(side="right", fill="y")
-    lienzo.bind_all("<MouseWheel>", lambda e: lienzo.yview_scroll(-1 if e.delta > 0 else 1, "units"))
-    return interior
+    return marco.interior
 
 
 def _tarjeta_error(padre, e: GE.ErrorGeneracion, abrir_programas, ancho=820):
-    borde = tk.Frame(padre, bg=T.MAGENTA, padx=1, pady=1)
-    borde.pack(fill="x", pady=(0, 10), padx=(0, 6))
-    t = tk.Frame(borde, bg=T.BLANCO)
-    t.pack(fill="both")
-    tk.Frame(t, bg=T.MAGENTA, width=4).pack(side="left", fill="y")
-    c = tk.Frame(t, bg=T.BLANCO, padx=16, pady=10)
-    c.pack(side="left", fill="both", expand=True)
+    c = T.tarjeta(padre, T.MAGENTA, borde=T.MAGENTA, padx=16, pady=10)
+    c.pack(fill="x", pady=(0, 10))
     arriba = tk.Frame(c, bg=T.BLANCO)
     arriba.pack(fill="x")
     tk.Label(arriba, text=e.titulo, font=T.F["cuerpo_b"], bg=T.BLANCO, anchor="w", wraplength=ancho - 330,
              justify="left").pack(side="left")
-    tk.Label(arriba, text=e.etiqueta, font=T.F["pequena_b"], bg=T.ROSA_SUAVE, fg=T.MAGENTA, padx=10,
-             pady=3).pack(side="right")
+    T.chip(arriba, e.etiqueta, "error").pack(side="right")
     for etiqueta, valor, color in (("Dónde", e.donde, T.GRIS), ("Qué pasó", e.que_paso, T.NEGRO),
                                    ("Qué hacer", e.que_hacer, T.NEGRO)):
         f = tk.Frame(c, bg=T.BLANCO)

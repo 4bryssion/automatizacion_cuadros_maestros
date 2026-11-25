@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import ttk
 from datetime import datetime
 from pathlib import Path
 
@@ -59,14 +60,21 @@ class PantallaRevision(tk.Frame):
         marco = tk.Frame(self, bg=T.FONDO)
         marco.pack(fill="both", expand=True)
         self.lienzo = tk.Canvas(marco, bg=T.FONDO, highlightthickness=0)
-        barra = tk.Scrollbar(marco, orient="vertical", command=self.lienzo.yview)
+        barra = ttk.Scrollbar(marco, orient="vertical", command=self.lienzo.yview, style="CM.Vertical.TScrollbar")
         self.lista = tk.Frame(self.lienzo, bg=T.FONDO, padx=28, pady=16)
         vid = self.lienzo.create_window(0, 0, window=self.lista, anchor="nw")
         self.lista.bind("<Configure>", lambda e: self.lienzo.configure(scrollregion=self.lienzo.bbox("all")))
         self.lienzo.bind("<Configure>", lambda e: (self.lienzo.itemconfigure(vid, width=e.width), self._ancho(e.width)))
         self.lienzo.configure(yscrollcommand=barra.set)
-        barra.pack(side="right", fill="y")
+        barra.pack(side="right", fill="y", padx=(8, 4), pady=4)
         self.lienzo.pack(side="left", fill="both", expand=True)
+        rueda = lambda e: self.lienzo.yview_scroll(-1 if (getattr(e, "delta", 0) > 0 or e.num == 4)  # noqa: E731
+                                                   else 1, "units")
+        self.lista._rueda = rueda
+        marco.bind("<Enter>", lambda e: [self.lienzo.bind_all(ev, rueda) for ev in
+                                         ("<MouseWheel>", "<Button-4>", "<Button-5>")])
+        marco.bind("<Leave>", lambda e: [self.lienzo.unbind_all(ev) for ev in
+                                         ("<MouseWheel>", "<Button-4>", "<Button-5>")])
         self.ancho = 900
 
     def _ancho(self, w):
@@ -101,21 +109,18 @@ class PantallaRevision(tk.Frame):
                                              ("Corrígelo", "En tu Excel o aquí en el programa; la tarjeta te lo indica."),
                                              ("Recarga", "Guarda y cierra el Excel, pulsa Recargar archivos y mira qué cambió."))):
             ultimo = i == 2
-            borde = tk.Frame(pasos, bg=T.VERDE if ultimo else T.LINEA, padx=1, pady=1)
-            borde.grid(row=0, column=i * 2, sticky="nsew")
-            pasos.grid_columnconfigure(i * 2, weight=1, uniform="p")
             fondo = T.TINTE_VERDE if ultimo else T.BLANCO
-            c = tk.Frame(borde, bg=fondo, padx=12, pady=8)
-            c.pack(fill="both", expand=True)
-            n = tk.Canvas(c, width=28, height=28, bg=fondo, highlightthickness=0)
-            n.create_oval(1, 1, 27, 27, fill=T.VERDE_CTA, outline=T.VERDE_CTA)
-            n.create_text(14, 15, text=str(i + 1), fill=T.BLANCO, font=T.F["pequena_b"])
-            n.pack(side="left", anchor="n", padx=(0, 10))
+            c = T.Caja(pasos, fondo=fondo, borde=T.VERDE if ultimo else T.LINEA, grosor=2 if ultimo else 1,
+                       radio=T.RADIO_GRANDE, padx=14, pady=10)
+            c.grid(row=0, column=i * 2, sticky="nsew")
+            pasos.grid_columnconfigure(i * 2, weight=1, uniform="p")
+            T.numero(c, i + 1, 30).pack(side="left", anchor="n", padx=(0, 10))
             tx = tk.Frame(c, bg=fondo)
             tx.pack(side="left", fill="x", expand=True)
             tk.Label(tx, text=titulo, font=T.F["cuerpo_b"], bg=fondo, anchor="w").pack(fill="x")
-            tk.Label(tx, text=texto, font=T.F["pequena"], bg=fondo, anchor="w", justify="left",
-                     wraplength=230).pack(fill="x")
+            lbl = tk.Label(tx, text=texto, font=T.F["pequena"], bg=fondo, anchor="w", justify="left", wraplength=200)
+            lbl.pack(fill="x")
+            tx.bind("<Configure>", lambda e, w=lbl: w.configure(wraplength=max(120, e.width - 4)))
             if not ultimo:
                 T.flecha(pasos, T.BLANCO).grid(row=0, column=i * 2 + 1, padx=6)
         resumen = tk.Frame(a, bg=T.BLANCO)
@@ -123,18 +128,14 @@ class PantallaRevision(tk.Frame):
         avisos = self.avisos()
         if self.recarga:
             c = self.recarga.comparacion
-            caja = tk.Frame(resumen, bg=T.VERDE, padx=1, pady=1)
-            caja.pack(fill="x")
-            dentro = tk.Frame(caja, bg=T.OK_BG, padx=14, pady=8)
-            dentro.pack(fill="both")
+            dentro = T.Caja(resumen, fondo=T.OK_BG, borde=T.VERDE, radio=T.RADIO + 2, padx=14, pady=8)
+            dentro.pack(fill="x")
             T.icono(dentro, "ok", 22, bg=T.OK_BG).pack(side="left")
             tk.Label(dentro, text=f"Archivos recargados {cuando(datetime.now())}.  Antes {c.antes} avisos, ahora {c.ahora}.",
                      font=T.F["cuerpo_b"], bg=T.OK_BG, fg=T.OK_TXT).pack(side="left", padx=(10, 0))
-            for n, texto, fondo, color in ((len(c.nuevos), "nuevo" if len(c.nuevos) == 1 else "nuevos", T.ROSA_SUAVE, T.MAGENTA),
-                                           (len(c.siguen), "siguen", T.AVISO_BG, T.AVISO_TXT),
-                                           (len(c.resueltos), "resueltos", "#E3EED2", T.OK_TXT)):
-                tk.Label(dentro, text=f"{n} {texto}", font=T.F["pequena_b"], bg=fondo, fg=color, padx=10,
-                         pady=3).pack(side="right", padx=(6, 0))
+            for n, texto, tipo in ((len(c.nuevos), "nuevo" if len(c.nuevos) == 1 else "nuevos", "error"),
+                                   (len(c.siguen), "siguen", "aviso"), (len(c.resueltos), "resueltos", "ok")):
+                T.chip(dentro, f"{n} {texto}", tipo, borde=None).pack(side="right", padx=(6, 0))
         else:
             tk.Label(resumen, text=f"{len(avisos)} aviso{'s' if len(avisos) != 1 else ''}", font=T.F["seccion"],
                      bg=T.BLANCO).pack(side="left", padx=(0, 12))
@@ -142,8 +143,8 @@ class PantallaRevision(tk.Frame):
             for g in ORDEN_GRUPOS:
                 if cuenta[g]:
                     _, _, color, fondo, (uno, varios) = GRUPOS[g]
-                    tk.Label(resumen, text=f"{cuenta[g]} {uno if cuenta[g] == 1 else varios}", font=T.F["pequena_b"], bg=fondo,
-                             fg=color if g != INFORMATIVO else T.GRIS_OSC, padx=12, pady=4).pack(side="left", padx=(0, 8))
+                    T.Chip(resumen, f"{cuenta[g]} {uno if cuenta[g] == 1 else varios}", fondo=fondo,
+                           color=color if g != INFORMATIVO else T.GRIS_OSC, alto=32, padx=14).pack(side="left", padx=(0, 8))
 
     def _pintar_lista(self):
         lista = self.lista
@@ -152,10 +153,8 @@ class PantallaRevision(tk.Frame):
         avisos = self.avisos()
         envoltura = max(300, self.ancho - 56 - 300)
         if self.recarga and self.recarga.comparacion.resueltos:
-            caja = tk.Frame(lista, bg=T.VERDE, padx=1, pady=1)
-            caja.pack(fill="x", pady=(0, 16))
-            d = tk.Frame(caja, bg=T.OK_BG, padx=18, pady=12)
-            d.pack(fill="both")
+            d = T.Caja(lista, fondo=T.OK_BG, borde=T.VERDE, radio=T.RADIO_GRANDE, padx=18, pady=12)
+            d.pack(fill="x", pady=(0, 16))
             res = self.recarga.comparacion.resueltos
             tk.Label(d, text=f"Resueltos desde la última lectura ({len(res)})", font=T.F["seccion"], bg=T.OK_BG,
                      fg=T.OK_TXT, anchor="w").pack(fill="x", pady=(0, 6))
@@ -176,10 +175,7 @@ class PantallaRevision(tk.Frame):
             titulo, explicacion, color, _, _ = GRUPOS[g]
             cab = tk.Frame(lista, bg=T.FONDO)
             cab.pack(fill="x", pady=(8, 10))
-            n = tk.Canvas(cab, width=40, height=40, bg=T.FONDO, highlightthickness=0)
-            n.create_oval(1, 1, 39, 39, fill=color, outline=color)
-            n.create_text(20, 21, text=str(len(del_grupo)), fill=T.BLANCO, font=T.F["cuerpo_b"])
-            n.pack(side="left", anchor="n", padx=(0, 14))
+            T.numero(cab, len(del_grupo), 40, color=color).pack(side="left", anchor="n", padx=(0, 14))
             tx = tk.Frame(cab, bg=T.FONDO)
             tx.pack(side="left", fill="x", expand=True)
             tk.Label(tx, text=titulo, font=T.F["seccion"], bg=T.FONDO,
@@ -204,20 +200,15 @@ class PantallaRevision(tk.Frame):
         return m
 
     def _tarjeta(self, padre, a, color, marca, envoltura):
-        borde = tk.Frame(padre, bg=T.LINEA, padx=1, pady=1)
-        borde.pack(fill="x", pady=(0, 12))
-        t = tk.Frame(borde, bg=T.BLANCO)
-        t.pack(fill="both")
-        tk.Frame(t, bg=color, width=5).pack(side="left", fill="y")
-        c = tk.Frame(t, bg=T.BLANCO, padx=20, pady=12)
-        c.pack(side="left", fill="both", expand=True)
+        c = T.tarjeta(padre, color, padx=20, pady=14, banda=6)
+        c.pack(fill="x", pady=(0, 12))
         arriba = tk.Frame(c, bg=T.BLANCO)
         arriba.pack(fill="x")
         tk.Label(arriba, text=a.titulo, font=T.F["cuerpo_b"], bg=T.BLANCO, anchor="w", justify="left",
                  wraplength=envoltura).pack(side="left")
         if marca:
             texto, fondo, fg = MARCAS[marca]
-            tk.Label(arriba, text=texto, font=T.F["pequena_b"], bg=fondo, fg=fg, padx=10, pady=3).pack(side="right")
+            T.Chip(arriba, texto, fondo=fondo, color=fg).pack(side="right")
         ancho_et = T.F["pequena_b"].measure("Qué hacer  ")
         for etiqueta, valor, fg in (("Dónde", a.donde, T.GRIS), ("Qué pasó", a.que_paso, T.NEGRO),
                                     ("Qué hacer", a.que_hacer, T.NEGRO)):
@@ -261,10 +252,8 @@ class PantallaRevision(tk.Frame):
 
     def _vacio(self, padre):
         """Mockup 41: no quedó nada por revisar."""
-        caja = tk.Frame(padre, bg=T.LINEA, padx=1, pady=1)
-        caja.pack(fill="x", pady=30)
-        d = tk.Frame(caja, bg=T.BLANCO, padx=30, pady=30)
-        d.pack(fill="both")
+        d = T.Caja(padre, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO_GRANDE, padx=30, pady=30)
+        d.pack(fill="x", pady=30)
         T.icono(d, "ok", 56).pack()
         tk.Label(d, text="No hay nada que revisar", font=T.F["modal_titulo"], bg=T.BLANCO).pack(pady=(14, 6))
         tk.Label(d, text="Todos los registros se cruzaron con su convenio y no quedó ningún aviso. Si cambias algún "
@@ -398,7 +387,7 @@ def salir_con_cambios(app, recarga=None, pantalla=None) -> bool:
     m.encabezado("aviso", "Hay correcciones que aún no están en tu cuadro")
     m.parrafo([("Recargaste los archivos o cambiaste la configuración, y el resultado cambió. El cuadro que generaste "
                 "antes quedó desactualizado, así que para salir hay que generarlo de nuevo.", False)])
-    caja = tk.Frame(m.cuerpo, bg=T.FONDO, padx=20, pady=14)
+    caja = T.Caja(m.cuerpo, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO_GRANDE, padx=20, pady=14)
     caja.pack(fill="x", pady=(0, 10))
     if recarga:
         c = recarga.comparacion
@@ -408,16 +397,14 @@ def salir_con_cambios(app, recarga=None, pantalla=None) -> bool:
                                     (len(c.nuevos), "aviso nuevo", T.ROSA_SUAVE, T.MAGENTA)):
             if n:
                 plural = texto if n == 1 else texto.replace("aviso ", "avisos ").replace("resuelto", "resueltos").replace("nuevo", "nuevos")
-                tk.Label(chips, text=f"{n} {plural}", font=T.F["pequena_b"], bg=fondo, fg=fg, padx=10,
-                         pady=4).pack(side="left", padx=(0, 8))
+                T.Chip(chips, f"{n} {plural}", fondo=fondo, color=fg).pack(side="left", padx=(0, 8))
     cambiada = RV.elementos_cambiados(u.config_firmas, app.config)
     if cambiada:
         f = tk.Frame(caja, bg=T.FONDO)
         f.pack(fill="x", pady=(0, 8))
         tk.Label(f, text="Configuración cambiada desde que generaste:", font=T.F["cuerpo"], bg=T.FONDO).pack(side="left")
         for nombre, n in cambiada.items():
-            tk.Label(f, text=f"{nombre} ({n})", font=T.F["pequena_b"], bg=T.AVISO_BG, fg=T.AVISO_TXT, padx=10,
-                     pady=3).pack(side="left", padx=(8, 0))
+            T.chip(f, f"{nombre} ({n})", "aviso").pack(side="left", padx=(8, 0))
     if u.filas_cambian:
         tk.Label(caja, text=f"El cuadro nuevo cambia en {u.filas_cambian} fila{'s' if u.filas_cambian != 1 else ''}.",
                  font=T.F["cuerpo_b"], bg=T.FONDO, anchor="w").pack(fill="x")
@@ -446,14 +433,13 @@ class ElegirInstitucion(D.Modal):
         fila.pack(fill="x")
         tk.Label(fila, text="Elegir institución", font=T.F["modal_titulo"], bg=T.BLANCO).pack(side="left")
         T.Ayuda(fila, "elegir_inst").pack(side="left", padx=10)
-        tk.Label(fila, text="Se guarda como equivalencia", font=T.F["pequena_b"], bg=T.FONDO, padx=12,
-                 pady=4).pack(side="right")
+        T.chip(fila, "Se guarda como equivalencia", "gris").pack(side="right")
         chips = tk.Frame(self.cuerpo, bg=T.BLANCO)
         chips.pack(fill="x", pady=(10, 12))
         for c in (f"Archivo: {aviso.ruta.name if aviso.ruta else ''} · fila {aviso.filas[0] if aviso.filas else '—'}",
                   f"{aviso.cantidad} sin contar"):
-            tk.Label(chips, text=c, font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="left", padx=(0, 8))
-        caja = tk.Frame(self.cuerpo, bg=T.FONDO, padx=18, pady=10)
+            T.chip_contexto(chips, c).pack(side="left", padx=(0, 8))
+        caja = T.Caja(self.cuerpo, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO + 2, padx=18, pady=10)
         caja.pack(fill="x")
         tk.Label(caja, text="Así aparece en el Excel", font=T.F["pequena"], bg=T.FONDO, fg=T.GRIS, anchor="w").pack(fill="x")
         tk.Label(caja, text=f"«{aviso.detalle['como_aparece']}»", font=T.F["seccion"], bg=T.FONDO, anchor="w").pack(fill="x")
@@ -506,14 +492,12 @@ class ElegirInstitucion(D.Modal):
 
     def _opcion(self, nombre, pct, muy):
         elegida = self.elegida.get() == nombre
-        borde = tk.Frame(self.opciones, bg=T.VERDE_CTA if elegida else T.LINEA, padx=2 if elegida else 1,
-                         pady=2 if elegida else 1)
-        borde.pack(fill="x", pady=(0, 8))
         fondo = T.TINTE_VERDE if elegida else T.BLANCO
-        f = tk.Frame(borde, bg=fondo, padx=14, pady=8, cursor="hand2")
-        f.pack(fill="both")
-        rb = tk.Radiobutton(f, variable=self.elegida, value=nombre, bg=fondo, activebackground=fondo,
-                            selectcolor=T.BLANCO, command=self._listar, tristatevalue="\x00")
+        f = T.Caja(self.opciones, fondo=fondo, borde=T.VERDE_CTA if elegida else T.LINEA, grosor=2 if elegida else 1,
+                   radio=T.RADIO + 2, padx=14, pady=8)
+        f.pack(fill="x", pady=(0, 8))
+        f.configure(cursor="hand2")
+        rb = T.radio(f, self.elegida, nombre, comando=self._listar)
         rb.pack(side="left")
         tx = tk.Frame(f, bg=fondo)
         tx.pack(side="left", fill="x", expand=True, padx=(8, 0))
@@ -522,7 +506,7 @@ class ElegirInstitucion(D.Modal):
         tk.Label(tx, text=f"{n} convenio{'s' if n != 1 else ''} en la matriz", font=T.F["pequena"], bg=fondo,
                  fg=T.GRIS, anchor="w").pack(fill="x")
         if pct is not None:
-            tk.Label(f, text=f"{pct} %  ·  {'Muy parecida' if muy else 'Poco parecida'}", font=T.F["pequena_b"],
-                     bg=fondo if muy else T.FONDO, fg=T.OK_TXT if muy else T.GRIS_OSC, padx=10, pady=3).pack(side="right")
+            T.chip(f, f"{pct} %  ·  {'Muy parecida' if muy else 'Poco parecida'}",
+                   "ok" if muy else "gris").pack(side="right")
         for w in (f, tx, *tx.winfo_children()):
             w.bind("<Button-1>", lambda e, v=nombre: (self.elegida.set(v), self._listar()))

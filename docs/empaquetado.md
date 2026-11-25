@@ -20,9 +20,9 @@ no trae el logo del CNA y Brown Std.
   de las pantallas e icono del programa, que es la «A» del logotipo y se crea al empaquetar).
 - **Logo del CNA:** no se publica. El .exe arma el cuadro sin ese logo; quien tenga el archivo puede ponerlo en
   `assets/logo_cna.png` y empaquetar en su equipo (`pip install -e ".[empaquetado]"` y `python tools/empaquetar.py`).
-- **Brown Std:** es una tipografía comercial (Lineto); la licencia de escritorio no permite publicarla ni incluirla en
-  un programa que se reparte. El .exe usa Segoe UI, que viene con Windows. Si la institución tiene una licencia que
-  permita incrustarla en una aplicación, basta con ponerla en `assets/marca/fuentes/` al empaquetar.
+- **Brown Std:** tipografía comercial (Lineto). La oficina confirmó el 25-nov-2026 que la institución tiene permiso para
+  usarla en el programa, así que está en `assets/marca/fuentes/` y va dentro del .exe (se carga solo para el programa,
+  sin instalarla en Windows). La comprobación del .exe falla si no la carga.
 
 ## En el equipo de la persona
 

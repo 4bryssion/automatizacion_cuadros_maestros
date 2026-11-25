@@ -42,44 +42,73 @@ def que_falta(contexto) -> str | None:
 
 
 def _ilustracion(padre, n):
-    """Dibujos simples de los 4 pasos (mockup 08), con figuras: se ven igual con cualquier tipografía."""
-    c = tk.Canvas(padre, height=120, bg=T.FONDO, highlightthickness=0)
-    gris, verde = "#CFCFCF", T.VERDE_CTA
-    if n == 1:
-        c.create_rectangle(20, 16, 190, 104, fill=T.BLANCO, outline=gris)
-        c.create_text(32, 30, text="Mensaje para Gemini", anchor="w", font=T.F["pequena_b"])
-        for i, w in enumerate((140, 120, 130, 90)):
-            c.create_rectangle(32, 48 + i * 13, 32 + w, 54 + i * 13, fill=gris, outline=gris)
-        c.create_line(200, 60, 228, 60, fill=T.GRIS, width=2, arrow="last")
-        c.create_rectangle(236, 40, 330, 80, outline=verde, width=2, fill=T.BLANCO)
-        c.create_text(283, 60, text="Copiar", fill=verde, font=T.F["pequena_b"])
-    elif n == 2:
-        c.create_rectangle(40, 14, 330, 106, fill=T.BLANCO, outline=gris)
-        c.create_rectangle(40, 14, 330, 32, fill="#EDEDED", outline=gris)
-        for i in range(3):
-            c.create_oval(50 + i * 12, 20, 57 + i * 12, 27, fill="#BDBDBD", outline="")
-        c.create_text(185, 23, text="gemini.google.com", font=T.F["pequena"], fill=T.GRIS)
-        c.create_text(185, 55, text="Gemini", font=T.F["cuerpo_b"])
-        c.create_rectangle(90, 74, 280, 94, outline=gris, fill=T.BLANCO)
-    elif n == 3:
-        for x, t in ((130, "Ctrl"), (200, "V")):
-            c.create_rectangle(x - 28, 12, x + 28, 38, outline=T.GRIS_OSC, width=2, fill=T.BLANCO)
-            c.create_text(x, 25, text=t, font=T.F["pequena_b"])
-        c.create_line(165, 42, 165, 66, fill=verde, width=2, arrow="last")
-        c.create_rectangle(40, 72, 320, 104, outline=T.GRIS_OSC, width=2, fill=T.BLANCO)
-        c.create_text(56, 88, text="Ayúdame a emparejar…", anchor="w", font=T.F["pequena"])
-        c.create_oval(290, 76, 314, 100, fill=verde, outline=verde)
-    else:
-        c.create_rectangle(20, 16, 160, 104, fill=T.BLANCO, outline=gris)
-        c.create_text(32, 30, text="Respuesta", anchor="w", font=T.F["pequena_b"])
-        for i, w in enumerate((110, 95, 105, 80)):
-            c.create_rectangle(32, 48 + i * 13, 32 + w, 54 + i * 13, fill=gris, outline=gris)
-        c.create_line(170, 60, 198, 60, fill=T.GRIS, width=2, arrow="last")
-        c.create_rectangle(206, 16, 330, 104, outline=verde, width=2, fill=T.BLANCO)
-        c.create_text(218, 30, text="Pegar respuesta", anchor="w", font=T.F["pequena_b"])
-        c.create_rectangle(218, 44, 318, 66, outline=gris, fill=T.BLANCO)
-        c.create_rectangle(218, 76, 318, 94, fill=verde, outline=verde)
-    return c
+    """Dibujos de los 4 pasos (mockup 08), suavizados con Pillow."""
+    from . import graficos as G
+    W, H = 380, 120
+
+    def dibujar(d, w, h):
+        k = G.SS
+        gris, verde, osc, blanco = G.rgb("#CFCFCF"), G.rgb(T.VERDE_CTA), G.rgb(T.GRIS_OSC), G.rgb(T.BLANCO)
+
+        def caja_(x0, y0, x1, y1, r=8, fill=blanco, outline=gris, ancho=1):
+            d.rounded_rectangle((x0 * k, y0 * k, x1 * k, y1 * k), r * k, fill=fill, outline=outline, width=ancho * k)
+
+        def texto(x, y, t, px=13, color=osc, negrita=True, centro=False):
+            f = G.fuente(px, negrita)
+            if centro:
+                G.texto_centrado(d, x * k, y * k, t, px, color, negrita)
+            else:
+                b = d.textbbox((0, 0), t, font=f)
+                d.text((x * k, y * k - (b[1] + b[3]) / 2), t, font=f, fill=color)
+
+        def flecha_(x0, y0, x1, y1):
+            d.line((x0 * k, y0 * k, x1 * k, y1 * k), fill=G.rgb(T.GRIS), width=2 * k)
+            if y0 == y1:
+                d.polygon([(x1 * k, (y1 - 5) * k), ((x1 + 8) * k, y1 * k), (x1 * k, (y1 + 5) * k)], fill=G.rgb(T.GRIS))
+            else:
+                d.polygon([((x1 - 5) * k, y1 * k), (x1 * k, (y1 + 8) * k), ((x1 + 5) * k, y1 * k)], fill=verde)
+        if n == 1:
+            caja_(22, 14, 200, 106)
+            texto(34, 30, "Mensaje para Gemini")
+            for i, ancho in enumerate((150, 128, 140, 96)):
+                d.rounded_rectangle((34 * k, (46 + i * 13) * k, (34 + ancho) * k, (52 + i * 13) * k), 3 * k, fill=gris)
+            flecha_(210, 60, 226, 60)
+            caja_(242, 40, 358, 80, 8, blanco, verde, 2)
+            texto(300, 60, "Copiar", 14, verde, centro=True)
+        elif n == 2:
+            caja_(40, 12, 340, 108, 10)
+            d.rounded_rectangle((41 * k, 13 * k, 339 * k, 34 * k), 9 * k, fill=G.rgb("#EDEDED"),
+                                corners=(True, True, False, False))
+            for i in range(3):
+                d.ellipse(((52 + i * 12) * k, 20 * k, (59 + i * 12) * k, 27 * k), fill=G.rgb("#BDBDBD"))
+            caja_(100, 17, 300, 30, 6)
+            texto(200, 24, "gemini.google.com", 11, G.rgb(T.GRIS), False, centro=True)
+            texto(190, 58, "Gemini", 17, osc, centro=True)
+            caja_(95, 76, 285, 96, 10)
+        elif n == 3:
+            for x, t in ((150, "Ctrl"), (220, "V")):
+                caja_(x - 28, 10, x + 28, 38, 6, blanco, osc, 2)
+                texto(x, 24, t, 14, osc, centro=True)
+            flecha_(185, 42, 185, 60)
+            caja_(40, 72, 340, 106, 17, blanco, osc, 2)
+            texto(58, 89, "Ayúdame a emparejar estos nombres…", 12, osc, False)
+            d.ellipse((310 * k, 76 * k, 336 * k, 102 * k), fill=verde)
+            d.line((323 * k, 95 * k, 323 * k, 83 * k), fill=blanco, width=2 * k)
+            d.polygon([(317 * k, 88 * k), (323 * k, 81 * k), (329 * k, 88 * k)], fill=blanco)
+        else:
+            caja_(22, 14, 170, 106)
+            texto(34, 30, "Respuesta")
+            for i, ancho in enumerate((118, 100, 110, 86)):
+                d.rounded_rectangle((34 * k, (46 + i * 13) * k, (34 + ancho) * k, (52 + i * 13) * k), 3 * k, fill=gris)
+            flecha_(180, 60, 196, 60)
+            caja_(212, 14, 358, 106, 8, blanco, verde, 2)
+            texto(224, 30, "Pegar respuesta")
+            caja_(224, 44, 346, 66, 5)
+            d.rounded_rectangle((224 * k, 76 * k, 346 * k, 94 * k), 5 * k, fill=verde)
+            texto(285, 85, "Revisar sugerencias", 10, blanco, centro=True)
+    caja_ill = T.Caja(padre, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO + 2, padx=8, pady=8)
+    tk.Label(caja_ill, image=G.imagen(padre, ("ilustracion", n), W, H, dibujar), bg=T.FONDO, bd=0).pack()
+    return caja_ill
 
 
 class ModalGemini(D.Modal):
@@ -176,26 +205,19 @@ class ModalGemini(D.Modal):
                  ("Vuelve y pega la respuesta", "Copia la respuesta de Gemini, vuelve aquí, pégala y pulsa Revisar "
                                                 "sugerencias.")]
         for i, (titulo, texto) in enumerate(pasos):
-            borde = tk.Frame(rejilla, bg=T.LINEA, padx=1, pady=1)
-            borde.grid(row=i // 2, column=i % 2, sticky="nsew", padx=(0, 8) if i % 2 == 0 else (8, 0), pady=(0, 12))
+            t = T.Caja(rejilla, fondo=T.BLANCO, borde=T.LINEA, radio=T.RADIO_GRANDE, padx=12, pady=12)
+            t.grid(row=i // 2, column=i % 2, sticky="nsew", padx=(0, 8) if i % 2 == 0 else (8, 0), pady=(0, 12))
             rejilla.grid_columnconfigure(i % 2, weight=1, uniform="g")
-            t = tk.Frame(borde, bg=T.BLANCO, padx=12, pady=12)
-            t.pack(fill="both", expand=True)
             _ilustracion(t, i + 1).pack(fill="x")
             f = tk.Frame(t, bg=T.BLANCO)
             f.pack(fill="x", pady=(10, 4))
-            num = tk.Canvas(f, width=30, height=30, bg=T.BLANCO, highlightthickness=0)
-            num.create_oval(1, 1, 29, 29, fill=T.VERDE_CTA, outline=T.VERDE_CTA)
-            num.create_text(15, 15, text=str(i + 1), fill=T.BLANCO, font=T.F["pequena_b"])
-            num.pack(side="left")
+            T.numero(f, i + 1, 30).pack(side="left")
             tk.Label(f, text=titulo, font=T.F["seccion"], bg=T.BLANCO).pack(side="left", padx=10)
             tk.Label(t, text=texto, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w", justify="left",
                      wraplength=420).pack(fill="x")
-        caja = tk.Frame(c, bg=T.NARANJA, padx=1, pady=1)
-        caja.pack(fill="x")
-        d = tk.Frame(caja, bg=T.AVISO_BG, padx=14, pady=10)
-        d.pack(fill="both")
-        T.icono(d, "aviso", 22, bg=T.AVISO_BG).pack(side="left", anchor="n")
+        d = T.Caja(c, fondo=T.AVISO_BG, borde=T.NARANJA, radio=T.RADIO + 2, padx=16, pady=12)
+        d.pack(fill="x")
+        T.icono(d, "aviso", 24, bg=T.AVISO_BG).pack(side="left")          # centrado con las dos líneas
         tx = tk.Frame(d, bg=T.AVISO_BG)
         tx.pack(side="left", fill="x", padx=12)
         tk.Label(tx, text="Gemini solo sugiere: nada se aplica sin tu confirmación.", font=T.F["cuerpo_b"],
@@ -239,9 +261,10 @@ class ModalGemini(D.Modal):
         T.chip(cab, "Paso 4 de 4", "ok").pack(side="right")
         tk.Label(c, text="El mensaje ya está copiado. Si Gemini no se abrió, ve a gemini.google.com en tu navegador.",
                  font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x", pady=(6, 8))
-        borde = tk.Frame(c, bg=T.VERDE_CTA, padx=2, pady=2)
+        borde = T.Caja(c, fondo=T.BLANCO, borde=T.VERDE_CTA, grosor=2, radio=T.RADIO + 2, padx=8, pady=6)
         borde.pack(fill="x")
-        self.caja_respuesta = tk.Text(borde, height=6, wrap="word", font=T.F["cuerpo"], bd=0, padx=10, pady=8)
+        self.caja_respuesta = tk.Text(borde, height=6, wrap="word", font=T.F["cuerpo"], bd=0, padx=6, pady=4,
+                                      highlightthickness=0)
         self.caja_respuesta.insert("1.0", self.texto_respuesta)
         self.caja_respuesta.pack(fill="x")
         self.caja_respuesta.bind("<KeyRelease>", lambda e: self._contar())
@@ -294,10 +317,10 @@ class ModalGemini(D.Modal):
         cab.pack(fill="x", pady=(14, 6))
         tk.Label(cab, text=f"Sugerencias ({len(self.respuestas)})", font=T.F["seccion"], bg=T.BLANCO).pack(side="left")
         tk.Label(cab, text="Marca las que quieres guardar", font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS).pack(side="right")
-        caja = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(c, pie=True)
         caja.pack(fill="x")
         anchos = (40, 330, 340, 170)
-        h = tk.Frame(caja, bg=T.GRIS_OSC, padx=12, pady=8)
+        h = T.cabecera(caja, padx=12, pady=8)
         h.pack(fill="x")
         for j, (texto, w) in enumerate(zip(("", "El Excel dice", "Gemini propone", "Estado"), anchos)):
             h.grid_columnconfigure(j, minsize=w)
@@ -357,7 +380,7 @@ class ModalSugerencias(D.Modal):
         chips = tk.Frame(self.cuerpo, bg=T.BLANCO)
         chips.pack(fill="x", pady=(10, 10))
         for texto in (f"Programa: {programa}", f"Vigencia: {vigencia(desde, hasta)}"):
-            tk.Label(chips, text=texto, font=T.F["pequena_b"], bg=T.FONDO, padx=12, pady=4).pack(side="left", padx=(0, 8))
+            T.chip_contexto(chips, texto).pack(side="left", padx=(0, 8))
         T.Franja(self.cuerpo, "info", "Estos nombres no coinciden exactamente, pero se parecen. El programa los propone "
                  "y tú decides: ninguno viene marcado. Lo que no marques sigue como aviso en Ver revisión.").pack(
             fill="x", pady=(0, 12))
@@ -380,10 +403,10 @@ class ModalSugerencias(D.Modal):
                        lambda: (S.marcar_muy_parecidas(self.lista), self.pintar()), fuente="pequena_b")
         muy.pack(side="right", padx=20)
         muy.activar(any(s.muy_parecida and not s.marcada for s in self.lista))
-        caja = tk.Frame(c, bg=T.LINEA, padx=1, pady=1)
+        caja = T.tabla(c, pie=True)
         caja.pack(fill="x")
         anchos = (36, 110, 310, 280, 140)
-        h = tk.Frame(caja, bg=T.GRIS_OSC, padx=12, pady=8)
+        h = T.cabecera(caja, padx=12, pady=8)
         h.pack(fill="x")
         for j, (texto, w) in enumerate(zip(("", "Tipo", "Así aparece en el Excel", "El programa propone", "Parecido"),
                                            anchos)):
@@ -469,7 +492,7 @@ class ElegirDeLista(D.Modal):
     def __init__(self, duena, titulo, como_aparece, opciones, actual=None):
         super().__init__(duena, titulo, ancho=620)
         tk.Label(self.cuerpo, text=titulo, font=T.F["modal_titulo"], bg=T.BLANCO, anchor="w").pack(fill="x")
-        caja = tk.Frame(self.cuerpo, bg=T.FONDO, padx=16, pady=10)
+        caja = T.Caja(self.cuerpo, fondo=T.FONDO, borde=None, grosor=0, radio=T.RADIO + 2, padx=16, pady=10)
         caja.pack(fill="x", pady=(10, 10))
         tk.Label(caja, text="Así aparece en el Excel", font=T.F["pequena"], bg=T.FONDO, fg=T.GRIS, anchor="w").pack(fill="x")
         tk.Label(caja, text=f"«{como_aparece}»", font=T.F["seccion"], bg=T.FONDO, anchor="w").pack(fill="x")

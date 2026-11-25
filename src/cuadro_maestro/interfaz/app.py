@@ -196,11 +196,15 @@ class Aplicacion:
 
 
 def _icono_ventana(raiz):
-    from ..recursos import carpeta_recursos
-    ruta = carpeta_recursos() / "icono.png"
-    if ruta.is_file():
+    """La «A» del logotipo como icono de todas las ventanas (barra de título y barra de tareas)."""
+    from PIL import ImageTk
+
+    from .graficos import icono_programa
+    img = icono_programa()
+    if img is not None:
         try:
-            raiz.iconphoto(True, tk.PhotoImage(file=str(ruta)))
+            raiz._icono = [ImageTk.PhotoImage(img.resize((n, n)), master=raiz) for n in (64, 32, 16)]
+            raiz.iconphoto(True, *raiz._icono)
         except tk.TclError:
             pass
 
