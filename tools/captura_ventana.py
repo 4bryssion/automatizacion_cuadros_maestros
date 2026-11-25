@@ -71,6 +71,9 @@ def modal_abierto():
 def capturar_y_cerrar(nombre, ms=900):
     def f():
         m = modal_abierto()
+        if m is not None and m.title() == "Leyendo los archivos":    # esperar a que termine de leer
+            raiz.after(300, f)
+            return
         if m:
             foto(nombre, m)
             m.destroy()
@@ -152,9 +155,11 @@ foto("06_configuracion")
 def abrir_editando(clase, nombre, *args, accion=lambda m: m.editar(0)):
     def f():
         m = modal_abierto()
-        if m:
-            accion(m)
-            raiz.after(500, lambda: (foto(nombre, m), m.destroy()))
+        if not isinstance(m, clase):            # todavía está la ventana de espera (en Windows leer tarda más)
+            raiz.after(300, f)
+            return
+        accion(m)
+        raiz.after(500, lambda: (foto(nombre, m), m.destroy()))
     raiz.after(600, f)
     clase(app, raiz, *args).mostrar()
 
