@@ -164,14 +164,19 @@ class VentanaPrincipal(tk.Frame):
         if ruta.is_file():
             try:
                 from PIL import Image, ImageTk
-                im = Image.open(ruta)
-                caja = im.getbbox()                 # el archivo oficial trae mucho margen transparente
-                if caja:
-                    im = im.crop(caja)
-                alto = 52
-                im = im.resize((int(im.width * alto / im.height), alto), Image.LANCZOS)
-                self._img_logo = ImageTk.PhotoImage(im)
-                return tk.Label(padre, image=self._img_logo, bg=T.BLANCO)
+                raiz = padre._root()
+                im = getattr(raiz, "_logo_pil", None)
+                if im is None:                      # se prepara una sola vez (el archivo oficial es grande)
+                    im = Image.open(ruta)
+                    caja = im.getbbox()             # y trae mucho margen transparente
+                    if caja:
+                        im = im.crop(caja)
+                    alto = 52
+                    im = raiz._logo_pil = im.resize((int(im.width * alto / im.height), alto), Image.LANCZOS)
+                foto = ImageTk.PhotoImage(im, master=padre)
+                etiqueta = tk.Label(padre, image=foto, bg=T.BLANCO)
+                etiqueta.foto = foto   # cada logo guarda su imagen: antes, abrir Configuración borraba la del inicio
+                return etiqueta
             except Exception:   # noqa: BLE001
                 pass
         return tk.Label(padre, text="AREANDINA", font=T.F["app_titulo"], bg=T.BLANCO, fg=T.VERDE)
@@ -248,7 +253,7 @@ class VentanaPrincipal(tk.Frame):
         invertida = desde is not None and hasta is not None and desde > hasta
         self.lbl_vig_error.configure(text="«Desde» no puede ser mayor que «Hasta»." if invertida else "")
         for cb in self.cb_desde + self.cb_hasta:
-            cb.configure(style="Error.CM.TCombobox" if invertida else "CM.TCombobox")
+            T.poner_estilo(cb, "Error.CM.TCombobox" if invertida else "CM.TCombobox")
         self.resumen = resumir(carpeta, self.config, desde, hasta) if carpeta and not invertida and desde else None
         self._pintar_matriz()
         self._pintar_tabla(desde, hasta)

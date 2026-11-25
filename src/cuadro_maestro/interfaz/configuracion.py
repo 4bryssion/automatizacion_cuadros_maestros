@@ -438,6 +438,7 @@ class ModalEquivalencias(ModalLista):
         v_es = tk.StringVar(value=e["es"] if e else "")
         cb = ttk.Combobox(der, textvariable=v_es, values=self.opciones, style="CM.TCombobox", font=T.F["cuerpo"], height=12)
         T.sin_rueda(cb)
+        T.poner_estilo(cb, "CM.TCombobox")
         cb.pack(fill="x", pady=(2, 0))
 
         def filtrar(*_):

@@ -21,6 +21,28 @@ ORDEN_FUENTES = ("matriz", "movilidad", "internacionalizacion_en_casa")
 SEDE_POR_DEFECTO = "Pereira"
 
 
+# Archivos ya leídos: si el archivo no cambió (misma fecha y tamaño) y su configuración tampoco, no se vuelve a abrir.
+# Leer la matriz real tarda uno o dos segundos; la vista previa, Fuentes de datos, Campos, Gemini y la generación la
+# leen una y otra vez. Se guardan pocas entradas (las más recientes).
+_LEIDOS: dict = {}
+MAX_LEIDOS = 48
+
+
+def _clave(e, fuente, config, sede):
+    import json
+    try:
+        st = e.ruta.stat()
+    except OSError:
+        return None
+    extra = config["programas"] if fuente["id"] == "matriz" else None
+    return (str(e.ruta), st.st_mtime_ns, st.st_size, e.anio, e.semestre, sede,
+            json.dumps([fuente, extra], sort_keys=True, ensure_ascii=False, default=str))
+
+
+def olvidar_leidos() -> None:
+    _LEIDOS.clear()
+
+
 class Cancelado(Exception):
     """La persona pulsó Cancelar: se detiene sin crear nada."""
 
@@ -45,6 +67,12 @@ def leer_carpeta(carpeta: Path, config: dict, anio_inicio: int, anio_fin: int, *
             continue
         if al_avanzar:
             al_avanzar(e.fuente, e.ruta)
+        clave = _clave(e, fuentes[e.fuente], config, sede)
+        if clave is not None and clave in _LEIDOS:
+            leido, sus_avisos = _LEIDOS[clave]
+            leidos.append(leido)
+            avisos.extend(sus_avisos)
+            continue
         try:
             libro = abrir(e.ruta)
         except NoSePudoAbrir as err:
@@ -54,7 +82,14 @@ def leer_carpeta(carpeta: Path, config: dict, anio_inicio: int, anio_fin: int, *
             with warnings.catch_warnings():
                 # openpyxl avisa de fechas imposibles (las deja como error) y de extensiones que no soporta.
                 warnings.simplefilter("ignore")
-                leidos.append(_leer_libro(libro, fuentes[e.fuente], e, config, sede, avisos, cancelado))
+                propios: list = []
+                leido = _leer_libro(libro, fuentes[e.fuente], e, config, sede, propios, cancelado)
+                leidos.append(leido)
+                avisos.extend(propios)
+                if clave is not None:
+                    if len(_LEIDOS) >= MAX_LEIDOS:
+                        _LEIDOS.pop(next(iter(_LEIDOS)))
+                    _LEIDOS[clave] = (leido, propios)
         except Cancelado:
             raise
         except Exception as err:  # noqa: BLE001 — un archivo raro por dentro es «dañado», nunca un cierre del programa

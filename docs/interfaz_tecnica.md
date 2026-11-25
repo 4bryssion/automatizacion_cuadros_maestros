@@ -138,6 +138,26 @@ Lógica en `src/cuadro_maestro/sugerencias.py` (pruebas en `tests/test_sugerenci
   confirmar). Ninguna viene marcada; «Marcar las muy parecidas» marca las de 95 % o más. Se abre con el botón
   «Confirmar sugerencias (n)» del grupo «Se resuelven aquí» en Ver revisión.
 
+## Rapidez y bordes
+
+- **Archivos ya leídos.** `lectura.lector` guarda lo leído de cada Excel (hasta 48) con la ruta, la fecha y el tamaño
+  del archivo y la configuración de su fuente (más los programas, en la matriz). Si nada de eso cambió, no se vuelve a
+  abrir: la vista previa, Fuentes de datos, Campos, Gemini y la generación ya no releen la matriz cada vez. Si el
+  archivo o su configuración cambian, se lee de nuevo. Los errores no se guardan.
+- **Fondos redondeados de ttk.** ttk estira el centro de la imagen repitiéndolo en mosaico: con un centro de 6 px una
+  tarjeta grande eran miles de copias en cada repintado (lo que se veía como que la ventana se trababa). Ahora las
+  imágenes tienen un centro de 96 px, y `width`/`height` del elemento conservan el tamaño mínimo de antes (si no, las
+  cajas pequeñas crecían y la ventana entraba en un ciclo de reacomodo).
+- **Reglas de cruce** repinta solo la tarjeta de la regla que cambió, el chip del encabezado y el botón «Restablecer
+  todas»; antes rehacía la ventana entera.
+- **En Windows los modales aparecen ya dibujados** (se muestran con transparencia total, se dibujan y se hacen
+  visibles), en vez de verse pintar por partes.
+- **Esquinas grises.** Lo transparente de una imagen de ttk se ve gris en Windows. Los campos y listas desplegables
+  llevan pintado el color de lo que tienen detrás: `tema.poner_estilo(control, estilo)` crea una variante del estilo por
+  color de fondo (`F<color>.CM.TCombobox`, etc.). Quien cambie el estilo de un campo debe usar esa función.
+- **Logo.** Cada pantalla guarda su propia imagen del logo (antes, abrir Configuración o Revisión borraba la del
+  inicio) y el archivo se prepara una sola vez.
+
 ## Pendiente
 
 El empaquetado en .exe y el manual.

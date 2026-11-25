@@ -40,55 +40,75 @@ class ModalReglas(D.Modal):
     def reglas(self):
         return self.app.config["reglas"]
 
-    def cambio(self):
+    def cambio(self, clave=None):
+        """Guarda y vuelve a pintar solo lo que cambió: la tarjeta de esa regla (o todas), el chip y el botón de
+        restablecer. Antes se rehacía la ventana entera en cada cambio y se notaba el parpadeo."""
         self.app.guardar_config()
-        posicion = self.marco.lienzo.yview()[0] if hasattr(self, "marco") else 0
-        self.pintar()
+        posicion = self.marco.lienzo.yview()[0]
+        for c in ([clave] if clave else [c for c, _, _ in REGLAS]):
+            vieja = self.tarjetas[c]
+            nueva = self._tarjeta(self.marco.interior, self.numeros[c], c, *self.textos[c], antes=vieja)
+            vieja.destroy()
+            self.tarjetas[c] = nueva
+        self._pintar_estado()
         self.update_idletasks()
         self.marco.lienzo.yview_moveto(posicion)
 
     def poner(self, clave, campo, valor):
+        if self.reglas[clave].get(campo) == valor:
+            return
         self.reglas[clave][campo] = valor
-        self.cambio()
+        self.cambio(clave)
+
+    def _pintar_estado(self):
+        n = reglas_cambiadas(self.app.config)
+        texto = f"5 reglas · {n} cambiada{'s' if n != 1 else ''}" if n else "5 reglas · confirmadas"
+        if getattr(self, "_chip_estado", None) is not None:
+            self._chip_estado.destroy()
+        self._chip_estado = T.chip(self._cab, texto, "aviso" if n else "ok")
+        self._chip_estado.pack(side="right")
+        self._todas.activar(bool(n))
 
     def pintar(self):
         c = self.contenido
         for w in c.winfo_children():
             w.destroy()
-        n = reglas_cambiadas(self.app.config)
-        cab = tk.Frame(c, bg=T.BLANCO)
+        self.controles = {}
+        self._chip_estado = None
+        cab = self._cab = tk.Frame(c, bg=T.BLANCO)
         cab.pack(fill="x")
         tk.Label(cab, text="Reglas de cruce", font=T.F["modal_titulo"], bg=T.BLANCO).pack(side="left")
         T.Ayuda(cab, "reglas").pack(side="left", padx=10)
-        T.chip(cab, f"5 reglas · {n} cambiada{'s' if n != 1 else ''}" if n else "5 reglas · confirmadas",
-               "aviso" if n else "ok").pack(side="right")
         tk.Label(c, text="Definen qué convenios entran al cuadro, a cuál se asigna cada registro y qué se cuenta. Vienen "
                          "confirmadas por la jefatura. Cámbialas solo si la regla cambió; lo que cambies queda marcado.",
                  font=T.F["cuerpo"], bg=T.BLANCO, anchor="w", justify="left",
                  wraplength=self.ancho - 80).pack(fill="x", pady=(8, 12))
         self.marco = T.desplazable(c, 560)
         self.marco.pack(fill="both", expand=True)
+        self.tarjetas, self.numeros, self.textos = {}, {}, {}
         for i, (clave, titulo, texto) in enumerate(REGLAS, start=1):
-            self._tarjeta(self.marco.interior, i, clave, titulo, texto)
+            self.numeros[clave], self.textos[clave] = i, (titulo, texto)
+            self.tarjetas[clave] = self._tarjeta(self.marco.interior, i, clave, titulo, texto)
         pie = tk.Frame(c, bg=T.BLANCO)
         pie.pack(fill="x", pady=(14, 0))
         tk.Frame(pie, bg=T.LINEA, height=1).pack(fill="x", pady=(0, 14))
-        todas = T.Boton(pie, "Restablecer todas a lo confirmado", self.restablecer_todas, tipo="secundario", ancho=330)
+        todas = self._todas = T.Boton(pie, "Restablecer todas a lo confirmado", self.restablecer_todas,
+                                      tipo="secundario", ancho=330)
         todas.pack(side="left")
-        todas.activar(bool(n))
         T.Boton(pie, "Ver cómo se aplican", self.ver_como_se_aplican, tipo="secundario",
                 ancho=220).pack(side="left", padx=12)
         T.Boton(pie, "Listo", lambda: self.cerrar(True), ancho=160).pack(side="right")
         tk.Label(c, text="Los cambios se guardan al instante. Mira cómo se aplican antes de generar.", font=T.F["pequena"],
                  bg=T.BLANCO, fg=T.GRIS,
                  anchor="w").pack(fill="x", pady=(8, 0))
+        self._pintar_estado()
 
     def ver_como_se_aplican(self):
         VerComoSeAplican(self.app, self).mostrar()
 
     def restablecer(self, clave=None):
         A.restablecer_reglas(self.app.config, clave)
-        self.cambio()
+        self.cambio(clave)
 
     def restablecer_todas(self):
         if D.aviso(self, "Restablecer las reglas", "aviso", "Las cinco reglas vuelven a como las confirmó la jefatura. "
@@ -96,11 +116,11 @@ class ModalReglas(D.Modal):
                    [("Restablecer todas", "ok", "primario"), ("Cancelar", "cancelar", "secundario")]) == "ok":
             self.restablecer()
 
-    def _tarjeta(self, padre, n, clave, titulo, texto):
+    def _tarjeta(self, padre, n, clave, titulo, texto, antes=None):
         cambiada = A.regla_cambiada(self.app.config, clave)
         t = T.Caja(padre, fondo=T.BLANCO, borde=T.NARANJA if cambiada else T.LINEA, grosor=2 if cambiada else 1,
                    radio=T.RADIO_GRANDE, padx=24, pady=16)
-        t.pack(fill="x", pady=(0, 12))
+        t.pack(fill="x", pady=(0, 12), **({"before": antes} if antes is not None else {}))
         cab = tk.Frame(t, bg=T.BLANCO)
         cab.pack(fill="x")
         T.numero(cab, n, 32).pack(side="left")
@@ -113,6 +133,7 @@ class ModalReglas(D.Modal):
             T.chip(cab, f"Confirmada · {A.fecha_confirmada(self.app.config)}", "ok").pack(side="right")
         tk.Label(t, text=texto, font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x", pady=(4, 6))
         getattr(self, f"_{clave[:2]}")(t, clave)
+        return t
 
     def _fila(self, t, texto, primera=False):
         if not primera:
@@ -132,7 +153,7 @@ class ModalReglas(D.Modal):
         confirmado = REGLAS_CONFIRMADAS[clave].get(campo)
         o = T.Opciones(der, pares, valor, lambda v: self.poner(clave, campo, v), editable=editable)
         if valor != confirmado:
-            o.configure(style="Cambiada.CM.TCombobox")
+            T.poner_estilo(o, "Cambiada.CM.TCombobox")
         o.pack(fill="both", expand=True)
         self.controles[(clave, campo)] = o
         return o

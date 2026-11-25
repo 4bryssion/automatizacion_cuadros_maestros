@@ -54,6 +54,9 @@ def foto(nombre, ventana_tk=None):
     w.update()
     w.after(300)
     w.update()
+    if not w.winfo_exists():
+        print(f"Sin captura {nombre}: la ventana ya se cerró")
+        return
     x, y = w.winfo_rootx(), w.winfo_rooty()
     ImageGrab.grab(bbox=(x, y, x + w.winfo_width(), y + w.winfo_height()), all_screens=True).save(SALIDA / f"{nombre}.png")
 
@@ -101,6 +104,8 @@ capturar_y_cerrar("03_confirmar")
 D.confirmar_generacion(raiz, "Administración de Empresas", 2021, 2022, 3, 6,
                        ["Movilidad 2021", "Int. en casa 2021-1", "Int. en casa 2021-2"], "hoy 11:20", False)
 params = dict(carpeta=datos, config=config, programa_id="administracion-de-empresas", anio_inicio=2021, anio_fin=2022)
+from cuadro_maestro.lectura import lector  # noqa: E402
+lector.olvidar_leidos()   # sin lo ya leído, para que la ventana de progreso alcance a verse
 raiz.after(150, lambda: foto("30_progreso", modal_abierto()))
 salida = D.Progreso(raiz, params, ["Programa: Administración de Empresas", "Vigencia: 2021–2022", "7 archivos"]).mostrar()
 if salida and salida[0] == "fin":

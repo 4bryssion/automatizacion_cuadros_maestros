@@ -4,6 +4,7 @@ from __future__ import annotations
 import queue
 import threading
 import time
+import sys
 import tkinter as tk
 from datetime import datetime
 
@@ -45,7 +46,21 @@ class Modal(tk.Toplevel):
         else:
             x, y = (self.winfo_screenwidth() - w) // 2, (self.winfo_screenheight() - h) // 3
         self.geometry(f"+{x}+{max(0, y)}")
+        # En Windows la ventana se veía pintarse por partes (parecía trabarse): se muestra invisible, se deja que
+        # termine de dibujarse y solo entonces aparece completa.
+        invisible = sys.platform == "win32"
+        if invisible:
+            try:
+                self.attributes("-alpha", 0.0)
+            except tk.TclError:
+                invisible = False
         self.deiconify()
+        if invisible:
+            try:
+                self.update()
+                self.attributes("-alpha", 1.0)
+            except tk.TclError:
+                pass
         self.grab_set()
         self.focus_set()
         self.wait_window()

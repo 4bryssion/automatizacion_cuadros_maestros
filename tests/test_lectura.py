@@ -238,3 +238,27 @@ def test_a_fecha(valor, esperado):
 def test_vacios_y_semestre():
     assert V.es_vacio("N/A") and V.es_vacio(" na ") and V.es_vacio(None) and not V.es_vacio("Universidad X")
     assert V.a_semestre(2.0) == 2 and V.a_semestre("2022-1") == 1 and V.a_semestre(3) is None
+
+
+def test_un_archivo_sin_cambios_no_se_vuelve_a_abrir(muestra, config, monkeypatch):
+    from cuadro_maestro.lectura import lector
+    lector.olvidar_leidos()
+    primera = leer(muestra, config)
+    abiertos = []
+    original = lector.abrir
+    monkeypatch.setattr(lector, "abrir", lambda ruta: (abiertos.append(ruta), original(ruta))[1])
+    segunda = leer(muestra, config)
+    assert abiertos == []
+    assert [len(a.registros) for a in segunda.archivos] == [len(a.registros) for a in primera.archivos]
+    assert len(segunda.avisos) == len(primera.avisos)
+    # si cambia la configuración de una fuente, esa fuente se vuelve a leer (y solo esa)
+    config["fuentes"][1]["fila_encabezado"] = {"automatica": True, "fila": 1, "x": 1}
+    leer(muestra, config)
+    assert len(abiertos) >= 1
+    # si cambia el archivo, se vuelve a leer
+    abiertos.clear()
+    ruta = segunda.archivos[0].ruta
+    time.sleep(0.01)
+    os.utime(ruta, None)
+    leer(muestra, config)
+    assert ruta in abiertos

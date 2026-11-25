@@ -87,7 +87,7 @@ def _estilos(raiz):
     n = 36
 
     def campo(borde, grosor, relleno=BLANCO):
-        return _guardar(raiz, G.caja_pil(n, n, RADIO, relleno, borde, grosor))
+        return _guardar(raiz, G.caja_pil(n * 4, n + 24, RADIO, relleno, borde, grosor, exterior=BLANCO))
 
     normal, foco = campo(GRIS, 1), campo(VERDE_CTA, 2)
     desact = campo(LINEA, 1, FONDO)
@@ -95,9 +95,10 @@ def _estilos(raiz):
                         ("CM.campo.cambiada", campo(NARANJA, 2))):
         if nombre == "CM.campo":
             estilo.element_create(nombre, "image", img, ("disabled", desact), ("focus", foco), border=10,
-                                  padding=(14, 11, 10, 11), sticky="nsew")
+                                  padding=(14, 11, 10, 11), sticky="nsew", width=36, height=36)
         else:
-            estilo.element_create(nombre, "image", img, border=10, padding=(14, 11, 10, 11), sticky="nsew")
+            estilo.element_create(nombre, "image", img, border=10, padding=(14, 11, 10, 11), sticky="nsew",
+                                  width=36, height=36)
     flecha = _guardar(raiz, G.triangulo(28, 20, GRIS_OSC))
     flecha_d = _guardar(raiz, G.triangulo(28, 20, DESACT_TXT))
     estilo.element_create("CM.flecha", "image", flecha, ("disabled", flecha_d), sticky="")
@@ -120,16 +121,87 @@ def _estilos(raiz):
     raiz.option_add("*TCombobox*Listbox.selectForeground", NEGRO)
     raiz.option_add("*TCombobox*Listbox.borderWidth", 0)
     # Barra de desplazamiento delgada y redondeada, sin flechas.
-    barra = _guardar(raiz, G.caja_pil(10, 40, 5, "#C4C4C4"))
-    barra_h = _guardar(raiz, G.caja_pil(10, 40, 5, "#9A9A9A"))
+    barra = _guardar(raiz, G.caja_pil(10, 160, 5, "#C4C4C4"))
+    barra_h = _guardar(raiz, G.caja_pil(10, 160, 5, "#9A9A9A"))
     estilo.element_create("CM.pulgar", "image", barra, ("active", barra_h), ("pressed", barra_h), border=(0, 6),
-                          sticky="ns")
+                          sticky="ns", width=10, height=40)
     estilo.layout("CM.Vertical.TScrollbar", [("Vertical.Scrollbar.trough", {"sticky": "ns", "children": [
         ("CM.pulgar", {"expand": "1", "sticky": "nsew"})]})])
     estilo.configure("CM.Vertical.TScrollbar", troughcolor=BLANCO, background=BLANCO, bordercolor=BLANCO,
                      lightcolor=BLANCO, darkcolor=BLANCO, gripcount=0, width=10)
     estilo.configure("CM.Horizontal.TProgressbar", troughcolor="#E3E3E3", background=VERDE_CTA, bordercolor="#E3E3E3",
                      lightcolor=VERDE_CTA, darkcolor=VERDE_CTA, thickness=10)
+
+
+# Las esquinas de los campos se pintan con el color de lo que tienen detrás: en Windows lo transparente de una imagen de
+# ttk se ve gris. Por eso hay una variante de cada estilo por color de fondo ("F" + color + "." + estilo).
+_BASES_CAMPO = {"CM.TCombobox": ("CM.campo", True), "Error.CM.TCombobox": ("CM.campo.error", True),
+                "Cambiada.CM.TCombobox": ("CM.campo.cambiada", True), "CM.TEntry": ("CM.campo", False),
+                "Error.CM.TEntry": ("CM.campo.error", False)}
+_COLORES_CAMPO = {"CM.campo": (GRIS, 1), "CM.campo.error": (MAGENTA, 2), "CM.campo.cambiada": (NARANJA, 2)}
+
+
+def _estilo_campo(raiz, base, fondo):
+    fondo = fondo.upper() if fondo.startswith("#") else fondo
+    if base not in _BASES_CAMPO or fondo == BLANCO:
+        return base
+    try:
+        r, g, b = (v // 257 for v in raiz.winfo_rgb(fondo))
+    except tk.TclError:
+        return base
+    hexa = "%02X%02X%02X" % (r, g, b)
+    if hexa == BLANCO[1:]:
+        return base
+    nombre = f"F{hexa}.{base}"
+    hechos = raiz.__dict__.setdefault("_estilos_campo", set())
+    if nombre in hechos:
+        return nombre
+    estilo = ttk.Style(raiz)
+    el, es_combo = _BASES_CAMPO[base]
+    el_f = f"{el}@{hexa}"
+    if el_f not in hechos:
+        borde, grosor = _COLORES_CAMPO[el]
+        ext = "#" + hexa
+        img = _guardar(raiz, G.caja_pil(144, 60, RADIO, BLANCO, borde, grosor, exterior=ext))
+        if el == "CM.campo":
+            foco = _guardar(raiz, G.caja_pil(144, 60, RADIO, BLANCO, VERDE_CTA, 2, exterior=ext))
+            desact = _guardar(raiz, G.caja_pil(144, 60, RADIO, FONDO, LINEA, 1, exterior=ext))
+            estilo.element_create(el_f, "image", img, ("disabled", desact), ("focus", foco), border=10,
+                                  padding=(14, 11, 10, 11), sticky="nsew", width=36, height=36)
+        else:
+            estilo.element_create(el_f, "image", img, border=10, padding=(14, 11, 10, 11), sticky="nsew",
+                                  width=36, height=36)
+        hechos.add(el_f)
+    if es_combo:
+        estilo.layout(nombre, [(el_f, {"sticky": "nsew", "children": [
+            ("CM.flecha", {"side": "right", "sticky": ""}),
+            ("Combobox.padding", {"expand": "1", "sticky": "nsew", "children": [
+                ("Combobox.textarea", {"sticky": "nsew"})]})]})])
+    else:
+        estilo.layout(nombre, [(el_f, {"sticky": "nsew", "children": [
+            ("Entry.padding", {"sticky": "nsew", "children": [("Entry.textarea", {"sticky": "nsew"})]})]})])
+    for opcion in ("padding", "foreground", "arrowsize", "insertcolor"):
+        v = estilo.lookup(base, opcion)
+        if v != "":
+            estilo.configure(nombre, **{opcion: v})
+    for opcion in ("foreground", "fieldbackground", "selectbackground", "selectforeground"):
+        m = estilo.map(base, opcion)
+        if m:
+            estilo.map(nombre, **{opcion: m})
+    hechos.add(nombre)
+    return nombre
+
+
+def poner_estilo(w, base=None):
+    """Pone a un campo o lista desplegable el estilo `base` con las esquinas del color de su fondo."""
+    if base is None:
+        base = str(w.cget("style"))
+        if base.startswith("F") and "." in base and base.split(".", 1)[1] in _BASES_CAMPO:
+            base = base.split(".", 1)[1]
+    try:
+        w.configure(style=_estilo_campo(w.winfo_toplevel(), base, fondo_de(w.master)))
+    except tk.TclError:
+        pass
 
 
 def estilo_marco(padre, relleno, borde=None, grosor=0, radio=RADIO, exterior=None, recorte=0,
@@ -142,11 +214,15 @@ def estilo_marco(padre, relleno, borde=None, grosor=0, radio=RADIO, exterior=Non
     if clave not in estilos:
         nombre = f"M{len(estilos)}"
         b = max(radio + grosor, banda[1] + 2 if banda else 0)
-        n = 2 * b + 6 + 2 * recorte
+        n = 2 * b + 96 + 2 * recorte   # centro grande: ttk lo repite en mosaico y con 6 px eran miles de copias
         img = G.caja_pil(n, n, radio, relleno, borde, grosor, exterior, esquinas, banda)
         if recorte:
             img = img.crop((recorte, recorte, n - recorte, n - recorte))
-        ttk.Style(raiz).element_create(nombre + ".fondo", "image", _guardar(raiz, img), border=b, sticky="nsew")
+        # El tamaño mínimo es el de antes (2·borde + 6): la imagen es más grande solo para que el centro se
+        # repita menos veces, no para agrandar las cajas pequeñas.
+        minimo = 2 * b + 6
+        ttk.Style(raiz).element_create(nombre + ".fondo", "image", _guardar(raiz, img), border=b, sticky="nsew",
+                                       width=minimo, height=minimo)
         ttk.Style(raiz).layout(nombre + ".TFrame", [(nombre + ".fondo", {"sticky": "nsew"})])
         estilos[clave] = nombre + ".TFrame"
     return estilos[clave]
@@ -407,6 +483,7 @@ class Campo(tk.Frame):
         super().__init__(padre, bg=fondo)
         self.variable = variable
         self.entrada = ttk.Entry(self, textvariable=variable, font=F["cuerpo"], style="CM.TEntry")
+        poner_estilo(self.entrada, "CM.TEntry")
         self.entrada.pack(fill="both", expand=True)
         if solo_lectura:
             self.entrada.configure(state="readonly")
@@ -428,7 +505,7 @@ class Campo(tk.Frame):
             pass
 
     def error(self, si=True):
-        self.entrada.configure(style="Error.CM.TEntry" if si else "CM.TEntry")
+        poner_estilo(self.entrada, "Error.CM.TEntry" if si else "CM.TEntry")
 
 
 class Opciones(ttk.Combobox):
@@ -452,6 +529,7 @@ class Opciones(ttk.Combobox):
             self.bind("<FocusOut>", lambda e: self._cambio(), add="+")
             self.bind("<Return>", lambda e: self._cambio(), add="+")
         sin_rueda(self)
+        poner_estilo(self, estilo)
         self._ultimo = valor
 
     def texto_de(self, valor):
@@ -497,6 +575,7 @@ def lista(padre, combo_kw: dict, **kw):
     """ttk.Combobox con el estilo del programa (para quien no usa Opciones)."""
     c = ttk.Combobox(padre, style="CM.TCombobox", font=F["cuerpo"], **combo_kw, **kw)
     sin_rueda(c)
+    poner_estilo(c, "CM.TCombobox")
     return c
 
 
