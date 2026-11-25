@@ -61,6 +61,8 @@ class Modal(tk.Toplevel):
                 self.attributes("-alpha", 1.0)
             except tk.TclError:
                 pass
+            if not self.winfo_exists():      # mientras se dibujaba pudo terminar y cerrarse (p. ej. una generación corta)
+                return self.resultado
         self.grab_set()
         self.focus_set()
         self.wait_window()

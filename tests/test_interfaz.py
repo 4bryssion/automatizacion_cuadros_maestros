@@ -419,3 +419,21 @@ def test_asistente_gemini_y_confirmar_sugerencias(muestra, tmp_path):
                                                  "administracion-de-empresas").avisos, app.config) == []
     finally:
         raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_un_modal_que_se_cierra_mientras_se_dibuja_no_falla(monkeypatch):
+    """En Windows el modal se dibuja invisible antes de aparecer; si en ese momento ya terminó (una generación
+    corta), no debe fallar al tomar el foco."""
+    import tkinter as tk
+    from cuadro_maestro.interfaz import dialogos as D
+    from cuadro_maestro.interfaz import tema as T
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        monkeypatch.setattr(D.sys, "platform", "win32")
+        m = D.Modal(raiz, "Prueba")
+        m.after(0, lambda: m.cerrar("listo"))
+        assert m.mostrar() == "listo"
+    finally:
+        raiz.destroy()
