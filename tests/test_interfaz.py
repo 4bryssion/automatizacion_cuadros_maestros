@@ -437,3 +437,35 @@ def test_un_modal_que_se_cierra_mientras_se_dibuja_no_falla(monkeypatch):
         assert m.mostrar() == "listo"
     finally:
         raiz.destroy()
+
+
+@pytest.mark.skipif(not _hay_pantalla(), reason="sin Tkinter o sin pantalla")
+def test_la_vista_previa_lista_todos_los_avisos(muestra, tmp_path):
+    """Antes solo se veían los 3 primeros y la tarjeta decía «Ver abajo»: ahora están todos (desplazando)."""
+    import tkinter as tk
+
+    from cuadro_maestro.configuracion import AlmacenConfiguracion
+    from cuadro_maestro.interfaz import tema as T
+    from cuadro_maestro.interfaz.app import Aplicacion
+    from cuadro_maestro.interfaz.vista_previa import VistaPrevia
+    raiz = tk.Tk()
+    try:
+        T.cargar_fuentes(raiz)
+        almacen = AlmacenConfiguracion(tmp_path / "u", tmp_path / "p")
+        app = Aplicacion(raiz, almacen, almacen.cargar().configuracion, AlmacenEstado(tmp_path / "u", tmp_path / "p"),
+                         Estado(str(muestra), "administracion-de-empresas", 2021, 2023))
+        vp = VistaPrevia(app, str(muestra), "administracion-de-empresas", 2021, 2023)
+        raiz.update()
+
+        def textos(w):
+            yield str(w.cget("text")) if "text" in w.keys() else ""
+            for h in w.winfo_children():
+                yield from textos(h)
+        todo = list(textos(vp))
+        assert len(vp.r.avisos) > 3
+        for a in vp.r.avisos:
+            assert any(t.startswith(a.titulo) for t in todo), a.titulo
+        assert not any("en la carpeta elegida" not in t and str(muestra) in t and t.startswith("Falta") for t in todo)
+        vp.destroy()
+    finally:
+        raiz.destroy()

@@ -184,8 +184,9 @@ AYUDAS = {
             ("p", [R("Muestra "), B("cómo quedaría el cuadro"),
                    R(" con tus archivos y la configuración actual. No crea archivos ni cambia nada.")]),
             ("b", [B("Las cuatro cifras: "), R("archivos leídos, convenios en el cuadro, movilidades contadas y avisos.")]),
-            ("b", [B("Avisos: "), R("se muestran los primeros, con el botón para resolverlos aquí. Después de corregir, pulsa "),
-                   B("Volver a leer los archivos"), R(". La lista completa está en Ver revisión, después de generar.")]),
+            ("b", [B("Avisos: "), R("están todos en la lista (desplázate dentro de ella), cada uno con su botón para resolverlo aquí. "
+                                     "Después de corregir, pulsa "),
+                   B("Volver a leer los archivos"), R(". También quedan en Ver revisión, después de generar.")]),
             ("b", [B("Ver cómo se leyó cada archivo ›"), R(" abre el detalle de la lectura.")]),
             ("p", [R("Si todo se ve bien, pulsa "), B("Generar cuadro maestro"), R(".")]),
         ],

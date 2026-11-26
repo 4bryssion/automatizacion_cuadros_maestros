@@ -15,6 +15,8 @@ from .modelo import vigencia
 from .sistema import abrir
 
 AVISOS_VISIBLES, FILAS_VISIBLES = 3, 4
+ALTO_AVISOS = 214                 # unos tres avisos a la vista; el resto, desplazando dentro de la lista
+AVISOS_MAXIMO = 150               # con miles de avisos la ventana tardaría en dibujarse
 COLOR_GRUPO = {EXCEL: T.MAGENTA, PROGRAMA: T.NARANJA, INFORMATIVO: "#9A9A9A"}
 
 
@@ -134,24 +136,44 @@ class VistaPrevia(D.Modal):
         cab = tk.Frame(c, bg=T.BLANCO)
         cab.pack(fill="x")
         tk.Label(cab, text="Avisos de la vista previa", font=T.F["seccion"], bg=T.BLANCO).pack(side="left")
-        tk.Label(cab, text=f"Mostrando {min(AVISOS_VISIBLES, len(avisos))} de {len(avisos)}", font=T.F["pequena"],
-                 bg=T.BLANCO, fg=T.GRIS).pack(side="right")
+        hay_mas = len(avisos) > AVISOS_VISIBLES
+        cuantos = tk.Label(cab, text=f"{len(avisos)} aviso{'s' if len(avisos) != 1 else ''}", font=T.F["pequena"],
+                           bg=T.BLANCO, fg=T.GRIS)
+        cuantos.pack(side="right")
         caja = T.borde(c, T.LINEA, radio=T.RADIO + 2, padx=4, pady=4)
         caja.pack(fill="x", pady=(8, 4))
-        for i, a in enumerate(avisos[:AVISOS_VISIBLES]):
+        # Todos los avisos están en la lista; si son más de los que caben, la lista se desplaza por dentro (antes solo
+        # se mostraban los 3 primeros y no había cómo ver el resto).
+        if hay_mas:
+            marco = T.desplazable(caja, ALTO_AVISOS)
+            marco.pack(fill="x")
+            lista = marco.interior
+        else:
+            lista = caja
+        for i, a in enumerate(avisos[:AVISOS_MAXIMO]):
             fondo = T.BLANCO if i % 2 == 0 else T.FONDO
-            f = tk.Frame(caja, bg=fondo, padx=14, pady=8)
+            f = tk.Frame(lista, bg=fondo, padx=14, pady=8)
             f.pack(fill="x")
             T.punto(f, COLOR_GRUPO[a.grupo], 12).pack(side="left", padx=(0, 12))
-            tk.Label(f, text=f"{a.titulo}  ·  {a.donde}", font=T.F["pequena"], bg=fondo, anchor="w", justify="left",
-                     wraplength=self.ancho - 380).pack(side="left", fill="x", expand=True)
+            # La ruta de la carpeta ya está arriba (chip «Carpeta»): repetirla ocupaba dos o tres líneas por aviso.
+            misma = a.donde.startswith("Carpeta ") and Path(a.donde[len("Carpeta "):]) == Path(self.carpeta)
+            donde = "en la carpeta elegida" if misma else a.donde
+            tk.Label(f, text=f"{a.titulo}  ·  {donde}", font=T.F["pequena"], bg=fondo, anchor="w", justify="left",
+                     wraplength=self.ancho - 400).pack(side="left", fill="x", expand=True)
             b = self._accion(f, a)
             if b:
                 b.pack(side="right")
-        if len(avisos) > AVISOS_VISIBLES:
-            tk.Label(c, text=f"y {len(avisos) - AVISOS_VISIBLES} avisos más. Resuelve estos aquí o ve todos en Ver "
-                             "revisión, después de generar.", font=T.F["pequena"], bg=T.BLANCO, fg=T.GRIS,
-                     anchor="w").pack(fill="x", pady=(0, 10))
+        extra = (f"Aquí se listan los primeros {AVISOS_MAXIMO}; todos quedan en Ver revisión al generar. "
+                 if len(avisos) > AVISOS_MAXIMO else "")
+        if hay_mas:                       # si al final caben todos, la lista se ajusta y no se desplaza
+            marco.update_idletasks()
+            alto = lista.winfo_reqheight()
+            if alto <= ALTO_AVISOS:
+                marco.lienzo.configure(height=alto)
+            else:
+                cuantos.configure(text=cuantos.cget("text") + " · desplázate para ver todos")
+        tk.Label(c, text=extra + "Resuélvelos aquí o, después de generar, en Ver revisión.", font=T.F["pequena"],
+                 bg=T.BLANCO, fg=T.GRIS, anchor="w").pack(fill="x", pady=(0, 10))
 
     def _accion(self, padre, a):
         """El mismo botón de acción que el aviso tiene en Ver revisión (decisión 2 de flujo)."""

@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk
 
-from PIL import ImageTk
+from PIL import Image, ImageTk
 
 from ..recursos import carpeta_recursos
 from . import graficos as G
@@ -215,7 +215,16 @@ def estilo_marco(padre, relleno, borde=None, grosor=0, radio=RADIO, exterior=Non
         nombre = f"M{len(estilos)}"
         b = max(radio + grosor, banda[1] + 2 if banda else 0)
         n = 2 * b + 96 + 2 * recorte   # centro grande: ttk lo repite en mosaico y con 6 px eran miles de copias
-        img = G.caja_pil(n, n, radio, relleno, borde, grosor, exterior, esquinas, banda)
+        if exterior == CLAVE_TRANSPARENTE:
+            # Ventana con color transparente (ayudas en Windows): ese color debe quedar puro. Si el borde suavizado se
+            # mezcla con él, alrededor se ve un remarco de color; por eso cada píxel es o del marco o transparente.
+            img = G.caja_pil(n, n, radio, relleno, borde, grosor, None, esquinas, banda)
+            alfa = img.getchannel("A").point(lambda v: 255 if v >= 128 else 0)
+            fondo_img = Image.new("RGBA", img.size, G.rgb(exterior))
+            fondo_img.paste(img.convert("RGB"), (0, 0), alfa)
+            img = fondo_img
+        else:
+            img = G.caja_pil(n, n, radio, relleno, borde, grosor, exterior, esquinas, banda)
         if recorte:
             img = img.crop((recorte, recorte, n - recorte, n - recorte))
         # El tamaño mínimo es el de antes (2·borde + 6): la imagen es más grande solo para que el centro se
@@ -398,8 +407,11 @@ def ancho_ayuda(ayuda: dict) -> int:
     return 400 if largo < 320 else 480 if largo < 650 else 560
 
 
+CLAVE_TRANSPARENTE = "#FF00FE"
+
+
 class PanelAyuda(tk.Toplevel):
-    TRANSPARENTE = "#FF00FE"
+    TRANSPARENTE = CLAVE_TRANSPARENTE
 
     def __init__(self, ancla: Ayuda, ayuda: dict, ancho=None):
         super().__init__(ancla)
@@ -420,11 +432,19 @@ class PanelAyuda(tk.Toplevel):
         cuerpo.pack(fill="both", expand=True)
         tk.Label(cuerpo, text=ayuda["titulo"], font=F["seccion"], bg=BLANCO, fg=GRIS_OSC, anchor="w").pack(fill="x")
         tk.Frame(cuerpo, bg=VERDE, height=4, width=64).pack(anchor="w", pady=(5, 10))
-        texto = tk.Text(cuerpo, wrap="word", bd=0, bg=BLANCO, font=F["pequena"], width=1, height=1,
+        # El texto va en un marco de ancho y alto exactos en píxeles. El alto se mide con la ventana ya dibujada
+        # (fuera de la pantalla): medirlo antes daba un número de líneas equivocado en Windows y la ayuda quedaba
+        # mucho más alta que su texto.
+        zona = tk.Frame(cuerpo, bg=BLANCO, width=ancho, height=40)
+        zona.pack(fill="x")
+        zona.pack_propagate(False)
+        texto = tk.Text(zona, wrap="word", bd=0, bg=BLANCO, font=F["pequena"], width=1, height=1,
                         padx=0, pady=0, cursor="arrow", highlightthickness=0, spacing1=2, spacing2=3, spacing3=6)
         texto.tag_configure("b", font=F["pequena_b"])
         texto.tag_configure("h", font=F["pequena_b"], foreground=VERDE_CTA, spacing1=8)
-        texto.tag_configure("vineta", lmargin1=0, lmargin2=20)
+        # Viñetas: el texto de la primera línea y el de las siguientes empiezan en la misma columna.
+        sangria = 22
+        texto.tag_configure("vineta", lmargin1=0, lmargin2=sangria, tabs=(sangria,))
         for tipo, contenido in ayuda["bloques"]:
             if tipo == "h":
                 texto.insert("end", contenido + "\n", "h")
@@ -435,26 +455,32 @@ class PanelAyuda(tk.Toplevel):
                 texto.window_create("end", window=fila_chips)
                 texto.insert("end", "\n")
             else:
+                inicio = texto.index("end-1c")
                 etiquetas = ("vineta",) if tipo in ("b", "ok", "mal") else ()
                 if tipo == "b":
-                    texto.image_create("end", image=G.punto(texto, VERDE_CTA, 7, BLANCO), padx=4)
-                    texto.insert("end", "   ", etiquetas)
+                    texto.image_create("end", image=G.punto(texto, VERDE_CTA, 7, BLANCO), padx=3)
+                    texto.insert("end", "\t", etiquetas)
                 elif tipo in ("ok", "mal"):
                     texto.image_create("end", image=G.simbolo(texto, tipo, 15, BLANCO, relleno=False))
-                    texto.insert("end", "  ", etiquetas)
+                    texto.insert("end", "\t", etiquetas)
                 for t, negrita in contenido:
                     texto.insert("end", t, etiquetas + (("b",) if negrita else ()))
+                if etiquetas:
+                    texto.tag_add("vineta", inicio, "end-1c")
                 texto.insert("end", "\n")
         texto.delete("end-2c", "end-1c")
         texto.configure(state="disabled")
-        texto.configure(width=max(10, ancho // max(1, F["pequena"].measure("0"))))
         texto.pack(fill="both", expand=True)
-        cuerpo.configure(width=ancho)
+        self.geometry("+-4000+-4000")
         self.update_idletasks()
-        texto.configure(width=max(10, round(ancho / F["pequena"].measure("0"))))
-        self.update_idletasks()
-        lineas = texto.count("1.0", "end-1c", "displaylines")
-        texto.configure(height=min(int(lineas[0]) if lineas else 10, 30))
+        try:
+            alto = texto.count("1.0", "end", "update", "ypixels")
+            alto = alto[0] if isinstance(alto, tuple) else int(alto)
+        except (tk.TclError, TypeError, ValueError):
+            alto = 0
+        if not alto or alto < 20:
+            alto = 20 * max(1, int(texto.index("end-1c").split(".")[0]))
+        zona.configure(height=min(alto + 2, 640))
         self.update_idletasks()
         x = min(ancla.winfo_rootx() - 20, ancla.winfo_screenwidth() - self.winfo_reqwidth() - 10)
         y = ancla.winfo_rooty() + ancla.winfo_height() + 6
